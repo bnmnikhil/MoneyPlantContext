@@ -1,0 +1,4 @@
+# The two project repos carry their own git history and remotes.
+# This repo tracks only the shared working context.
+/tradestack/
+/frontend/
