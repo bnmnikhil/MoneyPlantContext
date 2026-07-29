@@ -2,6 +2,31 @@
 
 **Generated from the code on 29 Jul 2026.** This file is code-truth, not chat memory. Regenerate it when the architecture shifts.
 
+---
+
+## ▶ NEXT SESSION — DO THIS FIRST
+
+Left off 29 Jul with `step/1e-1f-instrument-cache-and-session` pushed in **both** repos, green (30 backend tests, frontend typecheck clean), **PRs not yet merged**.
+
+1. **Merge both PRs on GitHub.** They are a pair — merge them together. Last time only one of a pair got merged, the next branch was cut from a stale `main`, and the work had to be redone.
+2. **Cut the Step 1 branch in both repos:**
+
+```powershell
+cd C:\Projects\Moneyplant\tradestack
+git switch main && git pull
+git switch -c step/2-aliceblue
+
+cd ..\frontend
+git switch main && git pull
+git switch -c step/2-aliceblue
+```
+
+3. **Sanity check before writing code:** `git log --oneline -3` in each — both should show the merge commit. Then start Alice Blue (Step 1 below).
+
+Delete this block once done.
+
+---
+
 ## What this is
 
 Options trading stack for NSE F&O. The core value is **multi-broker position aggregation** (Kite + Alice Blue + Paytm Money) with payoff graphs, because Alice Blue and Paytm lack decent position visualisation.
