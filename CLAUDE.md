@@ -4,9 +4,11 @@
 
 ## What this is
 
-Personal options trading stack for NSE F&O. The core value is **multi-broker position aggregation** (Kite + Alice Blue + Paytm Money) with payoff graphs, because Alice Blue and Paytm lack decent position visualisation. Learning project first, product later.
+Options trading stack for NSE F&O. The core value is **multi-broker position aggregation** (Kite + Alice Blue + Paytm Money) with payoff graphs, because Alice Blue and Paytm lack decent position visualisation.
 
-Owner is a leveraged call seller. Builds in ~90-minute morning slots. Wants **guided coding, not full dumps** — but will ask for full code on specific methods. Career switch is priority #1; this project is #2, so scope should be challenged aggressively.
+**Decided 29 Jul: this is a real product, not just a personal tool.** Target is a limited number of users, run safely, on minimal infrastructure cost. That reverses three earlier deferrals — authentication, persistence and multi-tenancy are now in scope rather than "only when a second user exists". It also means the app cannot be deployed until real auth exists (see Step 3).
+
+Owner is a leveraged call seller. Builds in ~90-minute morning slots. Wants **guided coding, not full dumps** — but will ask for full code on specific methods. Career switch is priority #1; this project is #2, so scope should still be challenged aggressively.
 
 ## Repos
 
@@ -72,7 +74,13 @@ The `Map<String,String> tokens` deliberately absorbs per-broker token shapes. Do
 
 ### Deliberately not built yet
 
-`BrokerConnection` entity (userId, brokerId, accountLabel, encrypted credentials) → Postgres, **only when Google OAuth arrives**. Sessions always stay in-memory (they die daily per SEBI). Do not build users / persistence / encryption until a second user exists.
+`BrokerConnection` entity (userId, brokerId, accountLabel) → Postgres. Now scheduled (Steps 3 and 7), not indefinitely deferred, because the product is going multi-user.
+
+**Sessions still stay in-memory.** Broker tokens die daily under SEBI rules, so there is nothing durable worth persisting and no token encryption problem to solve.
+
+**Likely no credential encryption either.** With app-level (vendor) OAuth — which Kite Connect uses and Alice Blue's a3 vendor flow uses — the *app* holds one api-key/secret pair in the environment and each user simply authorises. Per user you store the linkage, not their secrets. Verify this holds for Paytm before assuming it; if any broker requires per-user API keys, encryption comes back for that broker only.
+
+`connectionId` will need to become user-scoped (something like `{userId}:{brokerId}:{label}`) once users exist. `ConnectionService` is already keyed by `connectionId` rather than `brokerId`, so this is a key-format change, not a redesign.
 
 ## API contract
 
@@ -182,7 +190,21 @@ Pure computation in `PayoffEngine.compute(List<Leg>)`. 201 samples, ±10% pad be
 
 # Roadmap
 
-## Step 1 — make the core aggregate (in progress)
+**Order agreed 29 Jul 2026.** Steps are sequential and most span both repos.
+
+| # | Step | Gates |
+|---|---|---|
+| 0 | Multi-broker core (1a–1f) | ✅ done |
+| 1 | Alice Blue integration | — |
+| 2 | UI rework — group positions by broker and by instrument; fold in 1g | needs Step 1 |
+| 3 | Login / real authentication | **blocks deploy** |
+| 4 | Deploy — OCI, Cloudflare TBD | needs Step 3 |
+| 5 | Paytm Money integration | — |
+| 6 | Strategy builder | wants Step 7, and market data |
+| 7 | Persistence — users + broker links | partly pulled into Step 3 |
+| 8 | Analysis — technical, fundamental, premium decay, risk/reward, LLM | **blocked on market data** |
+
+## Step 0 — the multi-broker core ✅
 
 No broker code in this step. Alice Blue is only additive once it's done.
 
@@ -192,7 +214,7 @@ No broker code in this step. Alice Blue is only additive once it's done.
 - **1d ✅** Broker-neutral error hierarchy + Kite exception classification, both sides.
 - **1e** `InstrumentService` cache keyed by `(brokerId, symbol)`, `loadedOn` per broker.
 - **1f** Broker-neutral `SessionController`; `/api/session/login-url?brokerId=`.
-- **1g** `PayoffService` stops using the hardcoded `kite-default` connection and works per connection. **Curves are grouped by `(connectionId, underlying)` — not merged across brokers.** `/api/payoff` returns broker+underlying pairs; the selector reads "BANKNIFTY · Kite".
+- **1g — not yet done, folded into Step 2.** `PayoffService` stops using the hardcoded `kite-default` connection and works per connection. **Curves are grouped by `(connectionId, underlying)` — not merged across brokers.** `/api/payoff` returns broker+underlying pairs; the selector reads "BANKNIFTY · Kite". Until this lands, an Alice Blue book appears in the positions table but gets **no payoff curve at all**, which is most of the reason Alice Blue is being integrated.
 
 ### Decided 29 Jul: no cross-broker merging in the payoff
 
@@ -204,7 +226,7 @@ Two things were bundled under "merge across brokers"; both are settled.
 
 This narrows what the payoff feature is for: Alice Blue and Paytm have no decent payoff visualisation at all, so *having a curve per broker* is the win. Cross-broker net exposure is a later "Combined" toggle if a real book ever needs it — the aggregation value lives in the positions table, which already works.
 
-## Step 2 — Alice Blue integration (credentials ready, approved)
+## Step 1 — Alice Blue integration (credentials ready, approved)
 
 Auth is the current **Open API / a3 / v2 redirect flow** — *not* the deprecated v1 SDK:
 
@@ -217,20 +239,47 @@ browser → Alice Blue login → callback with userId + authCode
 
 Build: `AliceBlueProperties`, `AliceBlueSessionService` (checksum flow → `BrokerSession` with `{userSession}`), `AliceBlueBrokerGateway` (plain REST client, no Java SDK — parse comma-formatted string numbers like `"3,355.10"`; fields `Netqty`, `Tsym`, `Token`, `LTP`, `Opttype`; master-contract loader), `AliceBlueSessionController` at `/aliceblue/callback`. Register as `"aliceblue-default"`. The registry picks it up automatically — **zero changes to existing controllers, `PayoffService` or the frontend**, once the five blockers above are fixed.
 
-## Step 3 onwards
+## Step 2 — UI rework
 
-1. Paytm Money gateway (credentials in hand; REST via `developer.paytmmoney.com`, token auth, not a checksum flow)
-2. Decide on Kite market-data subscription
-3. Option chain
-4. Greeks / IV (Black-76, Newton-Raphson, net delta/theta)
-5. T+0 payoff line
-6. Telegram alerts
-7. Postgres + jOOQ snapshots
-8. Google OAuth (this is what triggers persistence)
-9. Propose-and-confirm execution — **only after a risk module exists**
+Positions grouped **by broker** and **by instrument**, for a cleaner view. Exact design decided at the time.
 
-Explicitly out of scope: a Java backtester. Backtesting stays offline in AlgoTest / Python.
+This is a *display* concern and does not contradict the payoff decision above. The table may collapse two BANKNIFTY 55500 PE rows from different brokers into one line with combined quantity, while `PayoffEngine` still treats them as two legs. The arithmetic is identical either way — keep the layers distinct.
 
-## Deployment (later, not built)
+Also fold in **1g** here, so Alice Blue gets a payoff curve.
 
-OCI VM with a reserved static IP (SEBI requirement). Caddy serves `dist/` and proxies `/api|/oauth2|/kite|/aliceblue` → `:8080`. Single origin. Cloudflare DNS, grey-cloud, on a subdomain of the personal domain.
+## Step 3 — Login / real authentication
+
+**This gates deployment.** `/api/me` is a stub that always returns 200, so `AuthGuard` is decorative and the app is permanently "logged in". Harmless on localhost; on a public IP it means anyone with the URL sees live positions, margins and P&L, and can drive the broker connect flow.
+
+Now that the product is multi-user, this is real auth: Google OAuth, a `users` table, and `connectionId` becoming user-scoped. This is where most of Step 7 actually gets built.
+
+## Step 4 — Deploy
+
+OCI VM with a reserved static IP (SEBI requirement). Caddy serves `dist/` and proxies `/api|/oauth2|/kite|/aliceblue` → `:8080`. Single origin. Cloudflare DNS vs OCI-only decided at the time. Minimal infra cost is an explicit constraint — prefer the OCI always-free tier and Postgres on the same VM over managed services.
+
+**Redirect URL gotcha:** brokers allow **one redirect URL per app registration**. Deploying means `localhost:8080/kite/callback` and `<domain>/kite/callback` cannot both be live. Register a second app per broker for dev, and do it when registering Alice Blue so it is handled once for both.
+
+## Step 5 — Paytm Money
+
+REST via `developer.paytmmoney.com`; token auth, not a checksum flow. Confirm whether it supports an app-level vendor flow or requires per-user API keys — that answer decides whether credential encryption is needed.
+
+## Step 6 — Strategy builder
+
+Build a hypothetical strategy and see its payoff before placing it. Note two dependencies: it probably wants Step 7 (saving strategies), and it is only pleasant to use with live option prices, which needs market data.
+
+## Step 7 — Persistence
+
+`users`, `broker_links`. Postgres + jOOQ. Largely pulled forward into Step 3; what remains here is whatever Step 6 needs to save.
+
+## Step 8 — Analysis features
+
+Technical, fundamental, premium decay, risk/reward, LLM analysis. Described by the owner as the core of the product.
+
+**Blocked on market data.** Every item runs through the price/option feed: technical needs history, premium decay needs option prices and IV over time plus stored series, risk/reward needs live premiums, LLM analysis needs something factual underneath. This is not "later work", it is *blocked* work.
+
+## Open decisions
+
+- **Market data source.** Kite's subscription is deferred on cost. Investigate cheaper or free NSE/option-chain APIs before committing. Until then `getLtp` returns 0 and the UI must not display a confident ₹0 — hide the spot card and spot reference line rather than showing zero.
+- **Regulatory.** Serving other users changes the picture: broker API terms generally restrict redistribution to third parties without a vendor agreement, and offering analysis or recommendations in India can fall under SEBI Research Analyst / Investment Adviser rules. Worth confirming properly before Step 8 — cheap to check now, expensive to discover late. Not legal advice.
+
+Explicitly out of scope: a Java backtester (stays offline in AlgoTest / Python), and propose-and-confirm order execution (only ever after a risk module exists).
