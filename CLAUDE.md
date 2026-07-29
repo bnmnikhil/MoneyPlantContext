@@ -192,7 +192,17 @@ No broker code in this step. Alice Blue is only additive once it's done.
 - **1d ✅** Broker-neutral error hierarchy + Kite exception classification, both sides.
 - **1e** `InstrumentService` cache keyed by `(brokerId, symbol)`, `loadedOn` per broker.
 - **1f** Broker-neutral `SessionController`; `/api/session/login-url?brokerId=`.
-- **1g** `PayoffService` merges legs per underlying across brokers. This is the actual product thesis and everything above exists to enable it.
+- **1g** `PayoffService` stops using the hardcoded `kite-default` connection and works per connection. **Curves are grouped by `(connectionId, underlying)` — not merged across brokers.** `/api/payoff` returns broker+underlying pairs; the selector reads "BANKNIFTY · Kite".
+
+### Decided 29 Jul: no cross-broker merging in the payoff
+
+Two things were bundled under "merge across brokers"; both are settled.
+
+**Identical instruments are not netted.** The same strike held at two brokers stays two legs. `PayoffEngine` sums `(value − avgPrice) × qty` linearly, so two legs at one strike give exactly the curve of one netted leg at the weighted-average price. Netting would only tidy the legs table.
+
+**Legs are grouped per broker, not per underlying.** Not a cost decision — grouping by `(connectionId, underlying)` versus `underlying` is one extra key either way. The reason is that **spreads only get margin benefit inside a single account**, so a strategy deliberately split across brokers is financially irrational and the merged curve would rarely have anything to merge. A curve whose legs span accounts also corresponds to no real margin position.
+
+This narrows what the payoff feature is for: Alice Blue and Paytm have no decent payoff visualisation at all, so *having a curve per broker* is the win. Cross-broker net exposure is a later "Combined" toggle if a real book ever needs it — the aggregation value lives in the positions table, which already works.
 
 ## Step 2 — Alice Blue integration (credentials ready, approved)
 
