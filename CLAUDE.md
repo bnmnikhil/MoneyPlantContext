@@ -84,6 +84,25 @@ The `Map<String,String> tokens` deliberately absorbs per-broker token shapes. Do
 
 `code` is `SESSION_EXPIRED` (reconnect required) or `CALL_FAILED` (transient — do not tell the user to reconnect). Partial success is the normal case and returns **200**: if Kite responds and Alice Blue's token is dead, you get Kite's rows plus one warning. A non-200 now means the entire request failed, which is a genuinely different situation.
 
+### Error codes (whole-request failures only)
+
+Only the single-connection endpoints (payoff) can produce these; the aggregate endpoints turn per-broker failure into warnings.
+
+```
+BrokerException (abstract: brokerId + code)
+├── BrokerSessionException       BROKER_SESSION_EXPIRED   409   "Reconnect"
+├── BrokerNotConnectedException  BROKER_NOT_CONNECTED     409   "Connect"
+└── BrokerCallException          BROKER_CALL_FAILED       502   retry, say nothing
+```
+
+Body is `{error, brokerId, message}`; `brokerId` may be null, which is why the handler builds a `HashMap` rather than `Map.of`. Frontend mirrors this in `BrokerErrorBody` and fires a `moneyplant:broker-session-lost` event carrying `{brokerId, code}`.
+
+**Gateways must classify.** `KiteBrokerGateway.classify()` maps `TokenException` → session expired and *everything else* → call failed. Alice Blue and Paytm gateways must do the same; reporting a 503 as "session expired" sends the user through a pointless OAuth round trip.
+
+**Kite SDK gotcha:** `KiteException` extends `Throwable` directly, not `Exception`. So `catch (KiteException | IOException e)` infers `Throwable` as the least upper bound, and any helper taking the caught variable must accept `Throwable`.
+
+Warning codes are unprefixed (`SESSION_EXPIRED`) because they sit inside a `BrokerWarning` object; error codes are prefixed (`BROKER_SESSION_EXPIRED`) because they sit bare in `{error: ...}`. Deliberate, not an oversight.
+
 | Method | Path | Returns |
 |---|---|---|
 | GET | `/api/positions` | `BrokerAggregate<PositionDto>` |
@@ -122,7 +141,7 @@ Pure computation in `PayoffEngine.compute(List<Leg>)`. 201 samples, ±10% pad be
 
 ## Blockers for Alice Blue (fix these first)
 
-1. **`ApiExceptionHandler` is Kite-hardcoded.** Every `BrokerSessionException` returns `{"error":"KITE_SESSION_EXPIRED"}` regardless of broker, and the frontend keys off that exact string. An Alice Blue failure would show a "Connect Kite" banner. Needs a broker-neutral code (`BROKER_SESSION_EXPIRED` + `brokerId`) on both sides. It also conflates "not connected" with "API call failed" — those deserve different statuses.
+1. ~~**`ApiExceptionHandler` is Kite-hardcoded.**~~ **Done (1d).** See the error-code section below.
 2. **`InstrumentService` cache is single-broker.** `bySymbol` is keyed by trading symbol only and `loadedOn` is one date for the whole app. Once Alice Blue loads its master contract, Kite's map is silently replaced and the second broker's `ensureLoaded` no-ops for the rest of the day. Key by `(brokerId, symbol)` and track `loadedOn` per broker.
 3. **`/api/session/status` and `/api/session/login-url` live inside `KiteSessionController`** and hardcode `"kite"`. Move to a broker-neutral controller; `login-url` will need a `brokerId` param.
 4. ~~**`CONNECTION_ID` duplicated in 5 files.**~~ **Partly done (1b).** Gone from `PositionsController`, `HoldingsController`, `AccountController` — they use the fan-out and take no connectionId at all. Two legitimate single-connection uses remain: `KiteSessionController` (1f) and `PayoffService` (1g).
@@ -170,7 +189,7 @@ No broker code in this step. Alice Blue is only additive once it's done.
 - **1a ✅** `.gitattributes` `* text=auto` in both repos. Diffs are readable again.
 - **1b ✅** Fan-out + `BrokerAggregate` contract, 3 controllers collapsed, 12 tests. Commits `571e074`, `84ce2df`.
 - **1c ✅** Frontend mirrors the contract; `BrokerWarnings`, Broker column, margins summed client-side. Commit `441b9f5`.
-- **1d** Broker-neutral errors: `ApiExceptionHandler` still hardcodes `KITE_SESSION_EXPIRED`. Classify Kite's `TokenException` as `SESSION_EXPIRED` vs everything else as `CALL_FAILED` inside the gateway.
+- **1d ✅** Broker-neutral error hierarchy + Kite exception classification, both sides.
 - **1e** `InstrumentService` cache keyed by `(brokerId, symbol)`, `loadedOn` per broker.
 - **1f** Broker-neutral `SessionController`; `/api/session/login-url?brokerId=`.
 - **1g** `PayoffService` merges legs per underlying across brokers. This is the actual product thesis and everything above exists to enable it.
