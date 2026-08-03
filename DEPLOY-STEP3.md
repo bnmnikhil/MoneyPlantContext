@@ -195,6 +195,37 @@ the callback. Reject on mismatch with a plain error — never a redirect.
 Note that `/api/session/login-url` being authenticated is what makes this work: the user is
 identified while minting the nonce, so the callback never has to identify them again.
 
+### The nonce must carry identity, not reference the session — measured 3 Aug
+
+`KiteSessionController.logCallerIdentity()` answered it:
+
+```
+Kite callback reached. App session present=false principal=(anonymous)
+```
+
+The app session does **not** survive Zerodha's cross-site redirect. So the server-side entry
+the nonce points at has to hold the `userId` itself; binding it to the HTTP session would
+never resolve on the way back. This also retires the idea that the callbacks could simply be
+re-authenticated — there is no session there to authenticate.
+
+### Per-broker mechanics — verified, not assumed
+
+| Broker | How the nonce travels | Source |
+|---|---|---|
+| Kite | `redirect_params=state%3D<nonce>` appended to the login URL — inner value URL-encoded, then the whole parameter encoded again. Comes back as an ordinary query param on the redirect. | kite.trade/docs/connect/v3/user |
+| Paytm | `state=<nonce>`, native and already in the login URL — currently a hardcoded `"moneyplant"`. Swap in the nonce. | `docs/paytm-api.md:56` — "an arbitrary string echoed back" |
+| Alice Blue | **No known round-trip.** The login URL takes `appcode` and nothing else. | `AliceBlueSessionService.loginUrl()` |
+
+So `BrokerAuthProvider.loginUrl()` becomes `loginUrl(String state)` and each broker embeds
+the nonce whichever way it can.
+
+**Alice Blue needs a fallback, and it must fail closed.** When a callback arrives with no
+usable nonce, attribute it only if exactly one pending connect exists for that broker;
+reject if there are none or more than one. With a handful of users the ambiguous case is
+essentially unreachable, and rejecting it is a retry rather than a misattributed brokerage
+account. Do not widen this into "pick the most recent" — that is a silent wrong answer under
+precisely the conditions where being right matters.
+
 ---
 
 ## Build order
@@ -271,10 +302,12 @@ Both already in `CLAUDE.md`; restated because 3c is the moment they stop being t
 
 1. **Which broker does the second user trade on?** Decides which prod registration goes
    first. Assumed Kite.
-2. **Does the OAuth `state` round trip survive Alice Blue's and Paytm's callbacks?** Kite
-   documents a `state`-like passthrough. The other two are unverified — if either drops
-   unknown query parameters, the CSRF fix needs the HTTP session alone rather than a
-   round-tripped nonce.
+2. ~~**Does the OAuth `state` round trip survive Alice Blue's and Paytm's callbacks?**~~
+   **Answered 3 Aug** — see the per-broker table above. Kite via `redirect_params`, Paytm
+   natively, Alice Blue not at all. What remains open is narrower: whether Alice Blue
+   silently passes through *unknown* query parameters on its redirect. If it does, it joins
+   the other two and the fallback becomes dead code. Worth one live attempt before accepting
+   the fallback permanently.
 3. **Domain and DNS.** Cloudflare in front, or OCI only. Cloudflare adds TLS and a hostname
    for free; it also puts a third party between the user and a brokerage session.
 4. **Does the Kite Connect monthly fee apply per app registration?** Decides whether prod
