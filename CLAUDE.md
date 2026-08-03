@@ -6,24 +6,27 @@
 
 ## ▶ NEXT SESSION — DO THIS FIRST
 
-**Steps 1, 2, most of 5, and Step 3a are done.** Now on `step/3a-auth` in **both** repos, green, committed, **not pushed**. That branch is stacked on `step/2-ui-rework`, which is itself still unmerged into `main` — so there are two branches deep to land.
+**Status as of 4 Aug 2026. Steps 1, 2, 5, 3a and the core of 3b are done, merged, and on `main` in both repos.** Nothing is in flight.
 
 ```
-tradestack  c5190b4  Delete dead code, unbundle thymeleaf, take PayoffEngine out of Spring
-frontend    0fd5926  Point sign-in at Google and echo the CSRF token
-parent      5437e15  Plan Step 3: multi-user auth, and the road to deploy
+tradestack  origin/main  f2d535d  Merge pull request #5 from bnmnikhil/step/3a-auth
+frontend    origin/main  6531aa7  Merge pull request #5 from bnmnikhil/step/3a-auth
 ```
 
-All three brokers aggregate. Field-level references — including every place each vendor's docs are wrong — are in `tradestack/docs/aliceblue-api.md` and `tradestack/docs/paytm-api.md`. **Read the relevant one before touching a gateway.**
+**Pull first — local `main` in both repos is stale**, still sitting on the pre-3a merge. The `step/2-ui-rework` and `step/3a-auth` branches are now spent and can be deleted locally and on the remote.
 
-**Google sign-in works end to end**, verified live on localhost. The full Step 3 plan — identity model, why there is no Postgres, the local/prod split, build order — is in **`DEPLOY-STEP3.md`**, beside this file. Read it before starting 3b.
+**The app is genuinely multi-user.** Google sign-in with an env-var allowlist, `/api/me` real, connections keyed `{userId}:{brokerId}:{label}`, every fan-out scoped to the caller, and broker callbacks attributed by a single-use nonce minted in `/api/session/login-url`. Kite's flow is verified live end to end. Backend suite is 124 green.
 
-1. **Start 3b: user-scoped connections.** `connectionId` → `{userId}:{brokerId}:{label}`, and **`state`-based callback attribution**, which is load-bearing rather than hardening — see below.
-2. **One open question 3b needs answered first.** `KiteSessionController.logCallerIdentity()` logs whether the app session survives the broker's cross-site redirect. Connect Kite once and read the line: `present=true` means the `state` nonce can bind to the session, `present=false` means it must carry the user identity itself. Delete the log once decided.
-3. **Delete `PaytmDebugController` and `mp-pm-raw`** as part of 3b. They expose account data with no authentication of their own.
-4. **Live smoke test all three together.** `mp-check`, then `mp-pnl` during market hours — Paytm's LTP is 0 outside them, which is handled but worth seeing correct.
-5. **Then push and PR: step/2 first, then 3a.** They are a stack, so they land in order.
-6. **Symbol-model step 2 (`InstrumentKey`)** is still queued behind all of this. Decision recorded 3 Aug — see below.
+All three brokers aggregate. Field-level references — including every place each vendor's docs are wrong — are in `tradestack/docs/aliceblue-api.md` and `tradestack/docs/paytm-api.md`. **Read the relevant one before touching a gateway.** The Step 3 plan — identity model, why there is no Postgres, the local/prod split — is in **`DEPLOY-STEP3.md`**, beside this file.
+
+**In flight outside the code: the Kite prod app registration and the static IP are filed and awaiting approval** (submitted 3 Aug; ~1 day turnaround last time). 3c cannot finish without them. Check these first — if they have landed, 3c is unblocked.
+
+1. **Finish 3b — account labels and the session-status reshape.** `/api/session/status` goes from broker-keyed `{brokers:[{id,connected}]}` to connection-keyed `{connections:[{connectionId,brokerId,accountLabel,connected}]}`, per `UX-STEP2.md` §Backend-1. `accountLabel` comes from each broker's profile call at connect time and falls back to the connectionId, never blank. Breaking change: the TS type moves with `useBrokerStatus`, `BrokerStatusChips` and `ConnectBrokerCard`. **Nothing is broken without it** — status works, scoped to the user — so it is the largest remaining chunk rather than an urgent one.
+2. **Render connect errors on `/app`.** Callbacks now redirect to `/app?error=kite|paytm|aliceblue|connect_expired` and nothing displays it, so a failed or expired connect lands on the dashboard silently. `connect_expired` should say the attempt timed out and to press Connect again.
+3. **Then 3c — deploy.** OCI VM, reserved static IP, Caddy serving `dist/` and proxying `/api|/oauth2|/login/oauth2|/kite|/aliceblue|/paytm` to `:8080`. Single origin, env values per host. Checklist in `DEPLOY-STEP3.md`.
+4. **One cheap experiment while connecting brokers anyway: does Alice Blue forward unknown query parameters?** If it does, `AliceBlueSessionService.loginUrl(state)` becomes a one-line change, it joins Kite and Paytm, and `PendingConnect.consumeSolePendingFor` becomes dead code to delete. Alice Blue is the only broker relying on that fallback.
+5. **Then the real prize: verify Alice Blue's option chain** (`POST /obrest/optionChain/getOptionChain`). Still the highest-leverage unknown in the project — per-strike `ltp` and `oi` at no extra cost would unblock Step 6 and most of Step 8, which is the part described as the core of the product.
+6. **Symbol-model step 2 (`InstrumentKey`)** remains queued. Decision recorded 3 Aug — see below.
 
 ### Decided 3 Aug: the application owns its symbols
 
@@ -37,11 +40,13 @@ Status: step 1 (`UnderlyingRegistry` + `underlyings.properties`) is done and shi
 
 ### ⚠ Before deploying
 
-- **`PaytmDebugController` must be gone.** See above.
+- ~~**`PaytmDebugController` must be gone.**~~ **Done in 3b.** Deleted along with `mp-pm-raw`, `mp-pm-spot` and the `/kite/login` dev helper.
 - **`MP_SESSION_STORE` must be unset.** It writes live broker tokens to `~/.moneyplant/sessions.json` **in plaintext**. It defaults to off and has to be switched on deliberately, so this is a "don't copy your dev env to the server" check rather than a code change. On a reachable host that file is a credential for a real brokerage account. `FileSessionStore` goes away entirely when Step 3/7 puts sessions in Postgres.
 - ~~**`KiteProperties` has the silent-placeholder hazard.**~~ **Fixed in 3a.** The guard is now `common/RequiredConfig.requireResolved`, shared by all three brokers and by the Google client credentials, instead of being copy-pasted into two session services and missing from the third.
 
-- **Broker callbacks are `permitAll()` and attribute nothing.** 3a briefly made them authenticated and that broke the connect flow outright — the session cookie has to survive a cross-site redirect, and when it does not, the entry point redirects to Google and the broker's single-use token is discarded into a loop. `state`-based attribution in 3b is what closes this, and it **must** land before Step 4. Reasoning in `DEPLOY-STEP3.md`.
+- ~~**Broker callbacks are `permitAll()` and attribute nothing.**~~ **Closed in 3b.** They are still `permitAll()` and must stay that way — 3a briefly made them authenticated and it broke the connect flow outright, because the session cookie does not survive the broker's cross-site redirect (measured: `present=false`). Attribution is now a single-use nonce minted in `/api/session/login-url`, which *is* authenticated. Kite carries it in `redirect_params`, Paytm in its native `state`; Alice Blue can carry nothing and falls back to "exactly one pending flow for this broker, or refuse".
+
+- **`MP_COOKIE_SECURE` must be `true` on the VM.** The session cookie is `SameSite=Lax` and `Secure` is per-host, defaulting false so plain-HTTP localhost works. Over HTTPS without it the cookie still functions, so nothing will look broken — it will simply be travelling less protected than it should.
 
 ### Carried forward, none blocking
 
@@ -87,8 +92,10 @@ step/1d-broker-errors   one branch per roadmap step, per repo
 - Squash merge into `main`, delete the branch.
 - **Never merge red.** Backend gate is `mvnw test`, frontend gate is `npm run typecheck`. Both are in the PR template.
 
-- `tradestack` HEAD: `5b00f2c Multi brokers support code refactor`
-- `frontend` HEAD: `77033be multi broker refactor of backend`
+- `tradestack` `origin/main`: `f2d535d Merge pull request #5 from bnmnikhil/step/3a-auth`
+- `frontend` `origin/main`: `6531aa7 Merge pull request #5 from bnmnikhil/step/3a-auth`
+
+Branch names stayed `step/3a-auth` in both repos even though the final commits covered 3b as well. 3a and 3b landed together rather than as the separate pair the plan assumed.
 
 ## Backend architecture (locked — do not relitigate)
 
@@ -192,14 +199,14 @@ Warning codes are unprefixed (`SESSION_EXPIRED`) because they sit inside a `Brok
 | GET | `/api/positions` | `BrokerAggregate<PositionDto>` |
 | GET | `/api/holdings` | `BrokerAggregate<HoldingDto>` |
 | GET | `/api/margins` | `BrokerAggregate<MarginDto>` — one row per broker, **frontend sums** |
-| GET | `/api/me` | **STUB** — hardcoded `{email,name,picture}` |
-| GET | `/api/session/status` | `{brokers:[{id,connected}]}` |
-| GET | `/api/session/login-url` | `{url}` (Kite only) |
+| GET | `/api/me` | `{email,name,picture}` from the OIDC principal; 401 when absent |
+| POST | `/api/logout` | 204. Served by Spring Security, not a controller |
+| GET | `/api/session/status` | `{brokers:[{id,connected}]}`, scoped to the caller. **Reshape pending** — see 3b remainder |
+| GET | `/api/session/login-url` | `{url}` for any registered broker. **Mints the connect nonce** — this is the authenticated moment the callback later depends on |
 | GET | `/api/payoff` | `CurveRef[]` — `{connectionId, brokerId, underlying}` per plottable curve |
 | GET | `/api/payoff/{underlying}?connectionId=` | `PayoffResponse` incl. `brokerId`, `connectionId`, `spot` |
 | GET | `/api/debug/instrument?symbol=` | `OptionInstrument` |
-| GET | `/kite/login` | login URL as text/html |
-| GET | `/kite/callback` | redirects to `${app.frontend-url}/app` |
+| GET | `/{broker}/callback` | public by necessity; attributed by nonce. Redirects to `${app.frontend-url}/app`, or `/app?error=…` on failure |
 
 Frontend mirrors these exactly in `src/types/api.ts`. **Keep the two in sync — the TS types are the contract.**
 
@@ -346,7 +353,11 @@ Also fold in **1g** here, so Alice Blue gets a payoff curve.
 
 **3a ✅ done 3 Aug.** Google OAuth, email allowlist, real `/api/me` and `/api/logout`, `AuthGuard` no longer decorative. Verified live on localhost.
 
-**3b next.** `connectionId` → `{userId}:{brokerId}:{label}`, `ConnectionService.forUser`, fan-out scoped to the caller, `state`-based callback attribution, `accountLabel` on `BrokerSession`, `/api/session/status` reshape per `UX-STEP2.md`.
+**3b ✅ core done 3 Aug, merged 4 Aug.** `connectionId` → `{userId}:{brokerId}:{label}` (userId is Google's `sub`, never the email — connectionId reaches the browser inside `BrokerWarning` and exception messages). `ConnectionService.allFor(userId)` with the unscoped `all()` *removed* rather than kept alongside. Fan-out, `sessions()`, `SpotPriceService` and `session(connectionId)` all scoped; the last also checks ownership, since `/api/payoff` takes a connectionId from the client and reports someone else's as "not connected" rather than "forbidden".
+
+**3b remainder.** `accountLabel` on `BrokerSession` and the `/api/session/status` reshape per `UX-STEP2.md` §Backend-1. Deferred deliberately — it spans both repos and nothing is broken without it.
+
+**3c next.** Deploy. Blocked only on the Kite prod registration and static IP, both filed 3 Aug.
 
 **Correction to the earlier note here:** this is *not* where most of Step 7 gets built. There is **no `users` table and no Postgres in Step 3 at all** — nothing per-user outlives a login, because broker tokens die daily under SEBI rules and no broker in the stack issues a refresh token. The allowlist is an environment variable. Persistence stays in Step 7, arriving when saved strategies finally give it something to hold.
 

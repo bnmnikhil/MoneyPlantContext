@@ -261,6 +261,15 @@ tokens for more than one person's brokerage account in a single file.
 
 **Estimate: ~½ day.**
 
+### Status — 4 Aug 2026
+
+**3a and 3b both shipped and merged** (PR #5 in each repo), and landed together on a single
+`step/3a-auth` branch rather than as the separate pair planned here. Kite's connect flow is
+verified live end to end. Backend suite 124 green.
+
+Outstanding from 3b: `accountLabel` and the `/api/session/status` reshape. Deferred on
+purpose — it spans both repos and nothing depends on it yet.
+
 ### 3c — Deploy
 
 OCI VM, reserved static IP, Caddy serving `dist/` and proxying
@@ -290,10 +299,12 @@ Both already in `CLAUDE.md`; restated because 3c is the moment they stop being t
       credential for a real brokerage account.
 - [ ] `KiteProperties` fails fast on an unset env var rather than binding `${...}`.
 - [ ] Session cookie `SameSite` set explicitly.
-- [ ] **Broker callbacks attribute via `state`.** They are `permitAll()` and currently
-      attribute nothing — on a reachable host anyone can drive the connect flow. This is the
-      one item on this list that is a genuine hole rather than a hygiene check.
-- [ ] `KiteSessionController.logCallerIdentity()` deleted.
+- [x] ~~**Broker callbacks attribute via `state`.**~~ Done in 3b. They remain `permitAll()`,
+      which is correct and must stay, but a callback that cannot be attributed to a pending
+      flow is now refused instead of trusted.
+- [x] ~~`KiteSessionController.logCallerIdentity()` deleted.~~ Done, having answered its question.
+- [ ] `MP_COOKIE_SECURE=true` on the VM. Defaults false so plain-HTTP localhost works, and
+      nothing looks broken without it — the cookie simply travels less protected than it should.
 - [ ] Prod broker credentials present in the VM environment; dev credentials absent from it.
 
 ---
