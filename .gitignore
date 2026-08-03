@@ -2,3 +2,6 @@
 # This repo tracks only the shared working context.
 /tradestack/
 /frontend/
+
+# Postman exports can carry live session tokens - keep them out of git.
+/Postman/
