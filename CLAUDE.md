@@ -6,19 +6,24 @@
 
 ## ▶ NEXT SESSION — DO THIS FIRST
 
-**Steps 1, 2 and most of 5 are done.** On `step/2-ui-rework` in **both** repos, green, committed, not yet pushed.
+**Steps 1, 2, most of 5, and Step 3a are done.** Now on `step/3a-auth` in **both** repos, green, committed, **not pushed**. That branch is stacked on `step/2-ui-rework`, which is itself still unmerged into `main` — so there are two branches deep to land.
 
 ```
-tradestack  5e74e39  Paytm Money: auth, read gateway, mapping from live payloads
-frontend    f2414c5  Group positions by broker and underlying, holdings by broker
+tradestack  c5190b4  Delete dead code, unbundle thymeleaf, take PayoffEngine out of Spring
+frontend    0fd5926  Point sign-in at Google and echo the CSRF token
+parent      5437e15  Plan Step 3: multi-user auth, and the road to deploy
 ```
 
-All three brokers now aggregate. Field-level references — including every place each vendor's docs are wrong — are in `tradestack/docs/aliceblue-api.md` and `tradestack/docs/paytm-api.md`. **Read the relevant one before touching a gateway.**
+All three brokers aggregate. Field-level references — including every place each vendor's docs are wrong — are in `tradestack/docs/aliceblue-api.md` and `tradestack/docs/paytm-api.md`. **Read the relevant one before touching a gateway.**
 
-1. **Live smoke test all three together.** `mp-check`, then `mp-pnl` during market hours — Paytm's LTP is 0 outside them, which is handled but worth seeing correct.
-2. **Delete `PaytmDebugController` and `mp-pm-raw`.** They expose account data with no authentication of their own. Acceptable on localhost, must not reach Step 4.
-3. **Then push and PR both repos together.**
-4. **Then start symbol-model step 2 (`InstrumentKey`).** Decision recorded 3 Aug — see below.
+**Google sign-in works end to end**, verified live on localhost. The full Step 3 plan — identity model, why there is no Postgres, the local/prod split, build order — is in **`DEPLOY-STEP3.md`**, beside this file. Read it before starting 3b.
+
+1. **Start 3b: user-scoped connections.** `connectionId` → `{userId}:{brokerId}:{label}`, and **`state`-based callback attribution**, which is load-bearing rather than hardening — see below.
+2. **One open question 3b needs answered first.** `KiteSessionController.logCallerIdentity()` logs whether the app session survives the broker's cross-site redirect. Connect Kite once and read the line: `present=true` means the `state` nonce can bind to the session, `present=false` means it must carry the user identity itself. Delete the log once decided.
+3. **Delete `PaytmDebugController` and `mp-pm-raw`** as part of 3b. They expose account data with no authentication of their own.
+4. **Live smoke test all three together.** `mp-check`, then `mp-pnl` during market hours — Paytm's LTP is 0 outside them, which is handled but worth seeing correct.
+5. **Then push and PR: step/2 first, then 3a.** They are a stack, so they land in order.
+6. **Symbol-model step 2 (`InstrumentKey`)** is still queued behind all of this. Decision recorded 3 Aug — see below.
 
 ### Decided 3 Aug: the application owns its symbols
 
@@ -34,7 +39,9 @@ Status: step 1 (`UnderlyingRegistry` + `underlyings.properties`) is done and shi
 
 - **`PaytmDebugController` must be gone.** See above.
 - **`MP_SESSION_STORE` must be unset.** It writes live broker tokens to `~/.moneyplant/sessions.json` **in plaintext**. It defaults to off and has to be switched on deliberately, so this is a "don't copy your dev env to the server" check rather than a code change. On a reachable host that file is a credential for a real brokerage account. `FileSessionStore` goes away entirely when Step 3/7 puts sessions in Postgres.
-- **`KiteProperties` has the silent-placeholder hazard** — an unset env var binds as the literal `${...}` rather than failing. Alice Blue and Paytm both guard this in their session services; Kite does not.
+- ~~**`KiteProperties` has the silent-placeholder hazard.**~~ **Fixed in 3a.** The guard is now `common/RequiredConfig.requireResolved`, shared by all three brokers and by the Google client credentials, instead of being copy-pasted into two session services and missing from the third.
+
+- **Broker callbacks are `permitAll()` and attribute nothing.** 3a briefly made them authenticated and that broke the connect flow outright — the session cookie has to survive a cross-site redirect, and when it does not, the entry point redirects to Google and the broker's single-use token is discarded into a loop. `state`-based attribution in 3b is what closes this, and it **must** land before Step 4. Reasoning in `DEPLOY-STEP3.md`.
 
 ### Carried forward, none blocking
 
@@ -45,7 +52,7 @@ Status: step 1 (`UnderlyingRegistry` + `underlyings.properties`) is done and shi
 - **Paytm has no day-change figure *in its positions payload*,** so `dayChange` is 0 for its rows and the column mixes real values with zeros. See the line above for the fix.
 - **`last_update_time` in the live-price payload is not a current epoch second** (`1470196447` = Aug 2016 read as one). Do not surface it as a quote timestamp without working out the real encoding.
 - **Payoff points carry float noise** (`-20339.999999999985`). Invisible on a chart, visible in a tooltip. Round at the DTO boundary.
-- **CLAUDE.md is not version-controlled** — it sits above both repos. All of this context lives in an untracked file.
+- ~~**CLAUDE.md is not version-controlled.**~~ **Wrong — it always was.** The directory above both repos is itself a git repo, and `CLAUDE.md` is tracked in it. `UX-STEP2.md` and `DEPLOY-STEP3.md` now are too, committed 3 Aug.
 
 ---
 
@@ -238,8 +245,8 @@ Pure computation in `PayoffEngine.compute(List<Leg>)`. 201 samples, ±10% pad be
 10. **Payoff window never starts at 0** — `lo = max(0, minStrike - span*0.5 - maxStrike*0.10)`. For long puts the true max profit (at spot=0) is off-screen, so `maxProfit` is understated.
 11. **Kite holdings ignore `t1Quantity`** — settled-but-not-delivered shows qty 0. The Alice Blue gateway adds T1 back (`sellableQty + t1Quantity`); Kite still does not, so the two disagree. **Unverified either way:** every sampled Alice Blue row had `t1Quantity: 0`, so if `sellableQty` already includes T1 the Alice Blue side double-counts. Check on a day with a same-day purchase.
 12. ~~**`PositionDto.dayChange` is `lastPrice - closePrice`.**~~ **Fixed (Step 1)** — now `× netQuantity`, so it is rupees like `pnl` rather than a per-unit price delta sitting in a column of money. The underlying SDK field names are still unverified against kiteconnect 3.5.0.
-13. **`/api/logout` is called by the frontend but does not exist in the backend.** `api.logout()` will 404/405 and `useLogout` will never redirect.
-14. **`AuthGuard` is effectively a no-op** — `/api/me` is a stub that always returns 200, so the app is always "logged in". Expected until Google OAuth, but don't mistake it for working auth.
+13. ~~**`/api/logout` is called by the frontend but does not exist in the backend.**~~ **Done (3a).** Served by Spring Security's logout handler at that path, not a controller, so session and cookie teardown stay in one place.
+14. ~~**`AuthGuard` is effectively a no-op.**~~ **Done (3a).** `/api/me` returns the real OIDC principal and 401s without one. Sign-in is Google + an env-var email allowlist; a rejected address is refused during the token exchange, so no session is ever created for it.
 15. ~~**`PayoffLeg.type` missing `FUT`.**~~ Fixed in 1c.
 
 15b. **`npm run build` was broken from the start** (fixed in 1c). `tsconfig.node.json` set both `composite: true` and `noEmit: true`, which is TS6310, so `tsc -b` always failed — meaning the project had never been type-checked, only transpiled by Vite. Emit now goes to `node_modules/.tmp`, `*.tsbuildinfo` is gitignored. **Run `npm run typecheck` after every frontend change.**
@@ -247,12 +254,12 @@ Pure computation in `PayoffEngine.compute(List<Leg>)`. 201 samples, ±10% pad be
 ## Hygiene
 
 16. **Line-ending churn** — all 29 backend source files show as fully modified (926 insertions / 926 deletions) with no semantic change. `.gitattributes` only covers `mvnw` and `*.cmd`. Add `* text=auto` and renormalise, otherwise every diff from here on is unreadable.
-17. **Dead code** — `PositionsService` is entirely commented out, `BrokerController` is an empty shell, `PositionsController` and `BrokerGateway` carry commented-out old versions. `InstrumentController` imports `KiteSessionService` unused.
-18. **`PayoffService.positions(BrokerSession s)`** takes a session parameter it ignores and uses the constant instead.
-19. **`spring-boot-starter-thymeleaf` is a dependency but there are no templates.** Drop it. Confirmed by every test run: `WARN ... Cannot find template location: classpath:/templates/`.
+17. ~~**Dead code.**~~ **Done.** `PositionsService` and `BrokerController` deleted, `BrokerGateway`'s commented-out version removed. The other two claims were already stale: `PositionsController` carries no commented-out version, and `InstrumentController` no longer imports `KiteSessionService`.
+18. ~~**`PayoffService.positions(BrokerSession s)` takes a session it ignores.**~~ **Already stale.** It calls `brokers.positions(connectionId)`; the ignored-parameter version is gone.
+19. ~~**`spring-boot-starter-thymeleaf` is a dependency but there are no templates.**~~ **Done.** Both it and `-thymeleaf-test` dropped; the `Cannot find template location` warning is gone from test runs.
 
-22. **Duplicate `org.json.JSONObject` on the test classpath** — `android-json` (via the Spring test starter) and `org.json:json:20230227` (transitively via kiteconnect). Spring warns that runtime behaviour is unpredictable. Exclude one, most likely `android-json`.
-20. **`PayoffEngine` is annotated `@Service`** despite being described as pure-domain. Harmless, but it is not Spring-free as claimed.
+22. ~~**Duplicate `org.json.JSONObject` on the test classpath.**~~ **Done.** `android-json` excluded from `spring-boot-starter-webmvc-test`. `org.json:json` stays — it is compile-scoped via kiteconnect and cannot be dropped, so jsonassert now binds to the one that was always going to win at runtime.
+20. ~~**`PayoffEngine` is annotated `@Service`** despite being described as pure-domain.~~ **Done.** Neither annotated nor injected — `PayoffService` constructs it directly, which is what `PayoffEngineTest` always did.
 21. ~~**`DashboardPage` grid/label warts.**~~ Fixed in 1c.
 
 ---
@@ -335,9 +342,13 @@ Also fold in **1g** here, so Alice Blue gets a payoff curve.
 
 ## Step 3 — Login / real authentication
 
-**This gates deployment.** `/api/me` is a stub that always returns 200, so `AuthGuard` is decorative and the app is permanently "logged in". Harmless on localhost; on a public IP it means anyone with the URL sees live positions, margins and P&L, and can drive the broker connect flow.
+**Full plan in `DEPLOY-STEP3.md`.** Split into 3a (auth), 3b (user-scoped connections), 3c (deploy).
 
-Now that the product is multi-user, this is real auth: Google OAuth, a `users` table, and `connectionId` becoming user-scoped. This is where most of Step 7 actually gets built.
+**3a ✅ done 3 Aug.** Google OAuth, email allowlist, real `/api/me` and `/api/logout`, `AuthGuard` no longer decorative. Verified live on localhost.
+
+**3b next.** `connectionId` → `{userId}:{brokerId}:{label}`, `ConnectionService.forUser`, fan-out scoped to the caller, `state`-based callback attribution, `accountLabel` on `BrokerSession`, `/api/session/status` reshape per `UX-STEP2.md`.
+
+**Correction to the earlier note here:** this is *not* where most of Step 7 gets built. There is **no `users` table and no Postgres in Step 3 at all** — nothing per-user outlives a login, because broker tokens die daily under SEBI rules and no broker in the stack issues a refresh token. The allowlist is an environment variable. Persistence stays in Step 7, arriving when saved strategies finally give it something to hold.
 
 ## Step 4 — Deploy
 
