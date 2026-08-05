@@ -12,9 +12,14 @@
 
 ```
 tradestack  fix/paytm-position-pricing   9729185  Paytm positions priced from the quote endpoint
-tradestack  step/3b-account-labels       (branch from main)
-frontend    step/3b-connect-errors       aa7a0ae  ConnectError + the status reshape
+tradestack  step/3b-account-labels       a271f3c  accountLabel + status reshape
+tradestack  step/3c-deploy               cd92e96  deploy/ config + two properties
+frontend    step/3b-connect-errors       aa7a0ae  ConnectError on /app
+frontend    step/3b-account-labels       7cba54e  status reshape, pairs with the backend branch
 ```
+
+All branched from `main` and independent of each other, except the two `step/3b-account-labels`
+branches, which are a contract pair and **must merge together**.
 
 The `step/2-ui-rework` and `step/3a-auth` branches are spent and can be deleted locally and on the remote.
 
@@ -26,7 +31,9 @@ All three brokers aggregate. Field-level references — including every place ea
 
 1. ~~**Finish 3b — account labels and the session-status reshape.**~~ **Done 5 Aug**, both repos. See the 3b remainder note under Step 3 for the two deliberate deviations from the spec. **Unverified live** — the shape is covered by tests, but no broker has been connected against it, and Paytm's label lookup in particular is a guess that wants one real connect to confirm.
 2. ~~**Render connect errors on `/app`.**~~ **Done 5 Aug.** `ConnectError` reads `?error=`, strips it so a refresh cannot resurrect it, and offers a per-broker retry; `connect_expired` gets its own message and no retry button, since the backend never learned which broker it was.
-3. **Then 3c — deploy.** OCI VM, reserved static IP, Caddy serving `dist/` and proxying `/api|/oauth2|/login/oauth2|/kite|/aliceblue|/paytm` to `:8080`. Single origin, env values per host. Checklist in `DEPLOY-STEP3.md`. **The Kite prod registration and static IP landed 5 Aug, so this is unblocked.**
+3. **3c — deploy. Started 5 Aug; the config half is done, the approvals are not.** Host is `moneyplant.bonamnikhilbabu.in` (Cloudflare DNS-only) on an OCI Ampere A1, systemd + Caddy, single origin. **Runbook: `tradestack/deploy/README.md`.** Design reasoning stays in `DEPLOY-STEP3.md`.
+
+   **What is blocking: broker redirect URLs.** The Kite prod app was registered against the bare static IP over HTTP, and that cannot work — Google rejects plain-HTTP redirect URIs on public hosts and rejects raw IPs as the host, so sign-in is impossible before any broker is even reached. The static IP still satisfies the broker requirement; the domain's A record points at it. So Kite must be **re-pointed** to `https://moneyplant.bonamnikhilbabu.in/kite/callback`, and Paytm and Alice Blue need prod registrations against the same domain. All three carry approval turnaround (~1 day observed), and Alice Blue additionally needs admin activation or its login answers "Invalid vendor id". Google's console needs the prod redirect URI added **beside** the localhost one, not replacing it.
 4. **One cheap experiment while connecting brokers anyway: does Alice Blue forward unknown query parameters?** If it does, `AliceBlueSessionService.loginUrl(state)` becomes a one-line change, it joins Kite and Paytm, and `PendingConnect.consumeSolePendingFor` becomes dead code to delete. Alice Blue is the only broker relying on that fallback.
 5. **Then the real prize: verify Alice Blue's option chain** (`POST /obrest/optionChain/getOptionChain`). Still the highest-leverage unknown in the project — per-strike `ltp` and `oi` at no extra cost would unblock Step 6 and most of Step 8, which is the part described as the core of the product.
 6. **Symbol-model step 2 (`InstrumentKey`)** remains queued. Decision recorded 3 Aug — see below.

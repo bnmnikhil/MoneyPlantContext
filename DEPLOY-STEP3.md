@@ -59,6 +59,24 @@ matter of time.
 
 ---
 
+## The deploy needs a domain, not the static IP — found 5 Aug
+
+The Kite prod registration was first filed against the bare static IP over HTTP. **That
+cannot work, and not merely as a security compromise.**
+
+Google rejects OAuth redirect URIs that use plain HTTP on a public host, and rejects raw IP
+addresses as the host entirely — only loopback is exempt. Every sign-in built in 3a goes
+through `https://<host>/login/oauth2/code/google`, so on `http://<ip>` Google refuses the
+registration and nobody can log in at all.
+
+The two requirements are independent, which is what makes this cheap to fix: **the static IP
+satisfies the broker/SEBI requirement, and continues to when a domain's A record points at
+it.** So the domain is the redirect URL and the IP is what it resolves to. Each broker's
+redirect URL is an editable app setting, so this is a re-registration, not a new application.
+
+The knock-on is that `MP_COOKIE_SECURE=true` and Caddy's automatic TLS stop being optional
+polish and become the thing that makes sign-in possible.
+
 ## Local stays alive: register new apps, never repoint old ones
 
 Brokers allow **one redirect URL per app registration**. The instinct is to edit the
@@ -273,9 +291,40 @@ purpose — it spans both repos and nothing depends on it yet.
 ### 3c — Deploy
 
 OCI VM, reserved static IP, Caddy serving `dist/` and proxying
-`/api|/oauth2|/kite|/aliceblue|/paytm` → `:8080`. Single origin. Env values per host.
+`/api|/oauth2|/login/oauth2|/kite|/aliceblue|/paytm` → `:8080`. Single origin. Env values per
+host.
 
 **Estimate: ~1 day of work**, plus broker approval turnaround (observed: ~1 day).
+
+**Started 5 Aug.** The configuration half is written and committed on `step/3c-deploy`:
+`deploy/{Caddyfile,moneyplant.service,deploy.sh,moneyplant.env.example,README.md}`, plus the
+two `application.properties` changes. **The runbook is `tradestack/deploy/README.md`** — VM
+setup, verification in dependency order, and a symptom table. This document stays the *why*;
+that one is the *how*.
+
+Decisions taken at the time:
+
+| | |
+|---|---|
+| Host | `moneyplant.bonamnikhilbabu.in`, Cloudflare DNS-only |
+| VM | OCI Ampere A1, 1 OCPU / 8 GB, always-free |
+| Process | systemd + fat jar, bound to `127.0.0.1:8080` |
+| Build | on the VM; GitHub Actions once the manual path is proven |
+| Brokers | prod registrations for **all three** — which is why no per-broker enable flag was needed |
+
+The last row was a live question: the credential guards throw at startup, so a VM without
+Alice Blue credentials would not boot at all. The alternative was a per-broker enable flag;
+registering Alice Blue for prod was chosen instead, since the account already exists and it
+avoids a code path that only production would ever exercise.
+
+**Per-user broker credentials were considered here and rejected.** All three brokers use an
+app-level vendor model — one registration, each user authorises with their own broker login —
+so users holding different brokers already works, and a user without an Alice Blue account
+simply never connects it. Building credential signup instead would pull Postgres, encryption
+at rest and a credentials UI into Step 3, all four of which this document lists as out of
+scope. What remains genuinely open is whether the brokers' *terms* permit one registration
+serving several users; that is a terms question, settled before any non-family user, not code
+to write now.
 
 ### Start now, in parallel with 3a
 
@@ -292,13 +341,24 @@ compressed by writing code faster.
 
 Both already in `CLAUDE.md`; restated because 3c is the moment they stop being theoretical.
 
-- [ ] `PaytmDebugController` and `mp-pm-raw` deleted — they expose account data with no
-      authentication of their own.
-- [ ] `MP_SESSION_STORE` unset on the VM. It writes live broker tokens to
-      `~/.moneyplant/sessions.json` **in plaintext**. On a reachable host that file is a
-      credential for a real brokerage account.
-- [ ] `KiteProperties` fails fast on an unset env var rather than binding `${...}`.
-- [ ] Session cookie `SameSite` set explicitly.
+- [x] ~~`PaytmDebugController` and `mp-pm-raw` deleted~~ — done in 3b, verified 5 Aug.
+- [x] ~~`MP_SESSION_STORE` unset on the VM.~~ Deliberately **absent** from
+      `deploy/moneyplant.env.example` rather than set to `false`, so there is nothing in the
+      env file to flip by accident. Still worth confirming after the first deploy: restart the
+      service and check the brokers show disconnected. It is the one item whose failure is
+      completely silent.
+- [x] ~~`KiteProperties` fails fast on an unset env var~~ — done in 3a via
+      `common/RequiredConfig.requireResolved`, now shared by all three brokers and the Google
+      client.
+- [x] ~~Session cookie `SameSite` set explicitly.~~ `same-site=lax` in
+      `application.properties`, with the reasoning beside it.
+- [x] ~~`app.frontend-url` is per-host.~~ Done 5 Aug — `${MP_FRONTEND_URL:...}`. It was a
+      literal, and it is load-bearing in Google's `redirect-uri`, `SecurityConfig`'s
+      redirects, and all three broker callbacks.
+- [ ] Broker redirect URLs point at `https://moneyplant.bonamnikhilbabu.in/...`, **not** the
+      static IP — see the section above on why the IP cannot work.
+- [ ] Backend bound to loopback (`SERVER_ADDRESS=127.0.0.1`) so Caddy is the only route in.
+      Verify from off-box: `curl --max-time 5 http://<static-ip>:8080/api/me` must fail.
 - [x] ~~**Broker callbacks attribute via `state`.**~~ Done in 3b. They remain `permitAll()`,
       which is correct and must stay, but a callback that cannot be attributed to a pending
       flow is now refused instead of trusted.
@@ -319,8 +379,13 @@ Both already in `CLAUDE.md`; restated because 3c is the moment they stop being t
    silently passes through *unknown* query parameters on its redirect. If it does, it joins
    the other two and the fallback becomes dead code. Worth one live attempt before accepting
    the fallback permanently.
-3. **Domain and DNS.** Cloudflare in front, or OCI only. Cloudflare adds TLS and a hostname
-   for free; it also puts a third party between the user and a brokerage session.
+3. ~~**Domain and DNS.** Cloudflare in front, or OCI only.~~ **Answered 5 Aug.**
+   `moneyplant.bonamnikhilbabu.in`, on a domain already owned. Cloudflare for DNS but the
+   record stays **grey cloud (DNS only)**, so Caddy obtains its own Let's Encrypt certificate
+   and terminates TLS on the VM. That keeps a third party out of the path of a live brokerage
+   session — the concern raised when this question was written — and proxying would also
+   break Caddy's HTTP-01 challenge. Switching to proxied later is one toggle plus a
+   Cloudflare origin certificate.
 4. **Does the Kite Connect monthly fee apply per app registration?** Decides whether prod
    registrations for all three brokers are worth doing at once or one at a time.
 
