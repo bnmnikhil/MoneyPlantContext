@@ -34,9 +34,12 @@ All three brokers aggregate. Field-level references — including every place ea
 3. **3c — deploy. Started 5 Aug; the config half is done, the approvals are not.** Host is `moneyplant.bonamnikhilbabu.in` (Cloudflare DNS-only) on an OCI Ampere A1, systemd + Caddy, single origin. **Runbook: `tradestack/deploy/README.md`.** Design reasoning stays in `DEPLOY-STEP3.md`.
 
    **What is blocking: broker redirect URLs.** The Kite prod app was registered against the bare static IP over HTTP, and that cannot work — Google rejects plain-HTTP redirect URIs on public hosts and rejects raw IPs as the host, so sign-in is impossible before any broker is even reached. The static IP still satisfies the broker requirement; the domain's A record points at it. So Kite must be **re-pointed** to `https://moneyplant.bonamnikhilbabu.in/kite/callback`, and Paytm and Alice Blue need prod registrations against the same domain. All three carry approval turnaround (~1 day observed), and Alice Blue additionally needs admin activation or its login answers "Invalid vendor id". Google's console needs the prod redirect URI added **beside** the localhost one, not replacing it.
-4. **One cheap experiment while connecting brokers anyway: does Alice Blue forward unknown query parameters?** If it does, `AliceBlueSessionService.loginUrl(state)` becomes a one-line change, it joins Kite and Paytm, and `PendingConnect.consumeSolePendingFor` becomes dead code to delete. Alice Blue is the only broker relying on that fallback.
-5. **Then the real prize: verify Alice Blue's option chain** (`POST /obrest/optionChain/getOptionChain`). Still the highest-leverage unknown in the project — per-strike `ltp` and `oi` at no extra cost would unblock Step 6 and most of Step 8, which is the part described as the core of the product.
-6. **Symbol-model step 2 (`InstrumentKey`)** remains queued. Decision recorded 3 Aug — see below.
+4. **Then 3d — per-user broker credentials.** Decided 5 Aug, planned, **not started**; full design in **`CREDENTIALS-STEP3D.md`**. All three brokers move from one app-level key/secret in the environment to each user supplying their own, stored AES-GCM encrypted in Postgres (Docker locally, a URL change to go managed). Deliberately sequenced *after* 3c so a new persistence layer and a new deployment are not being debugged at once.
+
+   Note it **deletes the six broker environment variables** and the startup guards with them, so `deploy/moneyplant.env.example` and the deploy runbook change when it lands. It also makes `/api/session/status`'s `brokers` array user-scoped, which is the user-configured-brokers backlog item below arriving early — the two-array shape chosen for that endpoint survives it unchanged.
+5. **One cheap experiment while connecting brokers anyway: does Alice Blue forward unknown query parameters?** If it does, `AliceBlueSessionService.loginUrl(state)` becomes a one-line change, it joins Kite and Paytm, and `PendingConnect.consumeSolePendingFor` becomes dead code to delete. Alice Blue is the only broker relying on that fallback.
+6. **Then the real prize: verify Alice Blue's option chain** (`POST /obrest/optionChain/getOptionChain`). Still the highest-leverage unknown in the project — per-strike `ltp` and `oi` at no extra cost would unblock Step 6 and most of Step 8, which is the part described as the core of the product.
+7. **Symbol-model step 2 (`InstrumentKey`)** remains queued. Decision recorded 3 Aug — see below.
 
 ### Decided 3 Aug: the application owns its symbols
 
@@ -159,7 +162,11 @@ The exception, added 3 Aug: **`SessionStore` behind `ConnectionService`**, off u
 - Writes outside the repo (`~/.moneyplant/sessions.json`) so no `.gitignore` mistake can commit a token. `sessions.json` is gitignored anyway as insurance against a custom path.
 - Corrupt file, missing file and missing timestamp all fail closed to "no sessions" — a re-login, never a failed startup.
 
-**Likely no credential encryption either.** With app-level (vendor) OAuth — which Kite Connect uses and Alice Blue's a3 vendor flow uses — the *app* holds one api-key/secret pair in the environment and each user simply authorises. Per user you store the linkage, not their secrets. Verify this holds for Paytm before assuming it; if any broker requires per-user API keys, encryption comes back for that broker only.
+~~**Likely no credential encryption either.**~~ **Reversed 5 Aug — encryption is back, for all three brokers.** The old reasoning was that app-level (vendor) OAuth means the *app* holds one api-key/secret pair in the environment and each user simply authorises, so per user you store the linkage rather than their secrets. That is technically true and still describes how the code works today.
+
+It was rejected on a different ground: it leaves open whether Zerodha's and Paytm's terms *permit* one registration serving several users. **Per-user credentials remove the question instead of answering it** — each user's API access is their own subscription, so there is no redistribution to reason about. Full design in **`CREDENTIALS-STEP3D.md`**; it lands after the 3c deploy, not before.
+
+The cost is real and was accepted knowingly: every user must register a developer app per broker and pay Kite's monthly fee, so onboarding stops being "sign in and press Connect".
 
 `connectionId` will need to become user-scoped (something like `{userId}:{brokerId}:{label}`) once users exist. `ConnectionService` is already keyed by `connectionId` rather than `brokerId`, so this is a key-format change, not a redesign.
 
@@ -399,7 +406,7 @@ Remaining:
 - ~~**Security master.**~~ **Done.** `https://developer.paytmmoney.com/data/v1/scrips/security_master.csv`, no auth token, ~13 MB, ~87k rows, reloaded daily. Columns are located by header name, not position, and the split respects quotes — company names contain commas. `instrument_type` values: `OPTSTK` 62392, `OPTIDX` 16374, `ES` 7726, `FUTSTK` 640, `ETF` 598, `I` 73, `FUTIDX` 27.
 - ~~**`getInstruments` returns empty.**~~ **Done** — 79,433 F&O instruments, keyed by the master's `name` column because that is exactly what positions return as `display_name`.
 - **Equity spot needs NSE/EQ specifically.** The same ticker appears as `BSE/B`, `BSE/X`, `NSE/SM` and more with *different* security ids. NSE/EQ is 2,080 rows and unique per symbol; quoting any other row prices a different book.
-- **Confirm the app-level vendor flow** vs per-user API keys — decides whether credential encryption returns. **Still open.**
+- ~~**Confirm the app-level vendor flow** vs per-user API keys.~~ **Closed 5 Aug by decision rather than by investigation** — the stack moves to per-user credentials for all three brokers, so whether Paytm's vendor flow would have worked no longer matters. See `CREDENTIALS-STEP3D.md`.
 
 ## Step 6 — Strategy builder
 
@@ -409,6 +416,8 @@ Build a hypothetical strategy and see its payoff before placing it. Note two dep
 
 `users`, `broker_links`. Postgres + jOOQ. Largely pulled forward into Step 3; what remains here is whatever Step 6 needs to save.
 
+**Postgres actually arrives in 3d** (`CREDENTIALS-STEP3D.md`), carrying one table — `broker_credential`. Still no `users` table: the allowlist stays an environment variable and rows key off the Google `sub`. 3d uses `JdbcClient` + Flyway rather than jOOQ, because codegen is not worth a build step for a single table; jOOQ remains the right call here, when there are several.
+
 ## Step 8 — Analysis features
 
 Technical, fundamental, premium decay, risk/reward, LLM analysis. Described by the owner as the core of the product.
@@ -417,7 +426,7 @@ Technical, fundamental, premium decay, risk/reward, LLM analysis. Described by t
 
 ## Backlog — user-configured brokers
 
-**Priority: very far.** Recorded 5 Aug 2026, directional only — do not build toward it.
+**Priority: very far** — but **the first half arrives in 3d**, sooner than this note assumed. Per-user broker credentials make `/api/session/status`'s `brokers` array "brokers this user has credentials for", which is exactly the shift described below, at host-and-user level. What stays far off is the scale part: a registry of tens of brokers and a UI for choosing among them.
 
 Today the broker list is a *global* assumption: `BrokerRegistry` enumerates every broker the build knows about, and the UI offers all three to every user. The long-term model is the reverse — **each user configures which brokers they use, and how many accounts they hold at each**, at a scale sketched as "tens of brokers".
 
