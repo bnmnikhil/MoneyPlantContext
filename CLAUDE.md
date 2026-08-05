@@ -6,24 +6,27 @@
 
 ## ▶ NEXT SESSION — DO THIS FIRST
 
-**Status as of 4 Aug 2026. Steps 1, 2, 5, 3a and the core of 3b are done, merged, and on `main` in both repos.** Nothing is in flight.
+**Status as of 5 Aug 2026. Steps 1, 2, 5, 3a and all of 3b are done. 3c — deploy — is the only thing left before the app is live.**
+
+`main` in both repos is at the 3a/3b merge (`tradestack f2d535d`, `frontend 6531aa7`) and local `main` is in sync. **Three branches are in flight, all green, none pushed:**
 
 ```
-tradestack  origin/main  f2d535d  Merge pull request #5 from bnmnikhil/step/3a-auth
-frontend    origin/main  6531aa7  Merge pull request #5 from bnmnikhil/step/3a-auth
+tradestack  fix/paytm-position-pricing   9729185  Paytm positions priced from the quote endpoint
+tradestack  step/3b-account-labels       (branch from main)
+frontend    step/3b-connect-errors       aa7a0ae  ConnectError + the status reshape
 ```
 
-**Pull first — local `main` in both repos is stale**, still sitting on the pre-3a merge. The `step/2-ui-rework` and `step/3a-auth` branches are now spent and can be deleted locally and on the remote.
+The `step/2-ui-rework` and `step/3a-auth` branches are spent and can be deleted locally and on the remote.
 
-**The app is genuinely multi-user.** Google sign-in with an env-var allowlist, `/api/me` real, connections keyed `{userId}:{brokerId}:{label}`, every fan-out scoped to the caller, and broker callbacks attributed by a single-use nonce minted in `/api/session/login-url`. Kite's flow is verified live end to end. Backend suite is 124 green.
+**The app is genuinely multi-user.** Google sign-in with an env-var allowlist, `/api/me` real, connections keyed `{userId}:{brokerId}:{label}`, every fan-out scoped to the caller, and broker callbacks attributed by a single-use nonce minted in `/api/session/login-url`. Kite's flow is verified live end to end. Backend suite is 124 green on `main`, 129 on `step/3b-account-labels`, 136 with both in-flight branches merged.
 
 All three brokers aggregate. Field-level references — including every place each vendor's docs are wrong — are in `tradestack/docs/aliceblue-api.md` and `tradestack/docs/paytm-api.md`. **Read the relevant one before touching a gateway.** The Step 3 plan — identity model, why there is no Postgres, the local/prod split — is in **`DEPLOY-STEP3.md`**, beside this file.
 
-**In flight outside the code: the Kite prod app registration and the static IP are filed and awaiting approval** (submitted 3 Aug; ~1 day turnaround last time). 3c cannot finish without them. Check these first — if they have landed, 3c is unblocked.
+**The Kite prod app registration and the static IP have landed (5 Aug).** 3c is unblocked; nothing outside the code is pending.
 
-1. **Finish 3b — account labels and the session-status reshape.** `/api/session/status` goes from broker-keyed `{brokers:[{id,connected}]}` to connection-keyed `{connections:[{connectionId,brokerId,accountLabel,connected}]}`, per `UX-STEP2.md` §Backend-1. `accountLabel` comes from each broker's profile call at connect time and falls back to the connectionId, never blank. Breaking change: the TS type moves with `useBrokerStatus`, `BrokerStatusChips` and `ConnectBrokerCard`. **Nothing is broken without it** — status works, scoped to the user — so it is the largest remaining chunk rather than an urgent one.
-2. **Render connect errors on `/app`.** Callbacks now redirect to `/app?error=kite|paytm|aliceblue|connect_expired` and nothing displays it, so a failed or expired connect lands on the dashboard silently. `connect_expired` should say the attempt timed out and to press Connect again.
-3. **Then 3c — deploy.** OCI VM, reserved static IP, Caddy serving `dist/` and proxying `/api|/oauth2|/login/oauth2|/kite|/aliceblue|/paytm` to `:8080`. Single origin, env values per host. Checklist in `DEPLOY-STEP3.md`.
+1. ~~**Finish 3b — account labels and the session-status reshape.**~~ **Done 5 Aug**, both repos. See the 3b remainder note under Step 3 for the two deliberate deviations from the spec. **Unverified live** — the shape is covered by tests, but no broker has been connected against it, and Paytm's label lookup in particular is a guess that wants one real connect to confirm.
+2. ~~**Render connect errors on `/app`.**~~ **Done 5 Aug.** `ConnectError` reads `?error=`, strips it so a refresh cannot resurrect it, and offers a per-broker retry; `connect_expired` gets its own message and no retry button, since the backend never learned which broker it was.
+3. **Then 3c — deploy.** OCI VM, reserved static IP, Caddy serving `dist/` and proxying `/api|/oauth2|/login/oauth2|/kite|/aliceblue|/paytm` to `:8080`. Single origin, env values per host. Checklist in `DEPLOY-STEP3.md`. **The Kite prod registration and static IP landed 5 Aug, so this is unblocked.**
 4. **One cheap experiment while connecting brokers anyway: does Alice Blue forward unknown query parameters?** If it does, `AliceBlueSessionService.loginUrl(state)` becomes a one-line change, it joins Kite and Paytm, and `PendingConnect.consumeSolePendingFor` becomes dead code to delete. Alice Blue is the only broker relying on that fallback.
 5. **Then the real prize: verify Alice Blue's option chain** (`POST /obrest/optionChain/getOptionChain`). Still the highest-leverage unknown in the project — per-strike `ltp` and `oi` at no extra cost would unblock Step 6 and most of Step 8, which is the part described as the core of the product.
 6. **Symbol-model step 2 (`InstrumentKey`)** remains queued. Decision recorded 3 Aug — see below.
@@ -53,8 +56,11 @@ Status: step 1 (`UnderlyingRegistry` + `underlyings.properties`) is done and shi
 - **Alice Blue holdings quantity is `sellableQty + t1Quantity`.** Every sampled row had `t1Quantity: 0`, so if `sellableQty` already includes T1, freshly-bought stock double-counts. Check on a day with a same-day purchase.
 - **Paytm `net_avg` is unverified for carry-forward positions.** It is a genuine weighted average cost in every sampled row, but all had `tot_buy_qty_cf: 0`. If Paytm rebases it to the previous close overnight, it becomes the same trap as Alice Blue's `netAveragePrice`. Check on a position held over a night.
 - ~~**`spot` is 0 on all three brokers.**~~ **Fixed 3 Aug** via Paytm's `/data/v1/price/live`, verified live during market hours. `SpotPriceService` asks *any* connected broker, so a Kite or Alice Blue curve gets its spot from Paytm. The UI must still hide the card and reference line on a 0 — that path is now "no broker could quote it", not "always".
-- **Paytm's live-price response also carries `change_absolute` and `change_percent`.** That is the day-change figure Paytm's positions endpoint withholds — so the note below is fixable, one live call per underlying. Not wired up.
-- **Paytm has no day-change figure *in its positions payload*,** so `dayChange` is 0 for its rows and the column mixes real values with zeros. See the line above for the fix.
+- ~~**Paytm has no day-change figure in its positions payload.**~~ ~~**Paytm's live-price response also carries `change_absolute`.**~~ **Both closed 4 Aug**, together with the P&L bug below — one batched quote call fills `ltp`, `pnl` and `dayChange` for every Paytm leg. `mode=LTP` does return `change_absolute`, so no extra call and no second mode were needed.
+
+- ~~**Paytm P&L was 0 on every row.**~~ **Fixed 4 Aug, verified live.** The cause was not the mapper, which was correctly refusing to compute `(0 − 27.69) × 65` from a missing price. It was the *reason* recorded for the missing price: `last_traded_price` in Paytm's positions payload was documented as "0.0 outside market hours", from a payload captured at 11pm. **That was wrong** — at 10:44 IST with the market open and both other brokers quoting live on the same fan-out, every Paytm row was still 0.0. The field is never populated on that endpoint. Positions are now priced from `/data/v1/price/live`, which each row can address itself: it carries `security_id` and `instrument_type`, so no security-master lookup is involved.
+
+  `NSE:<id>:OPTION` is now **verified live** — it was the load-bearing guess, since only INDEX and EQUITY had been confirmed. `FUTURE` follows the same grammar but is still unverified, having no live future to test against. The quote path never throws: a failed or empty quote falls back to realised-only P&L and logs why, so a bad pref costs a log line, not the positions table.
 - **`last_update_time` in the live-price payload is not a current epoch second** (`1470196447` = Aug 2016 read as one). Do not surface it as a quote timestamp without working out the real encoding.
 - **Payoff points carry float noise** (`-20339.999999999985`). Invisible on a chart, visible in a tooltip. Round at the DTO boundary.
 - ~~**CLAUDE.md is not version-controlled.**~~ **Wrong — it always was.** The directory above both repos is itself a git repo, and `CLAUDE.md` is tracked in it. `UX-STEP2.md` and `DEPLOY-STEP3.md` now are too, committed 3 Aug.
@@ -201,7 +207,7 @@ Warning codes are unprefixed (`SESSION_EXPIRED`) because they sit inside a `Brok
 | GET | `/api/margins` | `BrokerAggregate<MarginDto>` — one row per broker, **frontend sums** |
 | GET | `/api/me` | `{email,name,picture}` from the OIDC principal; 401 when absent |
 | POST | `/api/logout` | 204. Served by Spring Security, not a controller |
-| GET | `/api/session/status` | `{brokers:[{id,connected}]}`, scoped to the caller. **Reshape pending** — see 3b remainder |
+| GET | `/api/session/status` | `{brokers:[brokerId], connections:[{connectionId,brokerId,accountLabel,connected}]}`, scoped to the caller |
 | GET | `/api/session/login-url` | `{url}` for any registered broker. **Mints the connect nonce** — this is the authenticated moment the callback later depends on |
 | GET | `/api/payoff` | `CurveRef[]` — `{connectionId, brokerId, underlying}` per plottable curve |
 | GET | `/api/payoff/{underlying}?connectionId=` | `PayoffResponse` incl. `brokerId`, `connectionId`, `spot` |
@@ -355,7 +361,14 @@ Also fold in **1g** here, so Alice Blue gets a payoff curve.
 
 **3b ✅ core done 3 Aug, merged 4 Aug.** `connectionId` → `{userId}:{brokerId}:{label}` (userId is Google's `sub`, never the email — connectionId reaches the browser inside `BrokerWarning` and exception messages). `ConnectionService.allFor(userId)` with the unscoped `all()` *removed* rather than kept alongside. Fan-out, `sessions()`, `SpotPriceService` and `session(connectionId)` all scoped; the last also checks ownership, since `/api/payoff` takes a connectionId from the client and reports someone else's as "not connected" rather than "forbidden".
 
-**3b remainder.** `accountLabel` on `BrokerSession` and the `/api/session/status` reshape per `UX-STEP2.md` §Backend-1. Deferred deliberately — it spans both repos and nothing is broken without it.
+**3b remainder ✅ done 5 Aug.** `accountLabel` on `BrokerSession`, normalised in the canonical constructor so it is never blank, and `/api/session/status` reshaped.
+
+Two deviations from `UX-STEP2.md` §Backend-1, both deliberate:
+
+- **Two arrays, not one.** The spec's single `connections` array cannot express a broker nobody has connected, which is exactly what the Connect buttons are built from. A placeholder row would have made `connectionId` and `accountLabel` nullable for every consumer, so `brokers` stays a separate list of ids.
+- **`accountLabel` falls back to the connectionId's *label segment*, not the whole id.** The spec predates user-scoped connectionIds — its example is `kite-default`. The id now leads with Google's `sub`, so falling back to it whole would render `110150585954237860845:kite:default` in a chip.
+
+No broker needs an extra profile call except Paytm: Kite's `generateSession` already returns the client code on the `User` that carries the tokens, and Alice Blue's `clientId` is already in its login response. **Paytm's `/accounts/v1/user/details` response shape is unverified** — the client-code key is guessed from a candidate list, the call cannot throw, and the payload's field names are logged once per connect so the right key can be pinned from a live payload.
 
 **3c next.** Deploy. Blocked only on the Kite prod registration and static IP, both filed 3 Aug.
 
@@ -394,6 +407,16 @@ Build a hypothetical strategy and see its payoff before placing it. Note two dep
 Technical, fundamental, premium decay, risk/reward, LLM analysis. Described by the owner as the core of the product.
 
 **Blocked on market data.** Every item runs through the price/option feed: technical needs history, premium decay needs option prices and IV over time plus stored series, risk/reward needs live premiums, LLM analysis needs something factual underneath. This is not "later work", it is *blocked* work.
+
+## Backlog — user-configured brokers
+
+**Priority: very far.** Recorded 5 Aug 2026, directional only — do not build toward it.
+
+Today the broker list is a *global* assumption: `BrokerRegistry` enumerates every broker the build knows about, and the UI offers all three to every user. The long-term model is the reverse — **each user configures which brokers they use, and how many accounts they hold at each**, at a scale sketched as "tens of brokers".
+
+It changes what "disconnected" means. Today that is "a registered broker this user has no session for", which only works while the registry is small and every user plausibly wants all of it. At tens of brokers the answer has to come from that user's own configuration, not from the bean registry.
+
+Let it break ties in present-day design without scheduling work: prefer contracts that can express *this user's* brokers and *per-account* identity over ones that hardcode a global list. It is already why `/api/session/status` returns `brokers` and `connections` as two arrays rather than one array with synthetic rows, and why `accountLabel` falls back to the connectionId's label segment — the segment a user will one day name themselves — rather than to the brokerId.
 
 ## Open decisions
 
