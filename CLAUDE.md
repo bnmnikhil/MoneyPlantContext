@@ -6,9 +6,13 @@
 
 ## ▶ NEXT SESSION — DO THIS FIRST
 
-**Status as of 5 Aug 2026. Steps 1, 2, 5, 3a and all of 3b are done. 3c — deploy — is the only thing left before the app is live.**
+**Status end of 5 Aug 2026. Steps 1, 2, 5, 3a and all of 3b are done. 3c is half-deployed: the frontend is live on the VM over HTTPS, the backend is not up yet.**
 
-`main` in both repos is at the 3a/3b merge (`tradestack f2d535d`, `frontend 6531aa7`) and local `main` is in sync. **Three branches are in flight, all green, none pushed:**
+**`https://moneyplant.bonamnikhilbabu.in` serves the SPA with a valid certificate.** DNS (Cloudflare, grey cloud) → OCI static IP → Caddy → `/var/www/moneyplant`. What is *not* done: the backend jar is not deployed, `/etc/moneyplant/moneyplant.env` does not exist, the Google console has no production redirect URI, and Kite's prod app is still registered against the bare static IP over HTTP. Until those four, signing in is impossible — so the live site is a landing page and nothing behind it.
+
+Picking it up: **`tradestack/deploy/README.md` is the runbook.** Note the VM's clones are in `~/moneyplant/`, not the `/opt/moneyplant/src` the runbook and `deploy.sh` assume — either move them or adjust the paths.
+
+`main` in both repos is at the 3a/3b merge (`tradestack f2d535d`, `frontend 6531aa7`) and local `main` is in sync. **Five branches are in flight, all green, none pushed and none merged:**
 
 ```
 tradestack  fix/paytm-position-pricing   9729185  Paytm positions priced from the quote endpoint
@@ -19,21 +23,29 @@ frontend    step/3b-account-labels       7cba54e  status reshape, pairs with the
 ```
 
 All branched from `main` and independent of each other, except the two `step/3b-account-labels`
-branches, which are a contract pair and **must merge together**.
+branches, which are a contract pair and **must merge together** — the TS types are the contract,
+and mismatched they make the broker chips silently disappear rather than error.
 
-The `step/2-ui-rework` and `step/3a-auth` branches are spent and can be deleted locally and on the remote.
+**The frontend currently deployed on the VM was built from one of these branches — check which.** If it is `step/3b-account-labels` it expects the connection-keyed status shape and needs the paired backend branch deployed with it. `deploy.sh` checks out the same branch in both repos for exactly this reason.
+
+Two things worth doing before merging: connect each broker once locally (the status reshape is test-covered but has never run against a live broker, and Paytm's account-label lookup is a guess whose real field name is logged on the first connect), and delete the spent `step/2-ui-rework` and `step/3a-auth` branches locally and on the remote.
 
 **The app is genuinely multi-user.** Google sign-in with an env-var allowlist, `/api/me` real, connections keyed `{userId}:{brokerId}:{label}`, every fan-out scoped to the caller, and broker callbacks attributed by a single-use nonce minted in `/api/session/login-url`. Kite's flow is verified live end to end. Backend suite is 124 green on `main`, 129 on `step/3b-account-labels`, 136 with both in-flight branches merged.
 
 All three brokers aggregate. Field-level references — including every place each vendor's docs are wrong — are in `tradestack/docs/aliceblue-api.md` and `tradestack/docs/paytm-api.md`. **Read the relevant one before touching a gateway.** The Step 3 plan — identity model, why there is no Postgres, the local/prod split — is in **`DEPLOY-STEP3.md`**, beside this file.
 
-**The Kite prod app registration and the static IP have landed (5 Aug).** 3c is unblocked; nothing outside the code is pending.
+**Only Kite needs a prod registration now — do not chase Paytm's or Alice Blue's.** 3d deletes the app-level broker credentials entirely and moves to per-user ones, so those two registrations would be filed, waited on, and then made redundant. Kite alone proves the deploy end to end. Alice Blue and Paytm take throwaway strings in the env file meanwhile: the startup guard only checks non-blank, so the app boots and only pressing Connect on those two fails.
 
 1. ~~**Finish 3b — account labels and the session-status reshape.**~~ **Done 5 Aug**, both repos. See the 3b remainder note under Step 3 for the two deliberate deviations from the spec. **Unverified live** — the shape is covered by tests, but no broker has been connected against it, and Paytm's label lookup in particular is a guess that wants one real connect to confirm.
 2. ~~**Render connect errors on `/app`.**~~ **Done 5 Aug.** `ConnectError` reads `?error=`, strips it so a refresh cannot resurrect it, and offers a per-broker retry; `connect_expired` gets its own message and no retry button, since the backend never learned which broker it was.
-3. **3c — deploy. Started 5 Aug; the config half is done, the approvals are not.** Host is `moneyplant.bonamnikhilbabu.in` (Cloudflare DNS-only) on an OCI Ampere A1, systemd + Caddy, single origin. **Runbook: `tradestack/deploy/README.md`.** Design reasoning stays in `DEPLOY-STEP3.md`.
+3. **Finish 3c — four steps, in this order.** Host is `moneyplant.bonamnikhilbabu.in` (Cloudflare DNS-only) on an OCI Ampere A1, systemd + Caddy, single origin. **Runbook: `tradestack/deploy/README.md`.** Design reasoning stays in `DEPLOY-STEP3.md`.
 
-   **What is blocking: broker redirect URLs.** The Kite prod app was registered against the bare static IP over HTTP, and that cannot work — Google rejects plain-HTTP redirect URIs on public hosts and rejects raw IPs as the host, so sign-in is impossible before any broker is even reached. The static IP still satisfies the broker requirement; the domain's A record points at it. So Kite must be **re-pointed** to `https://moneyplant.bonamnikhilbabu.in/kite/callback`, and Paytm and Alice Blue need prod registrations against the same domain. All three carry approval turnaround (~1 day observed), and Alice Blue additionally needs admin activation or its login answers "Invalid vendor id". Google's console needs the prod redirect URI added **beside** the localhost one, not replacing it.
+   1. **Re-point the Kite prod app** to `https://moneyplant.bonamnikhilbabu.in/kite/callback`. It is registered against the bare static IP over HTTP, and **that cannot work at all** — Google rejects plain-HTTP redirect URIs on public hosts and rejects raw IPs as the host, so sign-in fails before a broker is ever reached. The static IP still satisfies the broker requirement; the domain's A record points at it. Carries approval turnaround (~1 day observed), so file it first.
+   2. **Create `/etc/moneyplant/moneyplant.env`**, `chmod 600`, root-owned, from `tradestack/deploy/moneyplant.env.example`. Nine variables are mandatory or the app refuses to start, naming the missing one. systemd reads it as literal `KEY=VALUE` — quotes become part of the value, and a trailing space on a secret produces a valid-looking hash the broker rejects.
+   3. **Deploy the backend jar** and the systemd unit. `curl .../api/me` returning **401 is success** — it means the app booted and the security chain is wired.
+   4. **Add the prod redirect URI in the Google console**, `https://moneyplant.bonamnikhilbabu.in/login/oauth2/code/google`, **beside** the localhost one rather than replacing it. It must match `MP_FRONTEND_URL` exactly — scheme, host, no trailing slash — or Google answers `redirect_uri_mismatch` without saying which side is wrong.
+
+   **Detour worth knowing about:** the VM had nginx installed and holding `:80`, and Caddy came up serving its own default welcome page rather than `/var/www/moneyplant`. The tell was `Last-Modified: 2023` and a 15 kB body — a packaged file, not a Vite build. Also note the Caddyfile is keyed to the hostname, so `curl http://localhost` does not match that site block; test with `-H "Host: moneyplant.bonamnikhilbabu.in"`.
 4. **Then 3d — per-user broker credentials.** Decided 5 Aug, planned, **not started**; full design in **`CREDENTIALS-STEP3D.md`**. All three brokers move from one app-level key/secret in the environment to each user supplying their own, stored AES-GCM encrypted in Postgres (Docker locally, a URL change to go managed). Deliberately sequenced *after* 3c so a new persistence layer and a new deployment are not being debugged at once.
 
    Note it **deletes the six broker environment variables** and the startup guards with them, so `deploy/moneyplant.env.example` and the deploy runbook change when it lands. It also makes `/api/session/status`'s `brokers` array user-scoped, which is the user-configured-brokers backlog item below arriving early — the two-array shape chosen for that endpoint survives it unchanged.
