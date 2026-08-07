@@ -59,7 +59,7 @@ All three brokers aggregate. Field-level references — including every place ea
    2. **`MP_DB_URL`, `MP_DB_USER`, `MP_DB_PASSWORD` and `MP_CREDENTIAL_KEY`** in `/etc/moneyplant/moneyplant.env`. Generate the key with `openssl rand -base64 32` and **back it up somewhere that is not the VM** — losing it strands every stored secret, and the only recovery is every user re-entering their credentials.
    3. The **six broker variables deleted** from that file. They are dead: nothing reads them.
 
-   Then the human cost, which is now the real gate: **each user must register their own Kite Connect app and pay Kite's monthly fee** before they can connect anything. The second allow-listed user cannot use the app until they do.
+   Then the human cost: **each user must register their own Kite Connect app** before they can connect anything. **It is free** — corrected 6 Aug 2026, this file previously said users must "pay Kite's monthly fee" and called it the real gate. Kite Connect's **Personal tier costs ₹0** and covers order/GTT/alert management, margin computation and portfolio — every endpoint MoneyPlant calls. The ₹500/month **Connect** tier only adds real-time WebSocket and historical candle data, which this app does not use: spot comes from Paytm's free live-price endpoint via `SpotPriceService`. So the gate is a signup form, not a subscription — much lower than recorded, and it stays that way unless Step 6/8 starts wanting Kite's data feed.
 5. **One cheap experiment while connecting brokers anyway: does Alice Blue forward unknown query parameters?** If it does, `AliceBlueSessionService.loginUrl(state)` becomes a one-line change, it joins Kite and Paytm, and `PendingConnect.consumeSolePendingFor` becomes dead code to delete. Alice Blue is the only broker relying on that fallback.
 6. **Then the real prize: verify Alice Blue's option chain** (`POST /obrest/optionChain/getOptionChain`). Still the highest-leverage unknown in the project — per-strike `ltp` and `oi` at no extra cost would unblock Step 6 and most of Step 8, which is the part described as the core of the product.
 7. **Symbol-model step 2 (`InstrumentKey`)** remains queued. Decision recorded 3 Aug — see below.
@@ -198,7 +198,7 @@ The exception, added 3 Aug: **`SessionStore` behind `ConnectionService`**, off u
 
 It was rejected on a different ground: it leaves open whether Zerodha's and Paytm's terms *permit* one registration serving several users. **Per-user credentials remove the question instead of answering it** — each user's API access is their own subscription, so there is no redistribution to reason about. Full design in **`CREDENTIALS-STEP3D.md`**.
 
-The cost is real and was accepted knowingly: every user must register a developer app per broker and pay Kite's monthly fee, so onboarding stops being "sign in and press Connect".
+The cost is real and was accepted knowingly: every user must register a developer app per broker, so onboarding stops being "sign in and press Connect". It is **effort, not money** — see the correction under step 4 above; Kite's free Personal tier covers everything this app calls.
 
 ### The 3d rule: credentials are a parameter, never a field
 
@@ -276,7 +276,7 @@ Warning codes are unprefixed (`SESSION_EXPIRED`) because they sit inside a `Brok
 | GET | `/api/margins` | `BrokerAggregate<MarginDto>` — one row per broker, **frontend sums** |
 | GET | `/api/me` | `{email,name,picture}` from the OIDC principal; 401 when absent |
 | POST | `/api/logout` | 204. Served by Spring Security, not a controller |
-| GET | `/api/session/status` | `{brokers:[brokerId], connections:[{connectionId,brokerId,accountLabel,connected}]}`, scoped to the caller. As of 3d `brokers` is **the brokers this user has credentials for**, not the registry |
+| GET | `/api/session/status` | `{brokers:[brokerId], connections:[{connectionId,brokerId,accountLabel,credentialLabel,connected}]}`, scoped to the caller. As of 3d `brokers` is **the brokers this user has credentials for**, not the registry. `credentialLabel` names **which registration authorised the login** — the join to `/api/broker-credentials`, added 7 Aug |
 | GET | `/api/broker-credentials` | One row per registered broker: `{brokerId, apiKey, configured}`. **Never returns a secret**, not even masked |
 | PUT | `/api/broker-credentials/{brokerId}` | `{apiKey, apiSecret}` → 204. Upsert; both values always required, both trimmed |
 | DELETE | `/api/broker-credentials/{brokerId}` | 204, or 404 when nothing was stored |
@@ -293,6 +293,10 @@ Frontend mirrors these exactly in `src/types/api.ts`. **Keep the two in sync —
 - Routing: `/` landing, `/login`, then `AuthGuard` → `AppShell` → `/app`, `/app/positions`, `/app/holdings`, `/app/payoff`, `/app/settings`.
 - **`/app/settings` is where broker credentials are entered (3d).** The secret field is write-only: it renders empty with "Stored" beside it rather than a row of dots, because a masked value would imply the real one is retrievable and it deliberately is not. That also settles what a blank secret means on an update — nothing, since both values are always required and there is no "leave unchanged" state to be ambiguous about.
 - **`ConnectBrokerCard` has two empty states.** No credentials at all (`brokers` is empty) sends the user to Settings; credentials but no live session offers Connect. A disabled Connect button was rejected for the first case — it reads as busy or broken when the action needed is genuinely different.
+
+- **Registrations and accounts are different axes, and `useBrokerConnectState` is the only place they are joined.** A registration is a developer app; an account is a login it authorised, and one app can authorise several. Both `BrokerStatusChips` and `ConnectBrokerCard` read that hook, so they cannot disagree about what is left to connect. Two rules live there: a registration with a live account is **not** offered for connecting (this is what makes the chips go quiet once everything is linked), and the registration label is **always sent** to `login-url` while only being *shown* when the user has more than one — a lone registration named anything other than `default` would otherwise start a flow the backend cannot resolve.
+
+  Fixed 7 Aug 2026, after two Kite accounts and two Kite registrations produced four chips that read as duplicates. The top bar used to carry an "add another account" chip **per registration**, permanently — with no `credentialLabel` on a connection there was no way to know a registration was already in use, so it could not do otherwise. That affordance now lives on the registration's own card in Settings, beside the accounts it has already authorised, where "another" is a claim the user can check.
 - Data: TanStack Query. `staleTime` 15s default; positions & payoff refetch every 30s, holdings 60s, session status 60s.
 - `lib/api.ts` is the only fetch layer. It maps **401 → redirect to /login** and **409 + `{error:"KITE_SESSION_EXPIRED"}` → `moneyplant:kite-expired` window event** so any query failing surfaces the reconnect banner.
 - Query client never retries 401/409.
@@ -457,7 +461,7 @@ Two deviations from the design doc, both small and deliberate:
 
 ## Step 4 — Deploy
 
-OCI VM with a reserved static IP (SEBI requirement). Caddy serves `dist/` and proxies `/api|/oauth2|/kite|/aliceblue` → `:8080`. Single origin. Cloudflare DNS vs OCI-only decided at the time. Minimal infra cost is an explicit constraint — prefer the OCI always-free tier and Postgres on the same VM over managed services.
+OCI VM with a reserved static IP — **not** a SEBI requirement, contrary to what this file said until 6 Aug 2026. SEBI's static-IP mandate binds *order placement* only, and MoneyPlant places no orders. The reserved IP is needed for the DNS A record, the TLS certificate and the three broker redirect URIs, which is reason enough to keep it. Full research in **`research/REGULATORY-API-STATIC-IP.md`**; the IPv4/IPv6 and cost side is in **`research/IPV4-VS-IPV6-STATIC-IP.md`**, which concludes: stay on OCI, stay on IPv4. Reserved public IPv4 and IPv6 are both free there, and a reserved IP **moves to a larger instance in the same region**, so growing the VM never costs the address. The dev machine has **no IPv6 egress at all** (measured), so no IPv6 path can be tested from it. Caddy serves `dist/` and proxies `/api|/oauth2|/kite|/aliceblue` → `:8080`. Single origin. Cloudflare DNS vs OCI-only decided at the time. Minimal infra cost is an explicit constraint — prefer the OCI always-free tier and Postgres on the same VM over managed services.
 
 **Redirect URL gotcha:** brokers allow **one redirect URL per app registration**. Deploying means `localhost:8080/kite/callback` and `<domain>/kite/callback` cannot both be live. Register a second app per broker for dev, and do it when registering Alice Blue so it is handled once for both.
 
@@ -515,5 +519,7 @@ Let it break ties in present-day design without scheduling work: prefer contract
 
   It does not return the underlying spot directly. Two candidates: put-call parity near ATM (`spot ≈ strike + CE_ltp − PE_ltp`) from the same payload, or the Historical Data endpoint. **Unverified against a live token** — confirm before treating Step 8 as unblocked, and check whether broker API terms permit using one broker's feed to price another broker's positions.
 - **Regulatory.** Serving other users changes the picture: broker API terms generally restrict redistribution to third parties without a vendor agreement, and offering analysis or recommendations in India can fall under SEBI Research Analyst / Investment Adviser rules. Worth confirming properly before Step 8 — cheap to check now, expensive to discover late. Not legal advice.
+
+  **Researched 6 Aug 2026 for the API/algo half — `research/REGULATORY-API-STATIC-IP.md`.** SEBI's retail algo framework has been fully in force since 1 April 2026. Nothing binds MoneyPlant while it stays read-only. Two findings change what "add order placement" would cost, so they belong here rather than in a step: **NSE maps one static IP to exactly one client** (family excepted), which a single shared VM egress IP cannot satisfy for two unrelated users; and **placing orders for another person makes MoneyPlant an "algo provider"** — the broker's agent, requiring exchange empanelment, per-algo registration, and hosting on the broker's servers. The lane that stays open is self-and-family. Black-box logic driving orders additionally requires RA registration, which is where this bullet and that doc meet.
 
 Explicitly out of scope: a Java backtester (stays offline in AlgoTest / Python), and propose-and-confirm order execution (only ever after a risk module exists).
