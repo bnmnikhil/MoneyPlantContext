@@ -1,29 +1,22 @@
 # MoneyPlant — working context
 
-**Generated from the code on 29 Jul 2026, last revised 5 Aug 2026 after 3c deployed and 3d was built.** This file is code-truth, not chat memory. Regenerate it when the architecture shifts.
+**Generated from the code on 29 Jul 2026, last revised 7 Aug 2026 after 3d deployed.** This file is code-truth, not chat memory. Regenerate it when the architecture shifts.
 
 ---
 
 ## ▶ NEXT SESSION — DO THIS FIRST
 
-**Status end of 5 Aug 2026. Steps 1, 2, 5, 3a, 3b and 3c are done and live. 3d is built and working locally, on a branch, not deployed.**
+**Status end of 7 Aug 2026. Steps 1, 2, 5 and all of 3 — 3a, 3b, 3c, 3d — are done and live. Nothing is in flight.**
 
 **`https://moneyplant.bonamnikhilbabu.in` is a working deployment.** DNS (Cloudflare, grey cloud) → OCI static IP → Caddy → `/var/www/moneyplant` for the SPA, `:8080` for the API. Google sign-in works, the backend is up under systemd, and the Kite prod redirect works end to end — all four 3c sub-steps are closed.
 
-**3d — per-user broker credentials — is done and confirmed working on localhost by the owner.** Not on the VM. Full design in `CREDENTIALS-STEP3D.md`; what changed is summarised under Step 3d below.
+**3d — per-user broker credentials — is deployed.** Postgres is on the VM, `MP_DB_*` and `MP_CREDENTIAL_KEY` are in `/etc/moneyplant/moneyplant.env`, and **the credential key is backed up off the VM**. That backup was the one irreversible item in the whole step: without it a lost key strands every stored secret with no recovery but every user re-entering their credentials. Full design in `CREDENTIALS-STEP3D.md`; what changed is summarised under Step 3d below.
 
-`main` in both repos is current and in sync with origin (`tradestack 359cff8`, `frontend 6fe156f`). The five branches that were in flight all merged — tradestack PRs #8 and #9, frontend PRs #6 and #7. **No spent branches were deleted**, deliberately; they are still local and on the remote.
+**Nothing is unpushed or unmerged in either code repo.** `main` is current and in sync with origin — `tradestack 84780c2`, `frontend 9d9a331`. 3d merged as tradestack #10 / frontend #8, and the follow-on `feat/per-account-credentials` — registrations and accounts as separate axes — merged 7 Aug as tradestack #11 / frontend #9. **No spent branches were deleted**, deliberately; all of them are still local and on the remote.
 
-**One branch is in flight, in both repos, green, unpushed and unmerged:**
+**The one repo with unpushed work is this one**, the docs repo above both others. See the hygiene note at the end of this section.
 
-```
-tradestack  step/3d-credentials   10f0c2a  credential/ package, Postgres, 3 commits
-frontend    step/3d-credentials   611f51f  Settings page, write-only secret
-```
-
-They are a **contract pair and must merge together** — the TS types are the contract. Mismatched, the settings screen calls endpoints that do not exist.
-
-**The app is genuinely multi-user.** Google sign-in with an env-var allowlist (two addresses now), `/api/me` real, connections keyed `{userId}:{brokerId}:{label}`, every fan-out scoped to the caller, and broker callbacks attributed by a single-use nonce minted in `/api/session/login-url`. Kite's flow is verified live. Backend suite is **131 green on `main`, 166 on `step/3d-credentials`** — plus a `db`-tagged repository suite excluded by default (`mvnw test -DexcludedGroups=`, Docker required).
+**The app is genuinely multi-user.** Google sign-in with an env-var allowlist (two addresses now), `/api/me` real, connections keyed `{userId}:{brokerId}:{label}`, every fan-out scoped to the caller, and broker callbacks attributed by a single-use nonce minted in `/api/session/login-url`. Kite's flow is verified live. Backend suite is **183 green on `main`** — plus a `db`-tagged repository suite excluded by default (`mvnw test -DexcludedGroups=`, Docker required). Frontend gate `npm run typecheck` is clean.
 
 ### Local development now needs Postgres
 
@@ -51,18 +44,30 @@ All three brokers aggregate. Field-level references — including every place ea
    - The VM had **nginx installed holding `:80`**, so Caddy came up serving its own default welcome page rather than `/var/www/moneyplant`. The tell was `Last-Modified: 2023` and a 15 kB body — a packaged file, not a Vite build. The Caddyfile is also keyed to the hostname, so `curl http://localhost` does not match that site block; test with `-H "Host: moneyplant.bonamnikhilbabu.in"`.
    - **A blank white page on `/app` after a successful sign-in** meant the deployed frontend and backend came from different branches. The frontend was built from `step/3b-account-labels` while the jar was built from `main`, which still returned the old broker-keyed `{id, connected}` shape. React then received an object where it expected a string and threw **minified error #31**, killing the whole page. Note this contradicts what this file predicted at the time — it said mismatched halves would make the broker chips "silently disappear rather than error". They do not; it is a hard white screen, because the stale array's elements reach JSX as objects. `deploy.sh` checks out the same branch in both repos precisely to prevent this, and this deploy went around it.
    - `curl .../api/me` returning **401 is success** — it means the app booted and the security chain is wired.
-4. ~~**Then 3d — per-user broker credentials.**~~ **Built 5 Aug and working locally**, on `step/3d-credentials` in both repos. Not deployed. Full design in **`CREDENTIALS-STEP3D.md`**; deviations and what actually landed are under Step 3d below.
+4. ~~**Then 3d — per-user broker credentials.**~~ **Built 5 Aug, merged 6 Aug, deployed 7 Aug.** Full design in **`CREDENTIALS-STEP3D.md`**; deviations and what actually landed are under Step 3d below.
 
-   **Next action is deploying it**, and it is not a drop-in — the VM will refuse to start until three things exist:
+   All three deploy prerequisites are satisfied on the VM and need no repeating: Postgres is up via `deploy/docker-compose.yml` (bound to `127.0.0.1:5432` — Docker writes its own iptables rules, so the OCI security list would *not* have saved you from the default `5432:5432`), `MP_DB_URL`/`MP_DB_USER`/`MP_DB_PASSWORD`/`MP_CREDENTIAL_KEY` are in `/etc/moneyplant/moneyplant.env`, and the six dead broker variables are gone.
 
-   1. **Postgres on the VM**: `cd deploy && POSTGRES_PASSWORD=... sudo -E docker compose up -d`. The compose file binds to `127.0.0.1:5432`, not `0.0.0.0` — Docker writes its own iptables rules, so the OCI security list would *not* have saved you from the default `5432:5432`.
-   2. **`MP_DB_URL`, `MP_DB_USER`, `MP_DB_PASSWORD` and `MP_CREDENTIAL_KEY`** in `/etc/moneyplant/moneyplant.env`. Generate the key with `openssl rand -base64 32` and **back it up somewhere that is not the VM** — losing it strands every stored secret, and the only recovery is every user re-entering their credentials.
-   3. The **six broker variables deleted** from that file. They are dead: nothing reads them.
+   **The credential key is backed up off the VM.** Keep it that way through every future rebuild — it is the only unrecoverable secret in the stack, and rotation is a backfill driven by `broker_credential.key_version`, never an edit to the variable in place.
 
-   Then the human cost: **each user must register their own Kite Connect app** before they can connect anything. **It is free** — corrected 6 Aug 2026, this file previously said users must "pay Kite's monthly fee" and called it the real gate. Kite Connect's **Personal tier costs ₹0** and covers order/GTT/alert management, margin computation and portfolio — every endpoint MoneyPlant calls. The ₹500/month **Connect** tier only adds real-time WebSocket and historical candle data, which this app does not use: spot comes from Paytm's free live-price endpoint via `SpotPriceService`. So the gate is a signup form, not a subscription — much lower than recorded, and it stays that way unless Step 6/8 starts wanting Kite's data feed.
-5. **One cheap experiment while connecting brokers anyway: does Alice Blue forward unknown query parameters?** If it does, `AliceBlueSessionService.loginUrl(state)` becomes a one-line change, it joins Kite and Paytm, and `PendingConnect.consumeSolePendingFor` becomes dead code to delete. Alice Blue is the only broker relying on that fallback.
+   What remains is the human cost, not a deploy step: **each user must register their own Kite Connect app** before they can connect anything. **It is free** — corrected 6 Aug 2026, this file previously said users must "pay Kite's monthly fee" and called it the real gate. Kite Connect's **Personal tier costs ₹0** and covers order/GTT/alert management, margin computation and portfolio — every endpoint MoneyPlant calls. The ₹500/month **Connect** tier only adds real-time WebSocket and historical candle data, which this app does not use: spot comes from Paytm's free live-price endpoint via `SpotPriceService`. So the gate is a signup form, not a subscription — much lower than recorded, and it stays that way unless Step 6/8 starts wanting Kite's data feed.
+5. **Next up — one cheap experiment while connecting brokers anyway: does Alice Blue forward unknown query parameters?** If it does, `AliceBlueSessionService.loginUrl(state)` becomes a one-line change, it joins Kite and Paytm, and `PendingConnect.consumeSolePendingFor` becomes dead code to delete. Alice Blue is the only broker relying on that fallback.
 6. **Then the real prize: verify Alice Blue's option chain** (`POST /obrest/optionChain/getOptionChain`). Still the highest-leverage unknown in the project — per-strike `ltp` and `oi` at no extra cost would unblock Step 6 and most of Step 8, which is the part described as the core of the product.
 7. **Symbol-model step 2 (`InstrumentKey`)** remains queued. Decision recorded 3 Aug — see below.
+
+### This repo is behind its own remote
+
+Recorded 7 Aug 2026. The two code repos are clean and pushed; **the docs repo containing this file is not**. It is ahead of `origin/main` by ten commits, going back to `5437e15 Plan Step 3`, and these are untracked entirely:
+
+```
+SPEC.md
+research/README.md
+research/IPV4-VS-IPV6-STATIC-IP.md
+research/REGULATORY-API-STATIC-IP.md
+research/sources/   (3 captured source documents)
+```
+
+That matters because **this file cites `research/REGULATORY-API-STATIC-IP.md` as if it were committed**, under Step 4 and under Open decisions. It is not — it exists only on the owner's laptop, along with the SEBI and NSE source captures behind it. A laptop failure loses the regulatory research and leaves three dangling citations — two documents, cited from Step 4 and from Open decisions — in a file whose entire premise is that it is code-truth.
 
 ### Decided 3 Aug: the application owns its symbols
 
@@ -84,7 +89,7 @@ Status: step 1 (`UnderlyingRegistry` + `underlyings.properties`) is done and shi
 
 - **`MP_COOKIE_SECURE` must be `true` on the VM.** The session cookie is `SameSite=Lax` and `Secure` is per-host, defaulting false so plain-HTTP localhost works. Over HTTPS without it the cookie still functions, so nothing will look broken — it will simply be travelling less protected than it should.
 
-- **`MP_CREDENTIAL_KEY` must be backed up off the VM (3d).** It is the only thing standing between a database dump and every user's live broker secrets, which is why it is deliberately not stored in the database. It is also unrecoverable: change or lose it and every stored secret is stranded, surfacing as `BROKER_CREDENTIAL_UNREADABLE` and fixable only by each user entering their credentials again. Rotation is a backfill driven by `broker_credential.key_version`, never an edit to the variable in place.
+- ~~**`MP_CREDENTIAL_KEY` must be backed up off the VM (3d).**~~ **Done 7 Aug**, with the 3d deploy. Keep it true rather than treating it as closed: it is the only thing standing between a database dump and every user's live broker secrets, which is why it is deliberately not stored in the database. It is also unrecoverable: change or lose it and every stored secret is stranded, surfacing as `BROKER_CREDENTIAL_UNREADABLE` and fixable only by each user entering their credentials again. Rotation is a backfill driven by `broker_credential.key_version`, never an edit to the variable in place.
 
 - **`spring-boot-flyway` must stay in the pom (3d).** Boot 4 split autoconfiguration into per-technology modules, so `flyway-core` is the library and `spring-boot-flyway` is the wiring that runs it at startup. With only the former the app boots perfectly, logs *nothing whatsoever* about Flyway, and the schema silently stays empty until the first query fails on a missing table. The test suite cannot catch this — it disables Flyway on purpose so the default build needs no Postgres — so it is caught only by booting against a real database.
 
@@ -135,12 +140,12 @@ step/1d-broker-errors   one branch per roadmap step, per repo
 - Squash merge into `main`, delete the branch.
 - **Never merge red.** Backend gate is `mvnw test`, frontend gate is `npm run typecheck`. Both are in the PR template.
 
-- `tradestack` `origin/main`: `359cff8 Merge pull request #9 from bnmnikhil/fix/paytm-position-pricing`
-- `frontend` `origin/main`: `6fe156f Merge pull request #7 from bnmnikhil/step/3b-connect-errors`
+- `tradestack` `origin/main`: `84780c2 Merge pull request #11 from bnmnikhil/feat/per-account-credentials`
+- `frontend` `origin/main`: `9d9a331 Merge pull request #9 from bnmnikhil/feat/per-account-credentials`
 
-Branch names stayed `step/3a-auth` in both repos even though the final commits covered 3b as well. 3a and 3b landed together rather than as the separate pair the plan assumed.
+Branch names stayed `step/3a-auth` in both repos even though the final commits covered 3b as well. 3a and 3b landed together rather than as the separate pair the plan assumed. The 7 Aug pair broke the `step/*` convention outright and was named `feat/per-account-credentials`, which is honest — it was not a roadmap step but a correction to one that had already shipped.
 
-**"Delete the branch" is not being honoured**, by choice as of 5 Aug. Every merged `step/*` branch is still local and on the remote — `step/1-aliceblue`, `step/1e-1f-…`, `step/2-ui-rework`, `step/3a-auth`, `step/3c-deploy`, plus the 3b and Paytm branches — along with the older `origin/V1` and `origin/V2--payoff-graph-one-broker`. Nothing depends on cleaning them up; it is deferred rather than forgotten.
+**"Delete the branch" is not being honoured**, by choice as of 5 Aug, and still true on 7 Aug. Every merged branch is still local and on the remote — ten in `frontend`, twelve in `tradestack`, all fully pushed with nothing local-only — along with the older `origin/V1` and `origin/V2--payoff-graph-one-broker`. Nothing depends on cleaning them up; it is deferred rather than forgotten. The useful consequence is that "is anything unpushed?" is answered in one command, `git for-each-ref --format='%(refname:short) %(upstream:track)' refs/heads/`, rather than by remembering which branch was in flight.
 
 **There is no PR template**, despite the line above saying the gates are in one. The gates are real and both were run on every branch merged so far; the template simply does not exist in either repo.
 
@@ -277,10 +282,10 @@ Warning codes are unprefixed (`SESSION_EXPIRED`) because they sit inside a `Brok
 | GET | `/api/me` | `{email,name,picture}` from the OIDC principal; 401 when absent |
 | POST | `/api/logout` | 204. Served by Spring Security, not a controller |
 | GET | `/api/session/status` | `{brokers:[brokerId], connections:[{connectionId,brokerId,accountLabel,credentialLabel,connected}]}`, scoped to the caller. As of 3d `brokers` is **the brokers this user has credentials for**, not the registry. `credentialLabel` names **which registration authorised the login** — the join to `/api/broker-credentials`, added 7 Aug |
-| GET | `/api/broker-credentials` | One row per registered broker: `{brokerId, apiKey, configured}`. **Never returns a secret**, not even masked |
-| PUT | `/api/broker-credentials/{brokerId}` | `{apiKey, apiSecret}` → 204. Upsert; both values always required, both trimmed |
-| DELETE | `/api/broker-credentials/{brokerId}` | 204, or 404 when nothing was stored |
-| GET | `/api/session/login-url` | `{url}` for any registered broker. **Mints the connect nonce** — this is the authenticated moment the callback later depends on |
+| GET | `/api/broker-credentials` | One row per **registration**: `{brokerId, label, apiKey, configured}`. A broker with two registrations returns two rows; a broker with none returns one row with `apiKey: null, configured: false`, which is the empty form the settings screen offers. **Never returns a secret**, not even masked |
+| PUT | `/api/broker-credentials/{brokerId}` and `/{brokerId}/{label}` | `{apiKey, apiSecret}` → 204. Upsert; both values always required, both trimmed. Omitted label means `default` |
+| DELETE | `/api/broker-credentials/{brokerId}` and `/{brokerId}/{label}` | 204, or 404 when nothing was stored under that label |
+| GET | `/api/session/login-url` | `?brokerId=` plus an optional `?label=` naming **which registration** to authorise through. `{url}`. **Mints the connect nonce** — this is the authenticated moment the callback later depends on — and parks the resolved label with it, rather than leaving the unauthenticated callback to guess between a user's two registrations |
 | GET | `/api/payoff` | `CurveRef[]` — `{connectionId, brokerId, underlying}` per plottable curve |
 | GET | `/api/payoff/{underlying}?connectionId=` | `PayoffResponse` incl. `brokerId`, `connectionId`, `spot` |
 | GET | `/api/debug/instrument?symbol=` | `OptionInstrument` |
@@ -364,7 +369,7 @@ Pure computation in `PayoffEngine.compute(List<Leg>)`. 201 samples, ±10% pad be
 | 0 | Multi-broker core (1a–1f) | ✅ done |
 | 1 | Alice Blue integration | — |
 | 2 | UI rework — group positions by broker and by instrument; fold in 1g | needs Step 1 |
-| 3 | Login / real authentication | ✅ 3a–3c done and live; 3d built, not deployed |
+| 3 | Login / real authentication | ✅ 3a–3d done, deployed and live |
 | 4 | Deploy — OCI + Cloudflare DNS-only | ✅ done 5 Aug, folded into 3c |
 | 5 | Paytm Money integration | — |
 | 6 | Strategy builder | wants Step 7, and market data |
@@ -450,7 +455,14 @@ No broker needs an extra profile call except Paytm: Kite's `generateSession` alr
 
 **3c ✅ done 5 Aug.** Deployed and working: HTTPS, Google sign-in, and a live Kite connect through `https://moneyplant.bonamnikhilbabu.in`. The three lessons worth keeping are in the numbered list at the top of this file.
 
-**3d ✅ built 5 Aug, working on localhost, not deployed.** Per-user broker credentials in Postgres — see the "credentials are a parameter" section above for the model, `CREDENTIALS-STEP3D.md` for the full design. Backend 166 green.
+**3d ✅ built 5 Aug, merged 6 Aug, deployed 7 Aug.** Per-user broker credentials in Postgres — see the "credentials are a parameter" section above for the model, `CREDENTIALS-STEP3D.md` for the full design. Backend 183 green.
+
+**Registrations and accounts became separate axes on 7 Aug**, in the follow-on `feat/per-account-credentials` (tradestack #11, frontend #9). 3d shipped assuming one registration per broker per user; two Kite accounts and two Kite registrations broke that assumption in the UI before it broke anything in the model. What changed:
+
+- `broker_credential` is keyed `(user_id, broker_id, label)`, so a user can hold two developer apps at one broker.
+- `BrokerSession` carries `credentialLabel` — **which registration authorised this login** — alongside `accountLabel`, which names the account the broker authenticated. One registration can authorise several accounts, so these are genuinely different axes and neither can be derived from the other.
+- `login-url` takes an optional `label` and parks the *resolved* one with the nonce. The callback is unauthenticated and cannot guess, so this had to be decided at mint time.
+- The frontend joins the two axes in exactly one place, `useBrokerConnectState` — see the Frontend section for the two rules that live there.
 
 Two deviations from the design doc, both small and deliberate:
 

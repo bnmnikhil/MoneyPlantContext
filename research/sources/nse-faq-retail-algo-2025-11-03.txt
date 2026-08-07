@@ -1,0 +1,174 @@
+Frequently Asked Questions (FAQs)                                              - Safer
+
+participation of Retail investors in Algorithmic trading
+
+Disclaimer:
+
+"This document/FAQ summarizes the queries relating to the above topic(s) in a concise
+
+manner for the Member's ease of understanding. The information and/ or content (collectively
+
+`Information') provided herein is general information only and NSE has issued                    detailed
+
+circulars to such effect from time to time. While reasonable care has been exercised to ensure
+
+that the Information is adequate and reliable, no representation is made by NSE as to its
+
+accuracy, correctness or completeness and NSE, its affiliates  and subsidiaries accepts no
+
+liability of whatsoever nature for any direct/indirect or consequential loss, including without
+
+limitation any loss of profits, arising from reliance on this Information. In the event of any
+
+difference/ inconsistencies between the Information as provided herein and in the circulars,
+
+the Information in the circulars shall be construed as final and binding. NSE does not in any
+
+way control, warrant or provide guarantee on the suitability of the Information for the readers
+
+usage. Th e readers are expected to undertake their own diligence and are advised not to solely
+
+rely on this document. Any such reliance shall be at the reader's own risk. Nothing stated
+
+herein shall bind NSE, in any manner whatsoever."
+
+                                                                                                Page 1 of 3
+                      Frequently Asked Questions (FAQs)
+
+1) What are the Empanelment criteria for Algo Provider?
+
+The detailed criteria for empanelment of Algo Provider have been mentioned in NSE
+
+circular no. NSE/INVG/70309 dated September 19, 2025      - 'Corrigendum to " Safer
+
+participation of Retail investors in Algorithmic trading         ­ Detailed Operational
+
+Modalities" ­ Update ")
+
+2) As per criteria mentioned in para 4.2 in NSE circular  NSE/INVG/70309 dated
+
+September 19, 2025 (Corrigendum to " Safer participation of Retail investors in
+
+Algorithmic trading ­ Detailed Operational Modalities" ­ Update ), who has to
+
+provide the declaration of cyber / adverse technical incident for the previous                 3
+
+years
+
+As per the empanelment criteria, the Algo Provider shall provide a self - declaration of
+
+any cyber / adverse technical incident for the previous 3 years. This declaration      is not
+
+required from any auditor and shall be provided by the Algo Provider s on their
+
+letterhead.
+
+3) Will static IP be required for retail customers coming via algo vendors         ?
+
+Client static IP will be required only in case of Tech savvy Investor using API        for
+
+placing orders.
+
+4) Whether a Research Analyst (RA ) wishing to deploy any black box algo will first
+    need to become an Algo Provider? Further, can an Algo Provider host black box
+    algos of multiple third -party R As ?
+
+As per SEBI circular     SEBI /HO/MIRSD/MIRSD -PoD/P/CIR/2025/0000013 dated
+
+February 04, 2025 , in case of Black Box Algos, " the Algo Provider shall Register as a
+
+Research Analyst and maintain a detailed research report for each such algo and
+
+confirm to the exchanges that such report has been maintained ".
+
+Thus, any RA wishing to deploy any Black Box Algo shall be required to become an
+Algo Provider before being able to provide a Black Box Algo.
+
+Further, as per para 14 of NSE circular  NSE/INVG/69255 dated July 22, 2025, all
+
+Algos developed by Algo Providers need to be hosted on the Trading Member's server.
+
+Hence, the Algo Provider hosting black box algos of multiple third          -party RAs is not
+
+possible.
+
+5) What are the hosting requirements for retail algorithmic trading strategies?
+
+As per Exchange Circular NSE/INVG/69255 dated July 22, 2025 (Annexure I, Para
+
+14), it is mandated that "all the strategies shall be run on the brokers servers. The
+
+order messages shall be originated from brokers server." This requirement is central
+
+to ensu ring the broker's control over risk management and data                  confidentiality.
+
+However, Tech Savvy client is required to host the Algo using a static IP at their end
+
+                                                                                      Page 2 of 3
+    where Algo logic reside s instead of hosting the Algo on Trading Member's          cloud
+    server .
+
+6) Is a static IP address mandatory for all individual retail clients using an API?
+
+    Client static IP is required only in case of Tech savvy Investor using API.
+
+7) How should algorithmic orders from Internet Based Trading (IBT) and Securities
+    Trading through Wireless Technology (STWT) platforms be tagged?
+
+Retail investors are allowed to trade using Algorithmic Trading through Client Direct
+
+API which is provided by broker to its clients to send the order messages through API
+
+and Member frontend for retail algo i.e. Internet or Mobile based applications . In such
+
+cases, the tagging shall be - first 12 digits would be "444444444444" and              the 13 th
+
+digit would be "0", or "2", or "4" .
+
+8) Is it permissible for clients to place basket orders for unregistered algos through
+    client APIs?
+
+As per the framework (refer Annexure I, Para 2.8 of Exchange Circular NSE/INVG/69255
+dated July 22, 2025), all orders received via API from clients are considered Algo orders
+and require appropriate tagging including standardised tagging for cases where the OPS
+is within the threshold of 10 OPS.
+
+9) Whether Tech Savy client is required to participate in monthly mandatory mock
+    as per SEBI guidelines
+
+As the responsibility of outcome (Profit/Loss) is with the Tach -savvy client itself since
+
+the Algo logic is of the Tech savvy client and the RMS is the responsibility of the
+
+Trading Member, i ndividual Tech savvy client is not required to participate in the
+
+monthly mock trading sessions, rest all the entities are required to       participate in
+
+mandatory mock sessions as per SEBI circular
+
+SEBI/HO/MRD1/DSAP/CIR/P/2020/234 dated November 24, 2020 and NSE circular
+
+NSE/MSD/67753 dated April 29, 2025
+
+10) An Algo platform developed by empanelled Algo vendor is hosted on Trading
+    Member's infrastructure. Whose static IP shall be required in case Retail clients
+    are trading through the Trading Member using such Algo platform developed by
+    the Algo Provider.
+
+With reference to NSE circular NSE/INVG/67858 dated May 05, 2025, it would be the
+static IP of the Trading Member's server.
+
+11) Are Market orders and IOC orders allowed through Algo?
+
+As per point 8.1.1.12 of NSE circular NSE/MSD/67753 dated April 29, 2025               , " Algo
+
+orders with order type as Market Order are not permitted " and as per point 8.1.2.1 of
+
+NSE circular NSE/MSD/67753 dated April 29, 2025 , "Immediate Or Cancel (IOC) and
+
+Market orders shall not be allowed to be placed using algorithmic trading              " in the
+
+Commodity segment.
+
+                                                                                     Page 3 of 3
+
