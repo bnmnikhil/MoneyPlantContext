@@ -1,22 +1,24 @@
 # MoneyPlant — working context
 
-**Generated from the code on 29 Jul 2026, last revised 7 Aug 2026 after 3d deployed.** This file is code-truth, not chat memory. Regenerate it when the architecture shifts.
+**Generated from the code on 29 Jul 2026, last revised 7 Aug 2026 after 4a's first branch was committed.** This file is code-truth, not chat memory. Regenerate it when the architecture shifts.
 
 ---
 
 ## ▶ NEXT SESSION — DO THIS FIRST
 
-**Status end of 7 Aug 2026. Steps 1, 2, 5 and all of 3 — 3a, 3b, 3c, 3d — are done and live. Nothing is in flight.**
+**Status end of 7 Aug 2026. Steps 1, 2, 5 and all of 3 — 3a, 3b, 3c, 3d — are done and live. Step 4 has started: 4a's first branch is committed, unpushed and unmerged.**
+
+**Step 4 is planned in `SPEC.md`, and that plan supersedes the numbered list that used to be here.** Four sub-steps: **4a foundations → 4b InstrumentKey → 4c snapshots and the freshness contract → 4d risk module.** Read `SPEC.md` before doing anything in this step; it records what was rejected as well as what was chosen, which is most of its value.
 
 **`https://moneyplant.bonamnikhilbabu.in` is a working deployment.** DNS (Cloudflare, grey cloud) → OCI static IP → Caddy → `/var/www/moneyplant` for the SPA, `:8080` for the API. Google sign-in works, the backend is up under systemd, and the Kite prod redirect works end to end — all four 3c sub-steps are closed.
 
 **3d — per-user broker credentials — is deployed.** Postgres is on the VM, `MP_DB_*` and `MP_CREDENTIAL_KEY` are in `/etc/moneyplant/moneyplant.env`, and **the credential key is backed up off the VM**. That backup was the one irreversible item in the whole step: without it a lost key strands every stored secret with no recovery but every user re-entering their credentials. Full design in `CREDENTIALS-STEP3D.md`; what changed is summarised under Step 3d below.
 
-**Nothing is unpushed or unmerged in either code repo.** `main` is current and in sync with origin — `tradestack 84780c2`, `frontend 9d9a331`. 3d merged as tradestack #10 / frontend #8, and the follow-on `feat/per-account-credentials` — registrations and accounts as separate axes — merged 7 Aug as tradestack #11 / frontend #9. **No spent branches were deleted**, deliberately; all of them are still local and on the remote.
+**One branch is in flight: `tradestack step/4a-capture`, at `420e962 capture and scheduling job`.** Committed, working tree clean, **not pushed and not merged** — the remote has never heard of it, so it exists on this laptop only. `main` is unchanged at `tradestack 84780c2` / `frontend 9d9a331` and both remain in sync with origin. Nothing in `frontend` has been touched for 4a; branch 1 is backend-only, so this is not a contract pair.
 
-**The one repo with unpushed work is this one**, the docs repo above both others. See the hygiene note at the end of this section.
+3d merged as tradestack #10 / frontend #8, and the follow-on `feat/per-account-credentials` — registrations and accounts as separate axes — merged 7 Aug as tradestack #11 / frontend #9. **No spent branches were deleted**, deliberately; all of them are still local and on the remote.
 
-**The app is genuinely multi-user.** Google sign-in with an env-var allowlist (two addresses now), `/api/me` real, connections keyed `{userId}:{brokerId}:{label}`, every fan-out scoped to the caller, and broker callbacks attributed by a single-use nonce minted in `/api/session/login-url`. Kite's flow is verified live. Backend suite is **183 green on `main`** — plus a `db`-tagged repository suite excluded by default (`mvnw test -DexcludedGroups=`, Docker required). Frontend gate `npm run typecheck` is clean.
+**The app is genuinely multi-user.** Google sign-in with an env-var allowlist (two addresses now), `/api/me` real, connections keyed `{userId}:{brokerId}:{label}`, every fan-out scoped to the caller, and broker callbacks attributed by a single-use nonce minted in `/api/session/login-url`. Kite's flow is verified live. Backend suite is **183 green on `main`, 205 on `step/4a-capture`** — plus a `db`-tagged repository suite excluded by default (`mvnw test -DexcludedGroups=`, Docker required). Frontend gate `npm run typecheck` is clean.
 
 ### Local development now needs Postgres
 
@@ -51,23 +53,42 @@ All three brokers aggregate. Field-level references — including every place ea
    **The credential key is backed up off the VM.** Keep it that way through every future rebuild — it is the only unrecoverable secret in the stack, and rotation is a backfill driven by `broker_credential.key_version`, never an edit to the variable in place.
 
    What remains is the human cost, not a deploy step: **each user must register their own Kite Connect app** before they can connect anything. **It is free** — corrected 6 Aug 2026, this file previously said users must "pay Kite's monthly fee" and called it the real gate. Kite Connect's **Personal tier costs ₹0** and covers order/GTT/alert management, margin computation and portfolio — every endpoint MoneyPlant calls. The ₹500/month **Connect** tier only adds real-time WebSocket and historical candle data, which this app does not use: spot comes from Paytm's free live-price endpoint via `SpotPriceService`. So the gate is a signup form, not a subscription — much lower than recorded, and it stays that way unless Step 6/8 starts wanting Kite's data feed.
-5. **Next up — one cheap experiment while connecting brokers anyway: does Alice Blue forward unknown query parameters?** If it does, `AliceBlueSessionService.loginUrl(state)` becomes a one-line change, it joins Kite and Paytm, and `PendingConnect.consumeSolePendingFor` becomes dead code to delete. Alice Blue is the only broker relying on that fallback.
-6. **Then the real prize: verify Alice Blue's option chain** (`POST /obrest/optionChain/getOptionChain`). Still the highest-leverage unknown in the project — per-strike `ltp` and `oi` at no extra cost would unblock Step 6 and most of Step 8, which is the part described as the core of the product.
-7. **Symbol-model step 2 (`InstrumentKey`)** remains queued. Decision recorded 3 Aug — see below.
+5. **Then Step 4, planned in `SPEC.md`.** 4a's first branch is done — see the next section for what landed and what is left of 4a. The two Alice Blue experiments below are no longer "next"; they are opportunistic and cost nothing to fold into a session where a broker is being connected anyway.
+6. **A cheap experiment while connecting brokers anyway: does Alice Blue forward unknown query parameters?** If it does, `AliceBlueSessionService.loginUrl(state)` becomes a one-line change, it joins Kite and Paytm, and `PendingConnect.consumeSolePendingFor` becomes dead code to delete. Alice Blue is the only broker relying on that fallback.
+7. **The real prize, still unclaimed: verify Alice Blue's option chain** (`POST /obrest/optionChain/getOptionChain`). Still the highest-leverage unknown in the project — per-strike `ltp` and `oi` at no extra cost would unblock Step 6 and most of Step 8, and `SPEC.md` D9 names it as the gate for greeks too.
+8. **Symbol-model steps 2–4 (`InstrumentKey`) are now 4b**, and `SPEC.md` D7 makes them a hard prerequisite for the risk module rather than a parallel track. Decision recorded 3 Aug — see below.
 
-### This repo is behind its own remote
+### Step 4a — where it stands
 
-Recorded 7 Aug 2026. The two code repos are clean and pushed; **the docs repo containing this file is not**. It is ahead of `origin/main` by ten commits, going back to `5437e15 Plan Step 3`, and these are untracked entirely:
+**Branch 1 of 3 is committed** on `tradestack step/4a-capture`. The order within 4a was deliberately **reversed** from `SPEC.md` §5: capture first, hygiene second. §5 puts the refactor first, but it also says every trading day without capture is a day of series that can never be recovered — so the clock-dependent work went first and the import rewrite waits.
 
-```
-SPEC.md
-research/README.md
-research/IPV4-VS-IPV6-STATIC-IP.md
-research/REGULATORY-API-STATIC-IP.md
-research/sources/   (3 captured source documents)
-```
+Two scope calls, both taken knowingly:
 
-That matters because **this file cites `research/REGULATORY-API-STATIC-IP.md` as if it were committed**, under Step 4 and under Open decisions. It is not — it exists only on the owner's laptop, along with the SEBI and NSE source captures behind it. A laptop failure loses the regulatory research and leaves three dangling citations — two documents, cited from Step 4 and from Open decisions — in a file whose entire premise is that it is code-truth.
+- **D11 — generated TS types and CI — is deferred entirely.** No `gen:api`, no GitHub Actions; neither repo has any CI, only a `pull_request_template.md`. Types stay hand-copied and the gates stay manual. **Revisit before 4c starts** — 4c is the contract-pair change that generated types were the stated mitigation for, and the white-screen incident is what happens without one.
+- **Docs: new ADRs only.** 0011–0024 from `SPEC.md` §7, plus `docs/adr/` in both repos. The 0001–0010 backfill and cutting this file to code-truth wait until 4a's code has settled. **None of it is written yet.**
+
+**What branch 1 landed** (backend only, 205 green):
+
+- **The gap `capture_run` records is the whole point.** `V3__raw_capture.sql` adds `raw_capture` — untyped, append-only, `raw jsonb` — and `capture_run`, one row per (user, broker, day). 4c parses the first into typed columns and therefore starts with history rather than from zero.
+- **`RawPortfolioSource` is a second interface, not a wider `BrokerGateway`.** All three gateways implement both. Putting a raw-payload method on `BrokerGateway` would have put a vendor-shaped leak in the one place the anti-corruption rule exists to keep clean.
+- **`snapshot/`** holds the writer, the 15:35 IST Mon–Fri job and the throttle. `broker/` publishes `PortfolioFetchedEvent` and knows nothing about `snapshot/`, so no gateway call acquires a database side effect.
+- **ArchUnit is in the normal build**, with rule A5 only: no `@RestController` may call a `*For(String userId)` overload, nor `connectedUserIds()`. A1–A4 come with branch 2, after the DTO move that A2 depends on. Verified by writing a violation, watching the build go red, and reverting.
+- **The D3 blocker turned out smaller than `SPEC.md` predicted.** It expected `allPositionsFor(userId)` and friends; the capture writes *raw* payloads, so it goes to `RawPortfolioSource` directly and only needs `sessionsFor(userId)`. The other three overloads were not written rather than shipped unused. A5 matches by name, so 4c's background refresh is guarded before it exists.
+
+**What is left of 4a:** branch 2 (`step/4a-boundaries` — move the shared DTOs out of `broker/dto/`, collapse `positions/`+`holdings/`+`account/` into `portfolio/`, `SpotPriceService` → `marketdata/`, delete `BrokerGateway.getLtp`, rules A1–A4), branch 3 (`step/4a-frontend` — code splitting, persisted query cache, lint rules), and the ADRs.
+
+**Two things branch 1 could not verify, and neither is a code problem:**
+
+- **No capture has ever run against a live broker.** It needs a broker connected and `/app/positions` loaded, then `select connection_id, kind, jsonb_pretty(raw) from raw_capture`. Everything below that is covered by tests or was exercised by hand in psql.
+- **`CaptureRepositoryTest` has never run as a suite**, because Docker is deliberately off on this laptop. The SQL it asserts — the throttle's `where not exists`, the `capture_run` precedence upsert, the jsonb round trip — was run directly against local Postgres in a scratch schema and behaved correctly, but the test itself is unexecuted.
+
+**Kite's archive is not Kite's bytes.** Alice Blue and Paytm still hold their parsed responses, so their capture is what arrived. The Kite SDK parses with Gson and discards the JSON, so `raw()` re-serialises the SDK's models with Jackson — which means **SDK field names, not wire names** (`tradingSymbol`, never `trading_symbol`), and anything the SDK does not model is already gone. A backfill reading those rows must expect SDK names. ADR 0013 has to say this; `KiteRawCaptureTest` asserts it in the meantime.
+
+### `DEPLOY-STEP3.md` is deleted but not committed
+
+Noticed 7 Aug 2026. It is tracked and still in `HEAD`, deleted only in the working tree, so nothing is lost — `git checkout -- DEPLOY-STEP3.md` brings it back. But it is **cited three times in this file and twice in `SPEC.md`**, so committing the deletion as it stands leaves five dangling references. Decide which: restore it, or commit the deletion and strip the citations.
+
+Otherwise the docs repo is clean and **in sync with `origin/main`** at `2beb78f arc replanned`, which is also where `SPEC.md` and all of `research/` were finally committed — the earlier warning in this file that they existed only on the laptop is closed.
 
 ### Decided 3 Aug: the application owns its symbols
 
@@ -162,6 +183,9 @@ Package-by-module under `com.MoneyPlant.tradestack`:
 | `positions/`, `holdings/`, `account/` | thin controllers over `BrokerService` |
 | `common/` | `ApiExceptionHandler`, `RequiredConfig` |
 | `credential/` | **3d.** `BrokerCredentials`, `CredentialCipher`, `BrokerCredentialRepository`, `BrokerCredentialService`, `BrokerCredentialController`, and the two exceptions |
+| `snapshot/` | **4a.** `CaptureService`, `CaptureRepository`, `CaptureStatus`, `EodCaptureJob`, `OnFetchCapture`, `SnapshotConfig`. Depends on `broker/`; `broker/` does not depend on it |
+
+`broker/` gained three types in 4a: `RawPortfolioSource` (the optional second capability), `PortfolioKind`, and `PortfolioFetchedEvent` (published by `BrokerService`, listened for in `snapshot/`).
 
 ### Patterns in play
 
@@ -363,6 +387,8 @@ Pure computation in `PayoffEngine.compute(List<Leg>)`. 201 samples, ±10% pad be
 # Roadmap
 
 **Order agreed 29 Jul 2026.** Steps are sequential and most span both repos.
+
+⚠ **"Step 4" now means two different things.** This table's Step 4 is the deploy, done 5 Aug and folded into 3c. `SPEC.md` calls itself *"Step 4: risk core, packaging and constraints"* and is the plan being worked to — 4a/4b/4c/4d in every branch name and every note above refer to **that** document, not to this row. The table is kept as written because the roadmap is a record of what was agreed; the collision is worth knowing about rather than renumbering after the fact.
 
 | # | Step | Gates |
 |---|---|---|
