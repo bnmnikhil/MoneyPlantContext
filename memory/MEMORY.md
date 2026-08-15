@@ -35,6 +35,8 @@ below.
 - [Credentials are per user, per registration](credentials-per-user-per-registration.md) — one broker app can authorise several logins, and every user registers their own app.
 - [A real product, not a personal tool](real-product-not-personal-tool.md) — a limited number of real users, run safely, on free-tier infrastructure.
 - [Per-instrument risk model](per-instrument-risk-model.md) — netted per account; "exposure" split into three honest measures; max loss is standalone and must never be summed.
+- [Margin attribution model](margin-attribution-model.md) — margin is non-additive, so it is allocated from the broker's real bill and the convention is always stated; split by each leg's own worst scenario.
+- [Snapshot writers migrate the archive](snapshot-writers-migrate-the-archive.md) — margin_snapshot is written from raw_capture, never a live fallback, and its "latest" query cannot copy the positions one.
 
 ## State
 
