@@ -12,18 +12,21 @@
 
 **Live at `https://moneyplant.bonamnikhilbabu.in`.** Cloudflare DNS (grey cloud) → OCI static IP → Caddy → `/var/www/moneyplant` for the SPA, `:8080` for the API. Google sign-in, Postgres on the VM via `deploy/docker-compose.yml`, and the Kite prod redirect all work end to end. Steps 1, 2, 3 (a–d) and 5 are done and deployed.
 
-**Both working trees are clean and everything is pushed.** `main` has not moved in either repo since 7 Aug:
+**The risk stack merged to `main` and was pushed on 15 Aug 2026.** `feat/heuristic-margin-engine` went in as ten backend commits and seven frontend, merged rather than squashed:
 
 ```
-tradestack  main 84780c2 = origin/main
-  └ 6 commits on feat/db-sessions → 5580c89   pushed
-frontend    main 9d9a331 = origin/main
-  └ 3 commits on fix/pledged-holdings → 11ad149   pushed
+tradestack  main 61030b2 = origin/main    (fast-forward from 78bc957)
+frontend    main aab94f5 = origin/main    (merge commit; content == branch tip)
+context     main cc3ef66 = origin/main
 ```
 
-`fix/pledged-holdings` has no tracking config in either repo, so `%(upstream:track)` prints blank for it — that reads as unpushed but is not. Answer "is anything unpushed?" with `git for-each-ref --format='%(refname:short) %(upstream:track)' refs/heads/`, then confirm untracked branches with `git ls-remote`.
+**The working trees are NOT clean, and this is deliberate.** Step 6 — the heuristic margin engine and the strategy builder — is still uncommitted in both repos and was **kept out of that merge** pending review. So the section below describing it as shipped describes your working tree, not `main` and not production. Also uncommitted and never to be committed: `hs_err_pid*.log` / `replay_pid*.log` JVM crash dumps in `tradestack/` (candidates for `.gitignore`).
 
-**Gates green:** backend `mvnw test` 364 passing; frontend `npm run typecheck` clean; frontend `npm run build` passing.
+Branch tracking is unreliable as a "is it pushed?" signal — several branches have no upstream config, so `%(upstream:track)` prints blank for pushed and unpushed alike. Use `git for-each-ref --format='%(refname:short) %(upstream:track)' refs/heads/`, then confirm with `git ls-remote`.
+
+**Gates green, measured on the deployable state** (a clean worktree at `main`, Step 6 absent): backend `mvnw test` **349 passing**; frontend `npm run build` (= `tsc -b && vite build`) passing. The 364 figure quoted elsewhere includes Step 6's own 15 tests and is *not* what ships — build from a worktree, not the working tree, when the answer has to be about what deploys.
+
+**`main` carries an unapplied migration.** `V8__spot_snapshot.sql` is new, and V5–V7 had still only ever run locally, so the next prod boot runs four migrations in sequence. All four are additive — `create table`, `create index`, `alter table … add column`; no drop, delete or truncate.
 
 ### Latest additions (15 Aug 2026 — `feat/heuristic-margin-engine`)
 
