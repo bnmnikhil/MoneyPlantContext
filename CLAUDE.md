@@ -1,6 +1,8 @@
 # MoneyPlant — working context
 
-**Regenerated from the code on 11 Aug 2026.** This file is code-truth and current state, not chat history. Closed items and the reasoning behind decisions have been cut: they live in git, in `tradestack/docs/adr/` (0011–0021, 0025), and in `SPEC.md`. Regenerate this file when the architecture shifts; do not let it accumulate a changelog again.
+**Regenerated from the code on 11 Aug 2026.** This file is code-truth and current state, not chat history. Closed items and the reasoning behind decisions have been cut: they live in git, in `tradestack/docs/adr/` (0011–0021, 0025), in `SPEC.md`, and in `memory/`. Regenerate this file when the architecture shifts; do not let it accumulate a changelog again.
+
+**`memory/` — read `memory/MEMORY.md` at the start of any non-trivial task.** It is the project memory: one file per durable decision or piece of project state, carrying the *reasoning* this file deliberately cuts. This file answers "what is true of the code now?"; `memory/` answers "why did we choose this, and when?". Keep the two from overlapping, and add a memory whenever a decision is made that a future reader would otherwise have to reverse-engineer from a diff.
 
 **Companion docs.** `SPEC.md` — the Step 4 plan, and the authority for it. `CREDENTIALS-STEP3D.md` — per-user broker credentials. `UX-STEP2.md` — UI rework. `tradestack/docs/symbol-model.md`, `aliceblue-api.md`, `paytm-api.md`. `tradestack/deploy/README.md` — deploy runbook. `research/` — regulatory and IP findings. **`DEPLOY-STEP3.md` was deleted in `84bd89b`;** `SPEC.md`, `CREDENTIALS-STEP3D.md` and `research/REGULATORY-API-STATIC-IP.md` still cite it and those references now dangle.
 
@@ -40,9 +42,13 @@ frontend    main 9d9a331 = origin/main
 
 ### Next
 
-1. **Merge the stack into `main`** — nine commits across two repos, overdue. Split `risk analysis` first if `main` should stay bisectable.
-2. **Wire 4c properly:** snapshot-first reads, a `raw_capture` → typed backfill, real `raw` on writes, and the A2 widening.
-3. **Finish 4d:** the decay series and margin/capital utilisation.
+**Verified against live data 15 Aug 2026, app connected to all three brokers.** What works end to end: `raw_capture` fresh for all three (`capture_run` all `CAPTURED`), `margin_snapshot` migrating exactly — every row matches its archive payload to the paisa — and `spot_snapshot` filling across 8 underlyings. Kite's `span + exposure + optionPremium = debits` holds to 0.0000 on live data; Alice Blue's is out by 1.6 paise, which is the documented float32 artefact, not a discrepancy.
+
+1. **`position_snapshot` is frozen at 11 Aug while the archive is current — fix first.** `raw_capture` positions are fresh (17:34 today, Kite 16 net legs) but the typed table still holds 11 Aug rows, so **`/api/risk/summary` computes everything on four-day-old positions** while `/api/positions` serves live. It is honest about it (`Freshness.STALE`) but will never self-correct: `SnapshotService.getPositions` only falls back live when the table is *empty*, and nothing migrates positions. Worse than uniformly stale — the page now mixes *today's* margins and spot with 11 Aug legs, so the margin allocation divides a current bill across old strikes. The fix is `MarginBackfillService` copied for positions (the parsers already exist), **and it must change `findLatestPositions` to `distinct on (connection_id) … order by captured_at desc, id desc`** — migrated rows carry per-connection timestamps, and the current `= max(captured_at)` form returns one broker and silently drops the rest (measured).
+2. **Verify Kite's basket margin against a live token.** `getCombinedMarginCalculation` is implemented in the gateway but deliberately unwired, with no schema, until one real response is seen. It logs `initial/final/benefit` on every call. Confirm `considerPositions=false` is the right reading and that `final.total` lands near the account's real `used`, then wire it and add the migration.
+3. **Merge the stack into `main`** — now thirteen commits across two repos, overdue.
+4. **Finish 4d:** the decay series. Margin & capital utilisation is **done** (D9 stub closed).
+5. `holding_snapshot` still has zero rows and no writer — the same backfill shape as positions.
 4. **Opportunistic, next time a broker is connected:** does Alice Blue forward unknown query parameters? If so `AliceBlueSessionService.loginUrl(state)` becomes a one-liner and `PendingConnect.consumeSolePendingFor` becomes dead code — Alice Blue is its only user.
 5. **The real prize, still unclaimed: verify Alice Blue's option chain** (`POST /obrest/optionChain/getOptionChain`). Per-strike `ltp` and `oi` at no extra cost would unblock Step 6 and most of Step 8; `SPEC.md` D9 makes it the gate for greeks.
 
