@@ -23,7 +23,19 @@ frontend    main 9d9a331 = origin/main
 
 `fix/pledged-holdings` has no tracking config in either repo, so `%(upstream:track)` prints blank for it — that reads as unpushed but is not. Answer "is anything unpushed?" with `git for-each-ref --format='%(refname:short) %(upstream:track)' refs/heads/`, then confirm untracked branches with `git ls-remote`.
 
-**Gates green:** backend `mvnw test` 222 passing; frontend `npm run typecheck` clean.
+**Gates green:** backend `mvnw test` 364 passing; frontend `npm run typecheck` clean; frontend `npm run build` passing.
+
+### Latest additions (15 Aug 2026 — `feat/heuristic-margin-engine`)
+
+- **Bottom-Up Heuristic Margin Engine:** Pure-domain calculator (`com.MoneyPlant.tradestack.risk.HeuristicMarginEngine`) implementing SEBI/NSE exchange-level SPAN + Exposure margin formulas and vertical spread/strangle offsets offline.
+- **Dual-Mode Margin Allocation:** `MarginAllocator` dynamically uses the top-down broker bill when available (`MarginBasis.EXACT`), and falls back to bottom-up heuristic calculation when missing (`MarginBasis.ESTIMATED`).
+- **Visual Options Strategy Designer (Step 6):** Complete interactive strategy builder at `/app/payoff` (Strategy Builder tab) featuring:
+  - 10+ standard NSE option strategy recipes (Bull/Bear Call/Put Spreads, Straddles, Strangles, Iron Condor, Iron Butterfly) generated around ATM spot with canonical strike intervals.
+  - Interactive multi-leg editor with strike/lot stepper controls, Buy/Sell pills, and individual leg disable/enable toggles.
+  - Real-time simulation API (`POST /api/payoff/simulate` and `GET /api/payoff/metadata`).
+  - Target Spot Inspector (interactive slider across $\pm 10\%$ of spot with real-time expiry P&L probe).
+  - Bottom-up SEBI margin & total capital breakdown with hedge benefit badges.
+  - "Open in Strategy Builder" bridge to import live held positions into the builder for what-if hedging experimentation.
 
 ### Step 4 — what is actually built
 
@@ -257,7 +269,7 @@ Read off live payloads 11 Aug. All three gateways populate all five `MarginDto` 
 
 **Kite.** `KiteException` extends `Throwable` directly, not `Exception` — so `catch (KiteException | IOException e)` infers `Throwable`, and any helper taking the caught variable must accept `Throwable`. Kite holdings **ignore `t1Quantity`**, so settled-but-not-delivered shows qty 0; the Alice Blue gateway adds it back, so the two disagree.
 
-**Alice Blue.** Classifies on **HTTP status, not an exception type** — a dead `userSession` is a plain-text `401 Unauthorized` with a non-JSON body, so the gateway checks the status *before* deserialising; feeding `Unauthorized` to Jackson throws a parse error that would be misread as transient. **The gateway must never let that 401 escape:** `frontend/src/lib/api.ts` maps any 401 to a redirect to `/login`, so one dead broker token would log the user out of MoneyPlant entirely. Field names come from the **v2** REST API (`netQuantity`, `tradingSymbol`, `ltp`) — not the deprecated v1 (`Netqty`, `Tsym`, `LTP`). Holdings quantity is `sellableQty + t1Quantity`; every sampled row had `t1Quantity: 0`, so **if `sellableQty` already includes T1 this double-counts** — check on a day with a same-day purchase. `getInstruments` still returns empty, so Alice Blue positions appear in tables and margins but get **no payoff curve**. Contract master: `https://v2api.aliceblueonline.com/restpy/static/contract_master/V2/NFO`, regenerated 08:00 IST; shape not yet inspected. Symbols are self-describing (`HDFCBANK25AUG26P730`), so a parser may beat downloading ~100k rows onto a small VM.
+**Alice Blue.** `getInstruments` **works** — it downloads the NFO contract master and parses it. Measured 15 Aug 2026 against a live token: all 11 Alice Blue positions resolved an `InstrumentKey`, and `/api/payoff` offered 3 Alice Blue curves. The long-standing note that it "returns empty, so Alice Blue gets no payoff curve" is dead and has been removed from the roadmap row too; `SnapshotPositionSource`'s javadoc still repeated it and has been corrected. Classifies on **HTTP status, not an exception type** — a dead `userSession` is a plain-text `401 Unauthorized` with a non-JSON body, so the gateway checks the status *before* deserialising; feeding `Unauthorized` to Jackson throws a parse error that would be misread as transient. **The gateway must never let that 401 escape:** `frontend/src/lib/api.ts` maps any 401 to a redirect to `/login`, so one dead broker token would log the user out of MoneyPlant entirely. Field names come from the **v2** REST API (`netQuantity`, `tradingSymbol`, `ltp`) — not the deprecated v1 (`Netqty`, `Tsym`, `LTP`). Holdings quantity is `sellableQty + t1Quantity`; every sampled row had `t1Quantity: 0`, so **if `sellableQty` already includes T1 this double-counts** — check on a day with a same-day purchase. `getInstruments` still returns empty, so Alice Blue positions appear in tables and margins but get **no payoff curve**. Contract master: `https://v2api.aliceblueonline.com/restpy/static/contract_master/V2/NFO`, regenerated 08:00 IST; shape not yet inspected. Symbols are self-describing (`HDFCBANK25AUG26P730`), so a parser may beat downloading ~100k rows onto a small VM.
 
 **Paytm.** **Do not use Paytm's official Java SDK** — unpublished (system scope, which `spring-boot-maven-plugin` drops from the fat jar, so it would work locally and fail on the VM), shaded with Spring Web 5.3, and pulls Jackson 2 into this Jackson 3 app. Positions are priced from `/data/v1/price/live?mode=LTP&pref=<exchange>:<security_id>:<type>` (comma-separated for batches; types `INDEX`, `EQUITY`, `OPTION`, `FUTURE`) — **none of this is in Paytm's docs.** **Never percent-encode `pref`.** Colons and commas are legal in a query, and `RestClient.uri(String)` encodes the template again, so a hand-rolled `%3A` reaches Paytm as `%253A`, matches nothing, and returns empty `data` — which both callers treat as "no quote" and degrade silently (realised-only P&L; spot 0). That was a real bug, fixed 11 Aug; `PaytmQuoteUrlTest` pins the URL. `mode=LTP` also returns `change_absolute`, so one batched call fills `ltp`, `pnl` and `dayChange`. `last_traded_price` in the positions payload is **never populated** — not "0.0 outside market hours" as once recorded. The quote path never throws: a failed quote falls back to realised-only P&L and logs why. `FUTURE` is still unverified, having no live future to test against.
 
@@ -285,7 +297,9 @@ Routing: `/` landing, `/login`, then `AuthGuard` → `AppShell` → `/app`, `/ap
 
   **Three rules live in that join, each from a real trap.** (1) **Key on `connectionId`, never `brokerId`** — `/api/margins` returns one row per connection despite its javadoc, so two Kite accounts are two rows both labelled `kite`, and folding on the broker id sums them into one. (2) **Outer join, and `margin: null` rather than `0`** — a dead margin call must leave the P&L row intact and show a dash, not a zero that reads as an empty account. (3) **Day P&L is positions-only and says so** — `HoldingDto` has no `dayChange` field at all (the snapshot repository writes a hardcoded `0.0`). The old "P&L today" tile was mislabelled from the day it was written: it summed lifetime `Position.pnl`.
 
-  **The page has never been seen rendered** — the Chrome extension cannot screenshot `localhost` here ("Frame with ID 0 is showing error page") — so the tile hints were sized blind. `aggregate.ts` was instead compiled standalone (its imports are type-only) and exercised under `node` against real `raw_capture` margins, 27 checks passing. **`frontend` has no test runner**, so that is the available technique for pure logic.
+  **The dashboard's tile hints were sized blind** and still have not been seen rendered. `aggregate.ts` was instead compiled standalone (its imports are type-only) and exercised under `node` against real `raw_capture` margins, 27 checks passing. **`frontend` has no test runner**, so that is the available technique for pure logic.
+
+  **The Chrome extension *can* screenshot `localhost` now** — it could not before ("Frame with ID 0 is showing error page"), and that outdated note is why later UI shipped unseen. `/app/positions` was verified live on 15 Aug 2026 against all three brokers. Two things only a rendered page caught: a sticky `<th>` clipping the first broker band (shadcn's `Table` wraps in `overflow-auto`, which becomes the sticky containing block), and a freshness caption that named the reassuring date instead of the load-bearing one.
 - **`/app/settings` is where broker credentials are entered.** The secret field is **write-only**: it renders empty with "Stored" beside it rather than dots, because a masked value would imply the real one is retrievable and it deliberately is not. That also settles what a blank secret means on update — nothing, since both values are always required.
 - **Registrations and accounts are different axes, and `features/session/brokerConnectState.ts` is the only place they are joined.** A registration is a developer app; an account is a login it authorised, and one app can authorise several. Both `BrokerStatusChips` and `ConnectBrokerCard` read that hook, so they cannot disagree. Two rules: a registration with a live account is **not** offered for connecting (this is what makes the chips go quiet once everything is linked), and the registration label is **always sent** to `login-url` while only being *shown* when there is more than one — a lone registration named anything but `default` would otherwise start a flow the backend cannot resolve. Fixed 7 Aug after two Kite accounts and two Kite registrations produced four chips reading as duplicates; "add another account" now lives on the registration's own card in Settings, beside the accounts it has already authorised.
 - **`ConnectBrokerCard` has two empty states.** No credentials at all sends the user to Settings; credentials but no live session offers Connect. A disabled Connect button was rejected for the first case — it reads as busy or broken when the action needed is genuinely different.
@@ -334,12 +348,12 @@ Host-level gotchas (Caddy hostname matching, nginx squatting on `:80`, `401` fro
 | # | Step | State |
 |---|---|---|
 | 0 | Multi-broker core (1a–1g) | ✅ done |
-| 1 | Alice Blue integration | mostly — `getInstruments` empty, so no payoff curve |
+| 1 | Alice Blue integration | ✅ done — contract master loads, positions resolve, payoff curves render |
 | 2 | UI rework — group positions by broker and instrument | partly; grouping helpers exist |
 | 3 | Login / real authentication (3a–3d) | ✅ done, deployed, live |
 | 4 | Deploy — OCI + Cloudflare DNS-only | ✅ done, folded into 3c |
 | 5 | Paytm Money integration | ✅ mostly done |
-| 6 | Strategy builder | wants Step 7 + live option prices |
+| 6 | Strategy builder | ✅ interactive visual designer shipped (`feat/heuristic-margin-engine`) |
 | 7 | Persistence — users + broker links | partly pulled into Step 3 |
 | 8 | Analysis — technical, fundamental, decay, risk/reward, LLM | **blocked on market data** |
 

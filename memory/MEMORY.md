@@ -37,6 +37,10 @@ below.
 - [Per-instrument risk model](per-instrument-risk-model.md) — netted per account; "exposure" split into three honest measures; max loss is standalone and must never be summed.
 - [Margin attribution model](margin-attribution-model.md) — margin is non-additive, so it is allocated from the broker's real bill and the convention is always stated; split by each leg's own worst scenario.
 - [Snapshot writers migrate the archive](snapshot-writers-migrate-the-archive.md) — margin_snapshot is written from raw_capture, never a live fallback, and its "latest" query cannot copy the positions one.
+- [Positions margin comes from risk](positions-margin-comes-from-risk.md) — both the subtotal and the account total read `/api/risk/summary`, never `/api/margins`, or the column stops footing.
+- [Premium left is negated market value](premium-left-is-negated-market-value.md) — `-(qty × LTP)` from the *live* rows, additive at every level unlike margin, and never coloured by sign.
+- [Bottom-up heuristic margin engine](heuristic-margin-engine.md) — offline SEBI/NSE SPAN + Exposure model with spread offsets for strategy simulation and missing broker bills.
+- [Strategy builder architecture](strategy-builder-architecture.md) — visual multi-leg designer on `/app/payoff` with 1-click recipes, live simulation, target price probe, and what-if import.
 
 ## State
 
