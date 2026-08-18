@@ -1,11 +1,31 @@
 ---
 name: margin-attribution-model
-description: "Per-instrument margin is an allocation of the broker's real bill, split by each leg's worst loss across the scenario markers; margin is non-additive so the convention must always be stated"
+description: "Per-instrument margin was an allocation of the broker's real bill, split by each leg's worst loss; demoted to a fallback on 17 Aug 2026 because the shares moved with the rest of the book. Margin is non-additive so the convention must always be stated"
 metadata:
   type: decision
 ---
 
 Decided 15 Aug 2026, building margin at instrument level.
+
+> **SUPERSEDED 17 Aug 2026 as the default.** The per-instrument figure is now
+> [[heuristic-margin-engine]]'s bottom-up estimate. The allocation below survives
+> only as a per-connection fallback, for an account where nothing could be
+> estimated but a bill exists. Everything below still describes that path
+> correctly; what changed is when it runs.
+>
+> **Why it was demoted.** Footing to the bill is a property of the *total*, and
+> it bought nothing for the individual row. The share a leg received moved with
+> every other leg in the account — adding an unrelated position elsewhere in the
+> book silently changed what an untouched contract appeared to cost — and a
+> single naked short could swallow most of the bill because its worst loss
+> dominated the denominator, even where the exchange charged it little. The
+> owner saw the numbers read wrong against the real account, which is what
+> prompted the calibration that found the bottom-up engine's own errors.
+>
+> The trade is explicit: bottom-up does **not** foot (8.6% over on a real
+> Zerodha bill) but each row is computed from its own strike, quantity and
+> hedges, so it holds still and can be checked leg by leg. The account's real
+> `used` is still shown beside it, unallocated.
 
 **Margin is non-additive — the same trap as `maxLoss`, one level up.** A hedged
 book consumes far less than its legs separately, so there is no single true

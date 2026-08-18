@@ -44,3 +44,11 @@ API" wrappers on GitHub are equities-only and delayed — useless for F&O.
 *zero* new integration, since that connection already exists. Treat Upstox as
 the designed fallback. Build on neither until one is confirmed against a live
 token — the standing rule in [[analysis-step-is-the-product]].
+
+> **Settled 18 Aug 2026: Alice Blue's chain works.** See
+> [[aliceblue-option-chain-verified]] — per-strike `ltp` and `oi`, plus spot,
+> future price and lot size, for 181 underlyings, free. **Upstox is no longer
+> needed as the fallback**, saving a fourth OAuth. This survey stays live for one
+> reason only: Upstox remains the only located free source of **greeks and IV**,
+> which Alice Blue does not return. If greeks are wanted as fetched data rather
+> than solved from `ltp`, the Upstox finding above is still the answer.
