@@ -4,7 +4,7 @@
 
 **`memory/` — read `memory/MEMORY.md` at the start of any non-trivial task.** It is the project memory: one file per durable decision or piece of project state, carrying the *reasoning* this file deliberately cuts. This file answers "what is true of the code now?"; `memory/` answers "why did we choose this, and when?". Keep the two from overlapping, and add a memory whenever a decision is made that a future reader would otherwise have to reverse-engineer from a diff.
 
-**Companion docs.** `SPEC.md` — the Step 4 plan, and the authority for it. `CREDENTIALS-STEP3D.md` — per-user broker credentials. `UX-STEP2.md` — UI rework. `tradestack/docs/symbol-model.md`, `aliceblue-api.md`, `paytm-api.md`. `tradestack/deploy/README.md` — deploy runbook. `research/` — regulatory and IP findings. **`DEPLOY-STEP3.md` was deleted in `84bd89b`;** `SPEC.md`, `CREDENTIALS-STEP3D.md` and `research/REGULATORY-API-STATIC-IP.md` still cite it and those references now dangle.
+**Companion docs.** `P0-LAUNCH.md` — the production-launch tracker, and the **authority for what is being worked on now**; it owns status, this file owns code-truth, and the two must not overlap. `SPEC.md` — the Step 4 plan, and the authority for it. `CREDENTIALS-STEP3D.md` — per-user broker credentials. `UX-STEP2.md` — UI rework. `tradestack/docs/symbol-model.md`, `aliceblue-api.md`, `paytm-api.md`. `tradestack/deploy/README.md` — deploy runbook. `research/` — regulatory and IP findings. **`DEPLOY-STEP3.md` was deleted in `84bd89b`;** `SPEC.md`, `CREDENTIALS-STEP3D.md` and `research/REGULATORY-API-STATIC-IP.md` still cite it and those references now dangle.
 
 ---
 
@@ -100,6 +100,8 @@ Both new fields are **required** on the gateway constructor rather than defaulte
 **Deferred, knowingly:** D11 (generated TS types, CI) entirely — neither repo has any CI, and there is no PR template despite the branching rules below citing one. ADR 0021 and frontend 0022 are *accepted but unimplemented*, both waiting on that CI. `step/4a-frontend` (code splitting, persisted query cache, lint rules) was never done.
 
 ### Next
+
+**As of 20 Aug 2026 the work is the P0 production launch, and `P0-LAUNCH.md` is where it is tracked.** Its item ids (A1 … F2) are the unit of work — take one, do it, run its verification, flip its marker there. **Status lives only in that file**; do not restate progress here. Two of its items were found while planning it and outrank everything in the list below: **D1**, there are no backups of anything, and **B1**, `InstrumentService.ensureLoaded` holds a singleton lock across a 60s download and is called once per position row, so one user's slow broker stalls every other user. Items 1 and 2 below are the same defects as **A1** and **A2** and are described more fully there.
 
 **Verified against live data 15 Aug 2026, app connected to all three brokers.** What works end to end: `raw_capture` fresh for all three (`capture_run` all `CAPTURED`), `margin_snapshot` migrating exactly — every row matches its archive payload to the paisa — and `spot_snapshot` filling across 8 underlyings. Kite's `span + exposure + optionPremium = debits` holds to 0.0000 on live data; Alice Blue's is out by 1.6 paise, which is the documented float32 artefact, not a discrepancy.
 

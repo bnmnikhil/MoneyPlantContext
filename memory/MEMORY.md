@@ -44,6 +44,7 @@ below.
 - [Strategy builder architecture](strategy-builder-architecture.md) — visual multi-leg designer on `/app/payoff` with 1-click recipes, live simulation, target price probe, and what-if import.
 - [Positions carry their contract facts](positions-carry-their-contract-facts.md) — strike, expiry and lot size as one nullable object, free from a lookup already being made; nothing reads it yet, and that is deliberate.
 - [An unmeasured zero is a claim](an-unmeasured-zero-is-a-claim.md) — `priceKnown` makes "nothing could quote this" visible, because a consumer that cannot tell it from ₹0 will render the ₹0.
+- [Backups: write-only PAR, symmetric gpg](backups-are-write-only-par-and-symmetric-gpg.md) — the VM can create backups but not read or delete them; the restore test with the off-VM key, not the timer, is what makes D1 real.
 
 ## State
 
