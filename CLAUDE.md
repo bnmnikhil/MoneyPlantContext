@@ -12,34 +12,36 @@
 
 **Live at `https://moneyplant.bonamnikhilbabu.in`.** Cloudflare DNS (grey cloud) → OCI static IP → Caddy → `/var/www/moneyplant` for the SPA, `:8080` for the API. Google sign-in, Postgres on the VM via `deploy/docker-compose.yml`, and the Kite prod redirect all work end to end. Steps 1, 2, 3 (a–d) and 5 are done and deployed.
 
-**The risk stack merged to `main` and was pushed on 15 Aug 2026.** `feat/heuristic-margin-engine` went in as ten backend commits and seven frontend, merged rather than squashed:
+**`feat/heuristic-margin-engine` is merged and done.** Both PRs landed as merge commits, not squashes, so all three 18 Aug commits keep their identity on `main`:
 
 ```
-tradestack  main 61030b2 = origin/main    (fast-forward from 78bc957)
-frontend    main aab94f5 = origin/main    (merge commit; content == branch tip)
-context     main cc3ef66 = origin/main
-```
-
-**The three uncommitted layers were committed on 18 Aug 2026**, in the order that keeps the diffs readable, onto `feat/heuristic-margin-engine` in both repos. **Committed but NOT pushed and NOT merged** — so every section describing them still describes that branch, not `main` and not production:
-
-```
-tradestack  feat/heuristic-margin-engine  3 ahead of main    c451a86 → e3e82d4 → 67fab01
-frontend    feat/heuristic-margin-engine  1 ahead, 3 behind  ddfe9fc
+tradestack  main c9bb2d1 = origin/main   (PR #14: c451a86 → e3e82d4 → 67fab01)
+frontend    main a17e9f9 = origin/main   (PR #12: ddfe9fc)
+context     main 3d7b4b6 = origin/main
 ```
 
 1. **Step 6** — `c451a86` backend (the margin engine, the three strategy endpoints) and `ddfe9fc` frontend (the designer plus the four 18 Aug fixes).
 2. **The `broker/` package split (ADR 0027)** — `e3e82d4`, alone, on top of Step 6. **Git records 24 renames**, which is the whole point: staged together with a feature diff it degrades into a 64-file add-plus-delete. One import had to be un-rewritten for Step 6's commit and re-rewritten here (`PayoffService`'s `BrokerSession`) so that each commit compiles standalone.
 3. **The Alice Blue option-chain probe** — `67fab01`, two new classes plus `aliceblue-api.md`. Explicitly *not a feature* (see below).
 
-The frontend being **3 behind** is an artefact of the 15 Aug merge commit, not divergence — `main`'s content already equals what the branch had. Merging the branch into `main` resolves it; do not rebase.
+**The merges happened on GitHub, and nothing here had fetched them.** For four days both local `main`s sat at the pre-merge commit while `origin/main` had moved on, and the local branch tips matched the remote exactly — so *branch tracking said "in sync" and every ahead/behind count in this file was wrong*. `git fetch --all` before reading any of them. This was the second time a git claim here went stale in the same way; the first is the tracking note below.
+
+**The current branch is `feat/position-contract-facts`**, off `main` in both repos, committed 20 Aug 2026 and **not pushed**:
+
+```
+tradestack  feat/position-contract-facts  2 ahead of main   b118b36 → bf9104b
+frontend    feat/position-contract-facts  1 ahead of main   9a206f9
+```
+
+It is the fourth layer — dev auth, then the position contract facts — described under *Latest additions (20 Aug 2026)* below.
 
 **Still uncommitted and never to be committed:** `hs_err_pid*.log` / `replay_pid*.log` JVM crash dumps in `tradestack/` (candidates for `.gitignore`), and `.mcp.json`. **Also left uncommitted deliberately: `tradestack/docs/architecture/backend-architecture.md`** — a 322-line generated report dated 15 Aug that documents the *pre-split* `broker/` package, so ADR 0027 falsified it before it was ever committed. Regenerate it or drop it; do not commit it as it stands.
 
 Branch tracking is unreliable as a "is it pushed?" signal — several branches have no upstream config, so `%(upstream:track)` prints blank for pushed and unpushed alike. Use `git for-each-ref --format='%(refname:short) %(upstream:track)' refs/heads/`, then confirm with `git ls-remote`.
 
-**Gates green, measured on the branch after the three commits (18 Aug 2026):** backend `mvnw test` **388 passing, 0 failures**; frontend `npm run build` (= `tsc -b && vite build`) passing. `main` itself is still **349** — the 39 added are Step 6's own tests, the margin calibration, the three spot-resolution regressions and the risk:reward guard. Build from a worktree, not the working tree, when the answer has to be about what deploys. The option-chain probe adds **no** tests, deliberately: there is nothing stable to assert about a vendor payload until it graduates into a feature.
+**Gates green, both measured with `mvnw clean test` on 20 Aug 2026:** `main` is **374 passing, 0 failures**, and `feat/position-contract-facts` is **385** — the 11 added are dev auth's own tests plus the mapper and fan-out coverage for the contract facts. Frontend `npm run build` (= `tsc -b && vite build`) passing on the branch. Build from a worktree, not the working tree, when the answer has to be about what deploys — `main`'s 374 was measured that way. The option-chain probe adds **no** tests, deliberately: there is nothing stable to assert about a vendor payload until it graduates into a feature.
 
-**`target/surefire-reports/` lies after a package move.** Summing `tests=` across those XML files gave **430** — 42 of them from five stale reports left behind by the pre-split `broker.*` session tests, which now also exist under `broker.session.*`. The directory is not cleaned between runs, so a renamed test class is counted twice. `mvnw clean test`, or subtract the orphans, before quoting a number.
+**Only `mvnw clean test`'s own summary line is a real test count.** Every other route has been wrong at least once. `target/surefire-reports/` is not cleaned between runs, so after the `broker/` package move summing `tests=` across those XMLs gave **430**, 42 of them stale duplicates of the pre-split `broker.*` session tests. Subtracting the orphans gave **388**, which this file then carried for two days — and the true figure was **374**. Do not sum the XMLs and do not subtract; run clean and read the `Tests run:` line under `Results:`.
 
 **`main` carries an unapplied migration.** `V8__spot_snapshot.sql` is new, and V5–V7 had still only ever run locally, so the next prod boot runs four migrations in sequence. All four are additive — `create table`, `create index`, `alter table … add column`; no drop, delete or truncate.
 
@@ -57,7 +59,7 @@ Branch tracking is unreliable as a "is it pushed?" signal — several branches h
   - "Open in Strategy Builder" bridge to import live held positions into the builder for what-if hedging experimentation.
   - ⚠ **Its numbers rest on two wrong inputs.** Leg premiums are **invented** — a placeholder estimator, because nothing could quote a strike until 18 Aug 2026; the chain feed now can. And NIFTY's lot size is hardcoded **75** in `getStrategyMetadata` while the chain *and* the contract master both say **65**, so every NIFTY leg is sized 15% too large and margin, max profit, max loss and capital all inherit it. Fix the lot size by reading `InstrumentService`, not by editing the literal — see `memory/nifty-lot-size-is-hardcoded-and-stale.md`.
 
-### Latest additions (18 Aug 2026 — committed to the branch, unpushed)
+### Latest additions (18 Aug 2026 — `main`, via PR #14 / #12)
 
 **Alice Blue's option chain is verified and works.** Per-strike `ltp`/`oi`/`pdc`/`pdoi`/`tradingsymbol`, plus `spotLTP`, `futLTP`, `lotsize`, `ticksize` and `pcr` on the wrapper, for **181 underlyings**, free. Payload shapes, the live sample and the three places vendor docs were wrong are in `tradestack/docs/aliceblue-api.md`; the reasoning is in `memory/aliceblue-option-chain-verified.md`. Three traps worth carrying here: the strikes are nested **one level deeper than every other Alice Blue endpoint** (`result[0].data`, not `result`); **`interval` is the strike count either side of the money, not the strike step**; and **do not derive spot by put-call parity** — parity recovers the *forward*, and measured 33 points above the `spotLTP` sitting in the same payload.
 
@@ -69,6 +71,18 @@ Branch tracking is unreliable as a "is it pushed?" signal — several branches h
 - **Changing expiry or underlying deleted a custom strategy**, silently and with no confirmation. `loadTemplateLegs` now refuses to write an empty result, and custom legs are *retargeted* — expiry-only keeps strikes, an underlying change re-expresses each leg by its offset from ATM in strike steps and its size in lots.
 - **Risk:Reward always read "N/A"** for every bounded strategy — so every spread, condor and butterfly, most of the recipe list. `maxLoss` is a signed P&L (`PayoffEngine` takes `Math.min` over the curve) but the guard was `maxLoss() > 0`, true only for a structure that cannot lose. **Both browser-only finds; neither was visible in code review.**
 - **Max Loss rendered `--₹8,250.00`** — a manual `-` prefix on an already-negative value. Both tiles now use `formatSignedINR`.
+
+### Latest additions (20 Aug 2026 — `feat/position-contract-facts`, unpushed)
+
+**Dev auth** (`b118b36`). `MP_DEV_AUTH=true` swaps `SecurityConfig` for `auth/DevAuthConfig`; details under *Local development* below, reasoning in `memory/dev-auth-bypasses-google-locally.md`. It had been running uncommitted for some days before this.
+
+**`PositionDto` carries three new things** (`bf9104b` backend, `9a206f9` frontend) — each one a fact only the vendor payload or the contract master holds, and none recoverable downstream:
+
+- **`Contract(strike, expiry, lotSize)`, one nullable object.** What lets anything reason about a position as a *structure* rather than as a mark: the intrinsic/extrinsic split needs the strike, time value needs the expiry, locating a group on its own payoff curve needs every leg's strike. **No extra lookup** — `BrokerService.resolveInstrument` was already calling `InstrumentService.find` on every row and keeping two fields of the `OptionInstrument` it got back. One object rather than three nullable fields, so "did the contract master resolve this row?" is asked once, the same both-or-neither rule as `underlying`/`underlyingLabel`. **Nothing reads it yet** — it is groundwork for the premium split and for feeding the chain into the builder.
+- **`priceKnown`** — false when nothing could quote the row, which is **not** the same as it being worth zero. Only Paytm can emit false (its marks come from a separate market-data call that returns empty); Kite and Alice Blue quote in the same payload as the position. Before this, an unquoted leg arrived as `ltp = 0` and premium left rendered a confident ₹0. Same rule as `MarginBasis.UNAVAILABLE`: a zero is a claim, and a consumer that cannot tell the two apart will render the claim. The frontend now shows an em dash per leg, and marks a *subtotal* containing one with `+?` — a subtotal cannot dash, or one unquoted leg would hide four real ones.
+- **`realisedPnl`** — the realised half of `pnl`, already included in it. Carried because `pnl` alone cannot be reconciled against the open position: `qty × (ltp − avgPrice)` is the unrealised half only, so the positions table pairing premium left against premium at entry is silently asserting this is zero. **It is zero across both live books today**, which is why the assumption survived; it stops being true the first time a leg is partly closed.
+
+Both new fields are **required** on the gateway constructor rather than defaulted — a default would let a mapper silently claim a price it never received. `TypedSnapshotRepository` derives `priceKnown` as `ltp > 0`, the cautious way round (the table cannot tell a zero mark from a missing one), and writes `realisedPnl` as 0 with no way to say so; anything that starts reading it from the snapshot path must add the column rather than trust it.
 
 ### Step 4 — what is actually built
 
@@ -89,13 +103,13 @@ Branch tracking is unreliable as a "is it pushed?" signal — several branches h
 
 **Verified against live data 15 Aug 2026, app connected to all three brokers.** What works end to end: `raw_capture` fresh for all three (`capture_run` all `CAPTURED`), `margin_snapshot` migrating exactly — every row matches its archive payload to the paisa — and `spot_snapshot` filling across 8 underlyings. Kite's `span + exposure + optionPremium = debits` holds to 0.0000 on live data; Alice Blue's is out by 1.6 paise, which is the documented float32 artefact, not a discrepancy.
 
-1. **`position_snapshot` is frozen at 11 Aug while the archive is current — fix first.** `raw_capture` positions are fresh (17:34 today, Kite 16 net legs) but the typed table still holds 11 Aug rows, so **`/api/risk/summary` computes everything on four-day-old positions** while `/api/positions` serves live. It is honest about it (`Freshness.STALE`) but will never self-correct: `SnapshotService.getPositions` only falls back live when the table is *empty*, and nothing migrates positions. Worse than uniformly stale — the page now mixes *today's* margins and spot with 11 Aug legs, so the margin allocation divides a current bill across old strikes. The fix is `MarginBackfillService` copied for positions (the parsers already exist), **and it must change `findLatestPositions` to `distinct on (connection_id) … order by captured_at desc, id desc`** — migrated rows carry per-connection timestamps, and the current `= max(captured_at)` form returns one broker and silently drops the rest (measured).
-2. **Verify Kite's basket margin against a live token.** `getCombinedMarginCalculation` is implemented in the gateway but deliberately unwired, with no schema, until one real response is seen. It logs `initial/final/benefit` on every call. Confirm `considerPositions=false` is the right reading and that `final.total` lands near the account's real `used`, then wire it and add the migration.
-3. **Push and merge the branch into `main`** — three backend commits (`c451a86`, `e3e82d4`, `67fab01`) and one frontend (`ddfe9fc`). None of the four is pushed; `git ls-remote` is the check, not branch tracking. The 15 Aug merge already took the earlier ten backend and seven frontend, so this is what is left.
-4. **Finish 4d:** the decay series. Margin & capital utilisation is **done** (D9 stub closed).
-5. `holding_snapshot` still has zero rows and no writer — the same backfill shape as positions.
-4. **Opportunistic, next time a broker is connected:** does Alice Blue forward unknown query parameters? If so `AliceBlueSessionService.loginUrl(state)` becomes a one-liner and `PendingConnect.consumeSolePendingFor` becomes dead code — Alice Blue is its only user.
-5. **Alice Blue's option chain is verified and works (18 Aug 2026).** Per-strike `ltp`/`oi` plus `spotLTP`, `futLTP` and `lotsize`, 181 underlyings, free. Shapes and traps in `tradestack/docs/aliceblue-api.md`; why, in `memory/aliceblue-option-chain-verified.md`. The probe (`broker/aliceblue/AliceBlueOptionChain` + `AliceBlueDebugController`, `GET /api/debug/aliceblue/option-chain`) is **committed (`67fab01`, unpushed) and deliberately not a feature** — when it graduates it belongs in `marketdata/` behind a canonical-underlying interface, and both classes should be deleted. Next: feed it into the strategy builder's invented premiums.
+1. **`position_snapshot` is frozen at 11 Aug while the archive is current — fix first.** `raw_capture` positions are fresh but the typed table still holds 11 Aug rows, so **`/api/risk/summary` computes everything on positions nine days old** while `/api/positions` serves live. It is honest about it (`Freshness.STALE`) but will never self-correct: `SnapshotService.getPositions` only falls back live when the table is *empty*, and nothing migrates positions. Worse than uniformly stale — the page mixes *today's* margins and spot with 11 Aug legs, so the margin allocation divides a current bill across old strikes. The fix is `MarginBackfillService` copied for positions (the parsers already exist), **and it must change `findLatestPositions` to `distinct on (connection_id) … order by captured_at desc, id desc`** — migrated rows carry per-connection timestamps, and the current `= max(captured_at)` form returns one broker and silently drops the rest (measured).
+2. **Fix NIFTY's hardcoded lot size** (`PayoffService.getStrategyMetadata`, 75 against the contract master's 65) by reading `InstrumentService`. Now nearly free: `PositionDto.Contract` already carries `lotSize` through from that lookup.
+3. **Feed the option chain into the strategy builder's invented premiums** — the one change that makes the builder's numbers real. `AliceBlueOptionChain` graduates out of `broker/aliceblue/` into `marketdata/`, behind a canonical-underlying interface beside `SpotPriceProvider`; delete it and `AliceBlueDebugController` at that point.
+4. **Verify Kite's basket margin against a live token.** `getCombinedMarginCalculation` is implemented in the gateway but deliberately unwired, with no schema, until one real response is seen. It logs `initial/final/benefit` on every call. Confirm `considerPositions=false` is the right reading and that `final.total` lands near the account's real `used`, then wire it and add the migration.
+5. **Finish 4d:** the decay series (`RiskService:66` still returns `List.of()`). Margin & capital utilisation is **done** (D9 stub closed).
+6. `holding_snapshot` still has zero rows and no writer — the same backfill shape as positions.
+7. **Opportunistic, next time a broker is connected:** does Alice Blue forward unknown query parameters? If so `AliceBlueSessionService.loginUrl(state)` becomes a one-liner and `PendingConnect.consumeSolePendingFor` becomes dead code — Alice Blue is its only user.
 
 ### The risk page — three things to settle before designing it
 
@@ -131,6 +145,7 @@ Trunk-based, short-lived branches; **the branch name is identical in both repos*
 
 ## Local development
 
+- **Google sign-in is off locally: `MP_DEV_AUTH=true`.** `auth/DevAuthConfig` replaces `SecurityConfig` (both `@ConditionalOnProperty` on that flag, opposite values), signs every request in as a fixed `DefaultOidcUser` inside a real `OAuth2AuthenticationToken`, and permits every path — so no `GOOGLE_CLIENT_ID`, redirect URI, network or allowlist entry is needed to run. The principal shape is identical to Google's, so `CurrentUser`, `AuthController` and CSRF are untouched. **`MP_DEV_USER_ID` is the Google `sub` and is load-bearing** — `broker_credential`, connection ids and session ownership all key off it; it is set to `110150585954237860845` in the user environment, the sub already in the local database, so the broker credentials there keep working. **It refuses to start unless `app.frontend-url` is loopback**, and `AllowedEmails` skips its empty-list startup failure while it is on. Both set with `setx`, so only new processes see them. Why, in `memory/dev-auth-bypasses-google-locally.md`.
 - **PostgreSQL 16 on port 5433** (`winget install PostgreSQL.PostgreSQL.16 --force`; the plain install 403s partway through EDB's CDN). Installed unattended, so the superuser password is winget's default `postgres`. Role/database `moneyplant`/`moneyplant`, owner `moneyplant`.
 - A pre-existing **PostgreSQL 17 holds 5432**, set to Manual and stopped to save memory. `Start-Service postgresql-x64-17` if anything wants it.
 - `MP_DB_URL=jdbc:postgresql://localhost:5433/moneyplant` and `MP_CREDENTIAL_KEY` (32 random bytes, base64) are in the **user** environment. **`setx` only affects new processes** — a shell or editor started before it was run still dies at startup naming `MP_CREDENTIAL_KEY`. That is the guard working.
@@ -389,7 +404,7 @@ Host-level gotchas (Caddy hostname matching, nginx squatting on `:80`, `401` fro
 | 3 | Login / real authentication (3a–3d) | ✅ done, deployed, live |
 | 4 | Deploy — OCI + Cloudflare DNS-only | ✅ done, folded into 3c |
 | 5 | Paytm Money integration | ✅ mostly done |
-| 6 | Strategy builder | ✅ interactive visual designer shipped (`feat/heuristic-margin-engine`) |
+| 6 | Strategy builder | ✅ interactive visual designer shipped, on `main` — but see the two wrong inputs above |
 | 7 | Persistence — users + broker links | partly pulled into Step 3 |
 | 8 | Analysis — technical, fundamental, decay, risk/reward, LLM | **unblocked 18 Aug 2026** — the chain feed exists; history and greeks still do not |
 

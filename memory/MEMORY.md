@@ -40,7 +40,10 @@ below.
 - [Positions margin comes from risk](positions-margin-comes-from-risk.md) — both the subtotal and the account total read `/api/risk/summary`, never `/api/margins`, or the column stops footing.
 - [Premium left is negated market value](premium-left-is-negated-market-value.md) — `-(qty × LTP)` from the *live* rows, additive at every level unlike margin, and never coloured by sign.
 - [Bottom-up margin engine](heuristic-margin-engine.md) — now the default per-instrument figure: SPAN scanned per expiry group + exposure per leg, calibrated to 8.6% over a real Zerodha bill.
+- [Dev auth bypasses Google locally](dev-auth-bypasses-google-locally.md) — `MP_DEV_AUTH` swaps sign-in for a fixed OIDC identity on loopback only; a second way in, never a second code path.
 - [Strategy builder architecture](strategy-builder-architecture.md) — visual multi-leg designer on `/app/payoff` with 1-click recipes, live simulation, target price probe, and what-if import.
+- [Positions carry their contract facts](positions-carry-their-contract-facts.md) — strike, expiry and lot size as one nullable object, free from a lookup already being made; nothing reads it yet, and that is deliberate.
+- [An unmeasured zero is a claim](an-unmeasured-zero-is-a-claim.md) — `priceKnown` makes "nothing could quote this" visible, because a consumer that cannot tell it from ₹0 will render the ₹0.
 
 ## State
 
