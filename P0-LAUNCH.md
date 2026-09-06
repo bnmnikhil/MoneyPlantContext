@@ -239,8 +239,8 @@ The second of the two headline findings above. Four parts:
 other user's `/api/positions` still returns within its timeout. This is the test that
 proves the cross-user fix.
 
-**All four parts done in code, 6 Sep 2026 — branch `p0/b1-instrument-load-lock`, commit
-`66ad28c`, unpushed. `mvnw clean test` 380 passing (main is 374).** The browser verification
+**All four parts merged to `main` 6 Sep 2026 (PR #17, commit `66ad28c`). `mvnw clean test`
+on merged `main` is 391 passing, 0 failures.** The browser verification
 above has *not* been run, which is why this is `[~]` and not `[x]`.
 
 - The lock is per broker (`loadLocks`, one monitor object each). The fast path reads
@@ -462,8 +462,10 @@ the stack.
 and confirm a stored broker credential decrypts with the backed-up key. An untested backup
 is not a backup.
 
-**In progress, 20 Aug 2026 — branch `p0/d1-backups`. Code written; the VM setup is not
-done.** Six files in `tradestack/deploy/`: `backup.sh`, `restore-verify.sh`,
+**Merged to `main` 6 Sep 2026 (PR #16). Code written; the VM setup is not done.** The
+scripts land on the VM at `/opt/moneyplant/src/tradestack/deploy/` with the next deploy,
+which is what the runbook's paths assume — so **deploy before doing the VM steps below.**
+Originally branch `p0/d1-backups`, commit `4fa5d01`. Six files in `tradestack/deploy/`: `backup.sh`, `restore-verify.sh`,
 `CredentialDecryptCheck.java`, the `moneyplant-backup` service and timer, and
 `backup.env.example`, plus a "Backups" section in `deploy/README.md` carrying the runbook.
 

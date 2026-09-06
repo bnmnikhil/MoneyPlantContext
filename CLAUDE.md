@@ -12,34 +12,43 @@
 
 **Live at `https://moneyplant.bonamnikhilbabu.in`.** Cloudflare DNS (grey cloud) → OCI static IP → Caddy → `/var/www/moneyplant` for the SPA, `:8080` for the API. Google sign-in, Postgres on the VM via `deploy/docker-compose.yml`, and the Kite prod redirect all work end to end. Steps 1, 2, 3 (a–d) and 5 are done and deployed.
 
-**`feat/heuristic-margin-engine` is merged and done.** Both PRs landed as merge commits, not squashes, so all three 18 Aug commits keep their identity on `main`:
+**Everything is merged. There is no work in flight, 6 Sep 2026.** Four PRs landed that day
+as merge commits, not squashes, so every commit keeps its identity on `main`:
 
 ```
-tradestack  main c9bb2d1 = origin/main   (PR #14: c451a86 → e3e82d4 → 67fab01)
-frontend    main a17e9f9 = origin/main   (PR #12: ddfe9fc)
-context     main 3d7b4b6 = origin/main
+tradestack  main 0b95e40 = origin/main
+frontend    main c8ab2ae = origin/main
+context     main         = origin/main
 ```
 
-1. **Step 6** — `c451a86` backend (the margin engine, the three strategy endpoints) and `ddfe9fc` frontend (the designer plus the four 18 Aug fixes).
-2. **The `broker/` package split (ADR 0027)** — `e3e82d4`, alone, on top of Step 6. **Git records 24 renames**, which is the whole point: staged together with a feature diff it degrades into a 64-file add-plus-delete. One import had to be un-rewritten for Step 6's commit and re-rewritten here (`PayoffService`'s `BrokerSession`) so that each commit compiles standalone.
-3. **The Alice Blue option-chain probe** — `67fab01`, two new classes plus `aliceblue-api.md`. Explicitly *not a feature* (see below).
+| PR | Branch | What |
+|---|---|---|
+| MoneyPlant #15 + Frontend #13 | `feat/position-contract-facts` | dev auth (`b118b36`), then the contract facts (`bf9104b` / `9a206f9`) — merged as a pair |
+| MoneyPlant #16 | `p0/d1-backups` | D1's scripts; `deploy/` only, touches nothing that builds |
+| MoneyPlant #17 | `p0/b1-instrument-load-lock` | B1, the per-broker load lock |
 
-**The merges happened on GitHub, and nothing here had fetched them.** For four days both local `main`s sat at the pre-merge commit while `origin/main` had moved on, and the local branch tips matched the remote exactly — so *branch tracking said "in sync" and every ahead/behind count in this file was wrong*. `git fetch --all` before reading any of them. This was the second time a git claim here went stale in the same way; the first is the tracking note below.
+**#15 and #17 conflicted, in the whole of `BrokerService.resolveInstrument`** — #15 rewrote
+its body to build a `Contract`, #17 rewrote the same body to drop `ensureLoaded` and its
+try/catch. Both were wanted and neither was dropped: the resolution is B1's structure with
+#15's payload. The textual merge also silently produced a test that would not compile,
+because B1's new fake gateway used the 7-arg `PositionDto` constructor #15 had replaced.
+**A merge that git reports as clean is not a merge that compiles** — run the gate on the
+merged result, not on the branches.
 
-**The current branch is `feat/position-contract-facts`**, off `main` in both repos, committed 20 Aug 2026 and **not pushed**:
+Before this, the earlier round (PR #14 / #12, 18 Aug) also sat merged on GitHub while
+nothing local had fetched them: for four days both local `main`s were behind while local
+branch tips matched the remote exactly, so *branch tracking said "in sync" and every
+ahead/behind count in this file was wrong*. `git fetch --all` before reading any of them.
+Its three commits — Step 6 `c451a86`/`ddfe9fc`, the `broker/` package split `e3e82d4`
+(ADR 0027, 24 recorded renames), and the Alice Blue option-chain probe `67fab01` — are all
+still individually on `main`.
 
-```
-tradestack  feat/position-contract-facts  2 ahead of main   b118b36 → bf9104b
-frontend    feat/position-contract-facts  1 ahead of main   9a206f9
-```
-
-It is the fourth layer — dev auth, then the position contract facts — described under *Latest additions (20 Aug 2026)* below.
 
 **Still uncommitted and never to be committed:** `hs_err_pid*.log` / `replay_pid*.log` JVM crash dumps in `tradestack/` (candidates for `.gitignore`), and `.mcp.json`. **Also left uncommitted deliberately: `tradestack/docs/architecture/backend-architecture.md`** — a 322-line generated report dated 15 Aug that documents the *pre-split* `broker/` package, so ADR 0027 falsified it before it was ever committed. Regenerate it or drop it; do not commit it as it stands.
 
 Branch tracking is unreliable as a "is it pushed?" signal — several branches have no upstream config, so `%(upstream:track)` prints blank for pushed and unpushed alike. Use `git for-each-ref --format='%(refname:short) %(upstream:track)' refs/heads/`, then confirm with `git ls-remote`.
 
-**Gates green, both measured with `mvnw clean test` on 20 Aug 2026:** `main` is **374 passing, 0 failures**, and `feat/position-contract-facts` is **385** — the 11 added are dev auth's own tests plus the mapper and fan-out coverage for the contract facts. Frontend `npm run build` (= `tsc -b && vite build`) passing on the branch. Build from a worktree, not the working tree, when the answer has to be about what deploys — `main`'s 374 was measured that way. The option-chain probe adds **no** tests, deliberately: there is nothing stable to assert about a vendor payload until it graduates into a feature.
+**Gates green on `main`, measured 6 Sep 2026 after the four merges:** `mvnw clean test` is **391 passing, 0 failures** (374 before the merges, +11 for the contract facts and dev auth, +6 for B1). Frontend `npm run build` (= `tsc -b && vite build`) passing on `main`. Build from a worktree, not the working tree, when the answer has to be about what deploys. The option-chain probe adds **no** tests, deliberately: there is nothing stable to assert about a vendor payload until it graduates into a feature.
 
 **Only `mvnw clean test`'s own summary line is a real test count.** Every other route has been wrong at least once. `target/surefire-reports/` is not cleaned between runs, so after the `broker/` package move summing `tests=` across those XMLs gave **430**, 42 of them stale duplicates of the pre-split `broker.*` session tests. Subtracting the orphans gave **388**, which this file then carried for two days — and the true figure was **374**. Do not sum the XMLs and do not subtract; run clean and read the `Tests run:` line under `Results:`.
 
@@ -72,7 +81,7 @@ Branch tracking is unreliable as a "is it pushed?" signal — several branches h
 - **Risk:Reward always read "N/A"** for every bounded strategy — so every spread, condor and butterfly, most of the recipe list. `maxLoss` is a signed P&L (`PayoffEngine` takes `Math.min` over the curve) but the guard was `maxLoss() > 0`, true only for a structure that cannot lose. **Both browser-only finds; neither was visible in code review.**
 - **Max Loss rendered `--₹8,250.00`** — a manual `-` prefix on an already-negative value. Both tiles now use `formatSignedINR`.
 
-### Latest additions (20 Aug 2026 — `feat/position-contract-facts`, unpushed)
+### Latest additions (20 Aug 2026 — merged to `main` 6 Sep via PR #15 / #13)
 
 **Dev auth** (`b118b36`). `MP_DEV_AUTH=true` swaps `SecurityConfig` for `auth/DevAuthConfig`; details under *Local development* below, reasoning in `memory/dev-auth-bypasses-google-locally.md`. It had been running uncommitted for some days before this.
 
