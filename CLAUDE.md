@@ -12,6 +12,12 @@
 
 **Live at `https://moneyplant.bonamnikhilbabu.in`.** Cloudflare DNS (grey cloud) → OCI static IP → Caddy → `/var/www/moneyplant` for the SPA, `:8080` for the API. Google sign-in, Postgres on the VM via `deploy/docker-compose.yml`, and the Kite prod redirect all work end to end. Steps 1, 2, 3 (a–d) and 5 are done and deployed.
 
+**`main` was deployed 6 Sep 2026** — `tradestack 0b95e40`, `frontend c8ab2ae`. Confirmed
+from outside the VM only: `GET /` returns 200 and `GET /api/me` returns 401, which is the
+runbook's success signal. **Not confirmed:** that Flyway actually applied V5–V8 (see
+below), and nothing on the host has been read — no log line, no schema query, no
+`systemctl` output.
+
 **Everything is merged. There is no work in flight, 6 Sep 2026.** Four PRs landed that day
 as merge commits, not squashes, so every commit keeps its identity on `main`:
 
@@ -52,7 +58,13 @@ Branch tracking is unreliable as a "is it pushed?" signal — several branches h
 
 **Only `mvnw clean test`'s own summary line is a real test count.** Every other route has been wrong at least once. `target/surefire-reports/` is not cleaned between runs, so after the `broker/` package move summing `tests=` across those XMLs gave **430**, 42 of them stale duplicates of the pre-split `broker.*` session tests. Subtracting the orphans gave **388**, which this file then carried for two days — and the true figure was **374**. Do not sum the XMLs and do not subtract; run clean and read the `Tests run:` line under `Results:`.
 
-**`main` carries an unapplied migration.** `V8__spot_snapshot.sql` is new, and V5–V7 had still only ever run locally, so the next prod boot runs four migrations in sequence. All four are additive — `create table`, `create index`, `alter table … add column`; no drop, delete or truncate.
+**V5–V8 ran in production for the first time at the 6 Sep deploy — and that has not been verified.** All four are additive, checked statement by statement in the SQL rather than taken on trust: 4 × `create table`, 6 × `create index`, 2 × `alter table … add column`, and zero `drop` / `delete` / `truncate` / `alter column` / `rename`. **Confirm before relying on any of it**, because the failure mode is silent: with `flyway-core` but no `spring-boot-flyway` the app boots perfectly, logs nothing about Flyway, and the schema stays empty until a query fails.
+
+```
+docker exec -it moneyplant-postgres psql -U moneyplant -d moneyplant   -c "select version, success from flyway_schema_history order by installed_rank"
+```
+
+**One consequence is already load-bearing.** `V5` created `position_snapshot` empty, so the 6 Sep risk request found an empty table, fell back live, and **seeded it with 6 Sep rows**. From 7 Sep the fallback never fires again and production's risk page is frozen on those rows. That is P0 item **A1**, and it is why A1 is now the first thing to do.
 
 ### Latest additions (15 Aug 2026 — `feat/heuristic-margin-engine`)
 

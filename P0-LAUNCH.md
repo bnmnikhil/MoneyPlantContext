@@ -109,9 +109,12 @@ moment there is a second user. → **B1**
 | F1 | Allowlist in an env var needs a restart | F · onboarding | `[ ]` |
 | F2 | Onboarding note for invited users | F · onboarding | `[ ]` |
 
-**Suggested order: D1, B1, C1 first** — the highest risk-reduction per hour, and the two
-that cannot be fixed after they bite. Then Gate A (the numbers), the rest of Gate B, Gate
-C, Gate E in parallel with any of them, then D2–D6 and Gate F before the first invite.
+**Order, revised 6 Sep 2026 after the deploy.** B1 is merged; D1 is merged but unverified.
+**A1 is now first** — the deploy seeded `position_snapshot` in production, so from 7 Sep the
+risk page is permanently frozen on 6 September positions, and the fix is one condition.
+Then finish **D1** on the VM (its scripts are deployed; only the PAR and the restore-verify
+remain), then **C1**. Then the rest of Gate A, the rest of Gate B, Gate C, Gate E in
+parallel with any of them, then D2–D6 and Gate F before the first invite.
 
 ---
 
@@ -138,6 +141,15 @@ and moves to **D6**. When it lands it *must* change `findLatestPositions` to
 
 **Verify:** with pre-today rows in `position_snapshot`, hit `/api/risk/summary` and assert
 `freshness` is `LIVE` and its position count matches `/api/positions`. Today they diverge.
+
+**The 6 Sep deploy armed this in production, and it starts biting 7 Sep.** `V5` created
+`position_snapshot` empty on the VM, so on deploy day the table was empty, the live
+fallback fired, the risk page read `LIVE` — **and it seeded the table with 6 Sep rows**
+(`raw = "{}"`). From 7 Sep `findLatestPositions` finds those rows, they are not today's, and
+the fallback never fires again because the table is no longer empty. **Production's risk
+page is now frozen on 6 September positions, permanently, until this item is fixed.** The
+local symptom (frozen at 11 Aug) and the production one now have the same cause and the
+same one-condition fix. This moves A1 from "worst of Gate A" to the first thing to do.
 
 ### `[ ]` A2 — NIFTY lot size is wrong by 15%
 
@@ -435,6 +447,13 @@ deploy verification list.
 
 **Verify:** the production log names Google OIDC as the active mode on every boot.
 
+**Partial evidence, 6 Sep 2026, from outside the VM.** An unauthenticated `GET /api/me`
+against production returned **401**. Had `MP_DEV_AUTH` been on, `DevAuthConfig` permits
+every path and signs every caller in as the fixed principal, so that call would have
+returned 200 with a user. That is a real negative signal but it is not the positive one
+this item asks for, and the direct checks (`grep MP_DEV_AUTH /etc/moneyplant/moneyplant.env`,
+the boot log) have **not** been run. Item stays open.
+
 ### `[ ]` C7 — Stale "MUST NOT SHIP AS-IS" comment
 
 `auth/SecurityConfig.java:118-119` reads *"MUST NOT SHIP AS-IS. On a reachable host an
@@ -502,6 +521,10 @@ done with the OCI CLI, not the console; the runbook's console steps are equivale
 required.
 
 **What is left:**
+
+**The scripts are on the VM as of the 6 Sep deploy**, at
+`/opt/moneyplant/src/tradestack/deploy/`, which is where every path in the runbook expects
+them. Steps 2-4 below are now unblocked.
 
 1. **The write-only PAR** — the one piece of setup still outstanding, because minting it
    produces the credential itself. Bucket-level, `AnyObjectWrite`, listing **denied**:
