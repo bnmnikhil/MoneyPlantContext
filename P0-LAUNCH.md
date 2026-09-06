@@ -80,7 +80,7 @@ moment there is a second user. → **B1**
 | A5 | Payoff engine: duplicate breakeven, window floor | A · numbers | `[ ]` |
 | A6 | Hide the Strategy Builder behind a flag | A · numbers | `[ ]` |
 | A7 | Label the SPAN estimate and the unbounded flags | A · numbers | `[ ]` |
-| B1 | `ensureLoaded` stalls every user | B · resilience | `[ ]` |
+| B1 | `ensureLoaded` stalls every user | B · resilience | `[~]` |
 | B2 | No React error boundary → blank white page | B · resilience | `[ ]` |
 | B3 | No fetch timeout → infinite skeleton | B · resilience | `[ ]` |
 | B4 | Failed queries render confident `₹0` | B · resilience | `[ ]` |
@@ -222,7 +222,7 @@ a fact when it is an estimate.
 
 ## Gate B — It stays up, and it fails visibly
 
-### `[ ]` B1 — `ensureLoaded` stalls every user
+### `[~]` B1 — `ensureLoaded` stalls every user
 
 The second of the two headline findings above. Four parts:
 
@@ -238,6 +238,31 @@ The second of the two headline findings above. Four parts:
 **Verify:** two browser sessions as two users; make Alice Blue's master hang; confirm the
 other user's `/api/positions` still returns within its timeout. This is the test that
 proves the cross-user fix.
+
+**All four parts done in code, 6 Sep 2026 — branch `p0/b1-instrument-load-lock`, commit
+`66ad28c`, unpushed. `mvnw clean test` 380 passing (main is 374).** The browser verification
+above has *not* been run, which is why this is `[~]` and not `[x]`.
+
+- The lock is per broker (`loadLocks`, one monitor object each). The fast path reads
+  `loadedOn` outside the lock, so **the three publishing writes in `load` must stay in
+  order** — `loadedOn` last, after both index maps; a comment says so and reordering them
+  reintroduces a visibility bug the tests will not catch.
+- The load is hoisted into `BrokerService.warmContractMasters`, deduplicated **by broker**
+  so two Kite accounts share one attempt.
+- A failed load is negative-cached for 60s (`InstrumentService.FAILURE_BACKOFF`) and then
+  throws `InstrumentMasterUnavailableException` rather than returning normally — a caller
+  whose `find` came back empty would read it as "the master does not list this symbol",
+  which is a far more confident claim than "the master never loaded".
+- The failure log is `warn`. (The tracker said `BrokerService.java:152`; line numbers had
+  drifted and the line meant is the one in `resolveInstrument`.)
+
+**What the tests do and do not prove.** `aSlowBrokerDoesNotBlockAnotherBrokersLoad` was run
+against the old `synchronized` method and **fails there**, timing out after 5s waiting for
+Kite — so the headline claim is measured, not assumed. But
+`aDeadContractMasterCostsOneAttemptForTheWholeBook` would still pass with the hoist
+reverted, because the negative cache alone bounds the attempt count: it pins the outcome,
+not the attribution. Neither test exercises **two users**, which is what the browser step
+above is for.
 
 ### `[ ]` B2 — No React error boundary
 
@@ -465,9 +490,24 @@ rehearsal found one bug nothing else would have: Postgres's `encode(bytea,'base6
 at 76 characters**, so a long ciphertext split across lines, every row after it shifted, and
 the check reported three spurious failures out of six. The extraction is hex now.
 
-**What is left, all of it on the VM:**
+**Object Storage is set up, 6 Sep 2026.** Bucket `moneyplant-backups`, private, standard
+tier, in the **root** compartment (where the A1 VM lives), namespace `axz4vyr5vyas`, region
+`ap-hyderabad-1`. Lifecycle rule `delete-moneyplant-backups-after-30-days` is applied and
+enabled, prefix `moneyplant/`. **The rule will actually run** — a lifecycle policy is inert
+without an IAM grant to the service, and `Allow service objectstorage-ap-hyderabad-1 to
+manage object-family in tenancy` was confirmed present rather than assumed. All three were
+done with the OCI CLI, not the console; the runbook's console steps are equivalent, not
+required.
 
-1. Create the bucket, the write-only PAR, and the 30-day lifecycle rule.
+**What is left:**
+
+1. **The write-only PAR** — the one piece of setup still outstanding, because minting it
+   produces the credential itself. Bucket-level, `AnyObjectWrite`, listing **denied**:
+   `oci os preauth-request create --namespace axz4vyr5vyas --bucket-name moneyplant-backups
+   --name moneyplant-vm-write --access-type AnyObjectWrite --bucket-listing-action Deny
+   --time-expires 2027-09-06T00:00:00Z`. Prefix the returned `access-uri` with
+   `https://objectstorage.ap-hyderabad-1.oraclecloud.com` to get `MP_BACKUP_PAR_URL`.
+   The URL is shown once and is itself the credential; calendar the expiry.
 2. Install `backup.env` and the two units, enable the timer, run it once by hand.
 3. **Run `restore-verify.sh` against an object downloaded from Object Storage** — not the
    local copy, which tests the dump but not the upload — with the off-VM copy of
