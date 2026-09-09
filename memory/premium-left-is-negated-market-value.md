@@ -1,6 +1,6 @@
 ---
 name: premium-left-is-negated-market-value
-description: "Premium left on the positions table is -(qty x LTP) computed from LIVE positions, not the risk report, and it is additive at every level unlike margin"
+description: "Premium left is -(qty x LTP) for known LIVE options only; non-options are excluded and missing quotes or instrument types make totals incomplete"
 metadata:
   type: decision
 ---
@@ -8,15 +8,28 @@ metadata:
 Decided 15 Aug 2026, adding a Premium column to `/app/positions` alongside the
 margin column from [[positions-margin-comes-from-risk]].
 
-**"Premium left" is `-(qty x ltp)`, summed.** Positive is a net credit — what you
-keep if every leg expires worthless; negative is a net debit. `qty` is signed and
+**"Premium left" is `-(qty x ltp)`, summed over CE/PE options only.** Positive is
+net short option value; negative is net long option value. It includes intrinsic
+and time value, so it is not guaranteed remaining profit or time decay. `qty` is signed and
 **already includes the lot** (a two-lot short of a 75-lot contract arrives as
 -150), so there is no lot size to multiply by and doing so would overstate every
 figure by that lot size. The column shows it beside the same figure at entry
-(`-(qty x avgPrice)`); the gap between the two is exactly the lifetime P&L, in
-the direction **entry - left**, because a credit decaying towards zero is the
-profit. Verified live: Alice Blue `24,360 - 62,928 = -38,568`, matching its P&L
-cell to the rupee.
+(`-(qty x avgPrice)` for quantity still open); **entry - left** is the unrealised
+P&L. Realised P&L from closed quantity is separate. The original live Alice Blue
+sample had no realised P&L: `24,360 - 62,928 = -38,568` matched its total P&L.
+
+**Revised 6 Sep 2026: premium is options-only.** Futures and equity must not
+contribute their notional market values to an option-premium total. Their premium
+cells show a dash, while their positions and P&L remain visible. Unknown instrument
+types also show a dash and make a total incomplete; the browser never guesses a
+type from the symbol. `priceKnown: false` excludes a price even if it is nonzero.
+No valued options means a dash, not zero. A known zero quote is a real zero, and a
+closed option has zero remaining premium without needing a quote.
+
+**Incomplete totals are not a floor.** Missing shorts add and missing longs
+subtract. Subtotals show their known amount with `?`, and suppress the entry
+comparison and percentage of margin until complete. The same rules apply to
+legs, CE/PE groups, underlying groups and account totals on desktop and mobile.
 
 **It is computed from the live `/api/positions` rows, not from the risk report,**
 even though the risk report carries `marketValue` which is the same quantity

@@ -22,6 +22,23 @@ exists because every wrong claim this project has carried was a claim nobody re-
 
 ---
 
+## Current release status — 9 Sep 2026
+
+- Release branch: `feat/payoff-chart-range` in context, frontend and tradestack.
+- Scope: option-only premium totals; futures payoff limits and mixed-expiry labels;
+  optional same-account holdings; index +/-10% / stock +/-15% chart defaults,
+  presets, custom range and Reset. Live holdings details now come from the same
+  response as the displayed combined curve.
+- Snapshot features, backfills and the canonical holding identity persistence
+  finding are deferred by owner instruction. This supersedes the older sequencing
+  below for this release; it does not mark A1 or D6 complete. Existing snapshot
+  risk freshness remains a known limitation, not a verified live-data feature.
+- Backend verification: `mvn clean test`, 414 passed (9 Sep). Frontend final
+  regression/build verification and native Chrome checks are being completed.
+- Deployment: pending commit/push and SSH access; no production change yet.
+  Keep local MCP configuration, JVM crash dumps and the stale generated architecture
+  report out of the release.
+
 ## What P0 means
 
 MoneyPlant is already live and works for its author. P0 is not "make it run" — it is

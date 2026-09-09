@@ -10,6 +10,24 @@
 
 ## Where things stand
 
+**Current scope, 9 Sep 2026:** live positions, holdings, premium calculations and
+payoff usability are the release focus. Snapshot feature improvements, backfills,
+and the holding-identity snapshot round-trip review finding are deferred by the
+owner. Existing snapshot-backed risk inputs remain unchanged and are not certified
+as live by this release. `P0-LAUNCH.md` carries release verification/deployment status.
+
+**Local chart controls (9 Sep 2026):** live and builder payoff charts default to
+spot +/-10% for indices and +/-15% for stocks, widened for strikes/breakevens.
+Presets, custom limits and Reset change only the view; summaries retain global
+limits. Breakevens include roots outside the API sample window. See
+`memory/payoff-ranges-and-limits.md`.
+
+**Local feature (8 Sep 2026): optional holdings in live payoff.** `/api/payoff/{underlying}`
+accepts `includeHoldings=false` and optional `holdingQty`; matching same-account
+shares use purchase cost and appear as EQ legs. The UI exposes a toggle and share
+quantity, with explicit unavailable/overlap handling. Builder imports preserve
+shares and hide unsupported holdings margin estimates. See `memory/payoff-holdings.md`.
+
 **Live at `https://moneyplant.bonamnikhilbabu.in`.** Cloudflare DNS (grey cloud) → OCI static IP → Caddy → `/var/www/moneyplant` for the SPA, `:8080` for the API. Google sign-in, Postgres on the VM via `deploy/docker-compose.yml`, and the Kite prod redirect all work end to end. Steps 1, 2, 3 (a–d) and 5 are done and deployed.
 
 **`main` was deployed 6 Sep 2026** — `tradestack 0b95e40`, `frontend c8ab2ae`. Confirmed
@@ -18,7 +36,7 @@ runbook's success signal. **Not confirmed:** that Flyway actually applied V5–V
 below), and nothing on the host has been read — no log line, no schema query, no
 `systemctl` output.
 
-**Everything is merged. There is no work in flight, 6 Sep 2026.** Four PRs landed that day
+**Historical baseline, 6 Sep 2026 (before the current payoff work).** Four PRs landed that day
 as merge commits, not squashes, so every commit keeps its identity on `main`:
 
 ```
@@ -100,7 +118,7 @@ docker exec -it moneyplant-postgres psql -U moneyplant -d moneyplant   -c "selec
 **`PositionDto` carries three new things** (`bf9104b` backend, `9a206f9` frontend) — each one a fact only the vendor payload or the contract master holds, and none recoverable downstream:
 
 - **`Contract(strike, expiry, lotSize)`, one nullable object.** What lets anything reason about a position as a *structure* rather than as a mark: the intrinsic/extrinsic split needs the strike, time value needs the expiry, locating a group on its own payoff curve needs every leg's strike. **No extra lookup** — `BrokerService.resolveInstrument` was already calling `InstrumentService.find` on every row and keeping two fields of the `OptionInstrument` it got back. One object rather than three nullable fields, so "did the contract master resolve this row?" is asked once, the same both-or-neither rule as `underlying`/`underlyingLabel`. **Nothing reads it yet** — it is groundwork for the premium split and for feeding the chain into the builder.
-- **`priceKnown`** — false when nothing could quote the row, which is **not** the same as it being worth zero. Only Paytm can emit false (its marks come from a separate market-data call that returns empty); Kite and Alice Blue quote in the same payload as the position. Before this, an unquoted leg arrived as `ltp = 0` and premium left rendered a confident ₹0. Same rule as `MarginBasis.UNAVAILABLE`: a zero is a claim, and a consumer that cannot tell the two apart will render the claim. The frontend now shows an em dash per leg, and marks a *subtotal* containing one with `+?` — a subtotal cannot dash, or one unquoted leg would hide four real ones.
+- **`priceKnown`** — false when nothing could quote the row, which is **not** the same as it being worth zero. Only Paytm can emit false (its marks come from a separate market-data call that returns empty); Kite and Alice Blue quote in the same payload as the position. Before this, an unquoted leg arrived as `ltp = 0` and premium left rendered a confident ₹0. The frontend excludes missing quotes and unresolved instrument types from premium, showing a dash when no options can be valued and `?` beside a partial total. Missing longs subtract and missing shorts add, so a partial premium is not a floor. Futures and equity do not contribute option premium. See `memory/premium-left-is-negated-market-value.md`.
 - **`realisedPnl`** — the realised half of `pnl`, already included in it. Carried because `pnl` alone cannot be reconciled against the open position: `qty × (ltp − avgPrice)` is the unrealised half only, so the positions table pairing premium left against premium at entry is silently asserting this is zero. **It is zero across both live books today**, which is why the assumption survived; it stops being true the first time a leg is partly closed.
 
 Both new fields are **required** on the gateway constructor rather than defaulted — a default would let a mapper silently claim a price it never received. `TypedSnapshotRepository` derives `priceKnown` as `ltp > 0`, the cautious way round (the table cannot tell a zero mark from a missing one), and writes `realisedPnl` as 0 with no way to say so; anything that starts reading it from the snapshot path must add the column rather than trust it.
@@ -386,7 +404,7 @@ Routing: `/` landing, `/login`, then `AuthGuard` → `AppShell` → `/app`, `/ap
 
 ## Payoff engine
 
-Pure computation in `PayoffEngine.compute(List<Leg>)`: 201 samples, ±10% pad beyond strike range, linear interpolation for breakevens, tail-slope heuristic for unbounded flags. `PayoffService` maps positions → legs via `InstrumentService` and groups by `(connectionId, underlying)`.
+Pure computation in `PayoffEngine.compute(List<Leg>, currentSpot)`: 201 regular samples plus exact option strikes, futures/equity entry prices and current spot. Futures' placeholder zero strikes do not set the chart range. Breakevens inside the window use linear interpolation and are deduplicated; chart segments are linear and P&L points are rounded to paise. Unlimited flags come from the exact net call/future/equity quantity at the upper tail. Finite extrema include spot zero even when it is off-screen. `PayoffService` maps positions → legs via `InstrumentService` and groups by `(connectionId, underlying)`. See `memory/payoff-ranges-and-limits.md`.
 
 ### No cross-broker merging (decided 29 Jul)
 
@@ -394,12 +412,10 @@ Pure computation in `PayoffEngine.compute(List<Leg>)`: 201 samples, ±10% pad be
 
 **Legs are grouped per broker, not per underlying** — because **spreads only get margin benefit inside a single account**, so a strategy deliberately split across brokers is financially irrational and the merged curve would rarely have anything to merge. A curve whose legs span accounts corresponds to no real margin position. Cross-broker net exposure is a later "Combined" toggle if a real book needs it; the aggregation value lives in the positions table.
 
-### Open correctness bugs
+### Remaining payoff limitations
 
-- **`unboundedProfit`/`unboundedLoss` use tail slope, not structure.** Should derive from `netCallQty`/`netPutQty`. The heuristic misreads flat tails and books where legs offset near the window edge.
-- **Breakeven detection uses `Math.signum(prev) != Math.signum(cur)`.** `signum(0) == 0`, so a sample landing exactly on zero registers as two crossings and emits a duplicate breakeven.
-- **The window never starts at 0** — `lo = max(0, minStrike - span*0.5 - maxStrike*0.10)`. For long puts the true max profit (at spot=0) is off-screen, so `maxProfit` is understated.
-- **Payoff points carry float noise** (`-20339.999999999985`) — invisible on a chart, visible in a tooltip. Round at the DTO boundary (ADR 0018).
+- **Different expiries still share one terminal-price scenario.** The live page labels this explicitly, lists the dates and qualifies its maximum-profit/loss cards. It does not reprice later contracts at the first expiry, and a displayed scenario loss is not a guaranteed cap across those dates.
+- **Breakevens are found only inside the plotted range.** Deeply off-screen crossings still require broader analytical root finding.
 
 ---
 
