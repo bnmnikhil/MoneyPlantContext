@@ -34,9 +34,11 @@ figure nothing could estimate. This is that idea named.
 
 **Rendering it: a leaf dashes, a subtotal marks itself.** A single leg shows an
 em dash. A *subtotal* must not — one unquoted leg among five would hide four
-real ones behind a dash — so it carries `unpricedLegs` and appends `+?`, which
-says the total is a floor and which direction it is wrong in. Same marker and
-same reasoning as `MarginFigure`'s unattributed legs.
+real ones behind a dash. It carries `unpricedLegs` and appends `?` to the known
+amount. Corrected 6 Sep 2026: option premium is signed, so missing longs subtract
+and missing shorts add; a partial premium total is not a floor. When no options
+can be valued, the subtotal also dashes. Unresolved instrument types count as
+unknown, but known futures and equity are excluded from option premium entirely.
 
 **When it must be derived, derive it cautiously.** `TypedSnapshotRepository`
 cannot distinguish a stored mark of zero from a mark never obtained, so it

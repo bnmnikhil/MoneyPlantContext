@@ -28,7 +28,10 @@ below.
 
 ## Decisions
 
+- [Holdings in payoff](payoff-holdings.md) — optional same-account shares at purchase cost, with quantity validation and overlap protection.
+
 - [No cross-broker merging](no-cross-broker-merging.md) — identical instruments at two brokers stay two legs; spreads only earn margin benefit inside one account.
+- [Payoff ranges and limits](payoff-ranges-and-limits.md) — futures use entry-price anchors; exact quantities determine unlimited tails, and mixed expiries remain an explicitly labelled scenario.
 - [P&L has two columns, always](pnl-has-two-columns.md) — brokers disagree on what "P&L" means, so `PositionDto` fixes both and each gateway fills the half its broker withholds.
 - [The app owns its symbols](app-owns-its-symbols.md) — broker symbols live only inside that broker's adapter; the symbol-model doc's middle path was overruled in favour of the full model.
 - [Sessions persist, encrypted](sessions-persist-encrypted.md) — driven by Paytm having no refresh token and a password+OTP login every time.
@@ -38,7 +41,7 @@ below.
 - [Margin attribution model](margin-attribution-model.md) — allocating the broker's real bill by each leg's worst scenario; **demoted to a fallback 17 Aug 2026** because the shares moved whenever anything else in the account did.
 - [Snapshot writers migrate the archive](snapshot-writers-migrate-the-archive.md) — margin_snapshot is written from raw_capture, never a live fallback, and its "latest" query cannot copy the positions one.
 - [Positions margin comes from risk](positions-margin-comes-from-risk.md) — both the subtotal and the account total read `/api/risk/summary`, never `/api/margins`, or the column stops footing.
-- [Premium left is negated market value](premium-left-is-negated-market-value.md) — `-(qty × LTP)` from the *live* rows, additive at every level unlike margin, and never coloured by sign.
+- [Premium left is negated market value](premium-left-is-negated-market-value.md) — `-(qty × LTP)` for known *live options* only; missing types or quotes make totals incomplete, and non-options are excluded.
 - [Bottom-up margin engine](heuristic-margin-engine.md) — now the default per-instrument figure: SPAN scanned per expiry group + exposure per leg, calibrated to 8.6% over a real Zerodha bill.
 - [Dev auth bypasses Google locally](dev-auth-bypasses-google-locally.md) — `MP_DEV_AUTH` swaps sign-in for a fixed OIDC identity on loopback only; a second way in, never a second code path.
 - [Strategy builder architecture](strategy-builder-architecture.md) — visual multi-leg designer on `/app/payoff` with 1-click recipes, live simulation, target price probe, and what-if import.
