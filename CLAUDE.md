@@ -250,6 +250,16 @@ The `Map<String,String> tokens` deliberately absorbs per-broker token shapes. **
 
 ### Sessions and credentials in Postgres
 
+**The application login expires at midnight IST.** This is the Google-authenticated
+servlet session, distinct from every broker session below. `EndOfDaySessionFilter`
+stores the next midnight on the first authenticated request and invalidates the
+session on the first request at or after that instant; `/api/**` then answers 401
+and the SPA redirects to `/login`. The servlet inactivity timeout is 24 hours so
+the old 30-minute default cannot end a same-day login early, and polling cannot
+carry it into the next day. A foreground tab detects midnight within the
+session-status poll's 60-second interval. Manual logout remains immediate. See
+`memory/application-sessions-expire-at-midnight.md`.
+
 **Sessions persist, encrypted** (ADR 0025). `PostgresSessionStore` replaced `FileSessionStore` and its plaintext `~/.moneyplant/sessions.json`, both **deleted**. The seam sits at `ConnectionService`, not in `broker/paytm`, because that service is already the single `connectionId`-keyed chokepoint and naming a broker there would break "a new broker needs zero changes". Why it exists at all: Paytm's login is a password *and* an OTP every time, issuing three access tokens and **no refresh token**, so there is no renewal path — while Kite and Alice Blue re-auth is one button.
 
 - Only sessions created **today in IST** are restored — stricter than any broker's real expiry, because restoring a dead token gives a confusing 401 while expiring early costs a login the user was making anyway. A restart across an IST date boundary costs a login, by design.
