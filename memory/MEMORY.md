@@ -28,6 +28,8 @@ below.
 
 ## Decisions
 
+- [Application sessions expire at midnight](application-sessions-expire-at-midnight.md) — the Google-authenticated web session has an absolute midnight-IST boundary; polling cannot extend it into the next day.
+
 - [Holdings in payoff](payoff-holdings.md) — optional same-account shares at purchase cost, with quantity validation and overlap protection.
 
 - [No cross-broker merging](no-cross-broker-merging.md) — identical instruments at two brokers stay two legs; spreads only earn margin benefit inside one account.
