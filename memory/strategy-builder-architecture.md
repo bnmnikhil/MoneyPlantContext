@@ -18,7 +18,7 @@ Traders need to design, simulate, and analyze multi-leg options strategies (e.g.
 - Hosted directly under `/app/payoff` with a clean tab switcher:
   - **`[ Live Positions ]`**: Existing view plotting open F&O positions from connected broker accounts.
   - **`[ Strategy Builder ]`**: Interactive visual designer for custom and template-based multi-leg strategies.
-- **What-If Bridge:** Added an **"Open in Strategy Builder"** button on any live position payoff curve to preload open legs directly into the builder for hedging experimentation (e.g., evaluating the impact of adding a protective OTM wing to an existing naked position).
+- **What-If Bridge:** Added an **"Open in Strategy Builder"** button on any live position payoff curve to preload open legs directly into the builder for hedging experimentation (e.g., evaluating the impact of adding a protective OTM wing to an existing naked position). The builder also has its own **"Add existing positions"** account/underlying selector, so this import does not require leaving the tab.
 
 ### 2. Pre-Built Strategy Recipes
 
@@ -49,6 +49,12 @@ Traders need to design, simulate, and analyze multi-leg options strategies (e.g.
 - **Leg Steppers:** $+/-$ buttons for strikes and lots, Buy/Sell pills, CE/PE toggles, and individual leg enable/disable checkboxes.
 - **Real-Time Visual Payoff Chart:** Gradient-filled P&L area chart, zero baseline, breakevens, and live spot marker.
 - **Target Spot Inspector:** Interactive slider across $\pm 10\%$ of spot showing expected P&L at expiry at any chosen underlying price.
+
+### 5. Position Account and Market-Data Source
+
+- An imported baseline is scoped to one `(connectionId, underlying)` and remains immutable.
+- The option-chain source is selected separately from that position account. A Kite or Paytm baseline may use Alice Blue chain data; quantities, costs and margin grouping remain with the original account.
+- Both connections must belong to the signed-in user. This is market-data reuse, not cross-broker position merging or order routing.
 
 ---
 
@@ -87,19 +93,13 @@ underlying change re-expresses each leg by its offset from ATM **in strike
 steps** and its size **in lots**, which is what the structure actually was. A
 2-step-wide condor stays a 2-step-wide condor.
 
-**Open — leg premiums are invented, and that is the real ceiling.** Nothing in
-the stack can quote a single strike, so templates seed a placeholder price.
-This is downstream of the same blocker as everything else:
-[[analysis-step-is-the-product]] and
-[[free-market-data-options-researched]]. Until a chain feed lands, every figure
-the builder produces is conditional on a made-up premium — which matters far
-more than it looks, because the margin engine is calibrated to 4% and is being
-fed guesses. Verifying Alice Blue's chain is the unblock.
+**Resolved — leg premiums now come from a quote snapshot.** Recipes and manually
+added legs are constructed from actual option-chain rows. An unavailable quote
+creates an explicitly unpriced draft instead of an invented premium. Alice Blue
+is currently the only `OptionChainProvider` implementation.
 
-**Open — metadata is hardcoded where a contract master already exists.** Lot
-sizes, strike steps and default spots are literals in `getStrategyMetadata`,
-and `InstrumentService` already loads the real ones. The expiry list is worse:
-the next four **Thursdays**, the same list for every underlying, on the system
-default zone rather than IST, with no holiday handling — and stock options are
-monthly-only, so four weekly expiries for RELIANCE describe contracts that do
-not exist.
+**Resolved for builder decisions — metadata comes from the catalogue, provider
+and contract master.** Underlyings are searched from the exchange catalogue,
+expiries come from the selected chain provider, and lot sizes come from verified
+listed contracts. The legacy metadata envelope remains only for recipe summaries
+and compatibility; it no longer chooses contracts or sizes positions.
