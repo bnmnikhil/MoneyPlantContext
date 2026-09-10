@@ -62,5 +62,7 @@ below.
 
 ## Reference
 
+- [Strategy builder implementation plan](../STRATEGY-BUILDER-IMPLEMENTATION.md) — proposed Sensibull-style workflow with catalogue-backed stock search, real option-chain leg selection, and comparison against existing positions; documented 10 Sep 2026; phases A-F implemented the same day (tradestack 20b79e2, frontend c52fb37), phase G documentation still open.
+
 - [Free market data options, researched](free-market-data-options-researched.md) — Upstox gives per-strike IV and greeks for ₹0; NSE direct is blocked from the VM and its terms do not cover a product.
 - [NSE SPAN margin parameters](nse-span-margin-parameters.md) — the published scan ranges, exposure rates and sixteen scenarios, with the two σ inputs this stack cannot compute.
