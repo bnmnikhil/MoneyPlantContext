@@ -393,6 +393,39 @@ The anti-corruption rule for *types*, extended to *names* — which had leaked m
 
 ## Frontend
 
+**UX shell (11 Sep 2026, local):** authenticated pages use a full-width navy/teal
+workspace with top navigation (Overview, Positions, Holdings, Payoff, Risk), a
+broker dropdown, and account/settings menus. Below 1024px navigation uses five
+bottom tabs. The header's Live indicator describes broker sessions, not data
+freshness. The four `UX mockup/` PNGs are the selected visual reference;
+`UX-REDESIGN.md` records resumable checkpoints and visual-verification status.
+
+**Overview layout (11 Sep 2026, local):** `/app` now follows `dashboard.png` with
+a horizontal summary strip, paired P&L/capital tables and collapsible per-account
+positions/holdings previews. Partial totals are marked, unavailable figures use
+dashes, and combined capital is labelled as held separately per account.
+
+**Positions layout (11 Sep 2026, local):** `/app/positions` has the mockup's
+five-metric strip and nine-column table, with separate P&L/day P&L and collapsible
+accounts/underlyings. The headline margin sums matching displayed risk groups;
+broker rows retain their actual account bills. Incomplete values and stale risk
+timestamps remain explicit. See `memory/ux-mockup-redesign.md` for the semantics.
+
+**Live payoff layout (11 Sep 2026, local):** `/app/payoff` follows `payoff.png` with
+a searchable account/underlying selector, five-metric strip and chart/legs panels.
+Range changes affect only the view; mixed-expiry, incomplete-data and holdings
+semantics remain visible. An empty curve list clears stale selection. Builder
+drafts survive tab changes; Adjust strategy imports the displayed response.
+Exact visual matching remains pending browser access.
+
+**Strategy builder layout (12 Sep 2026, local):** the context bar separates baseline
+account from quote source above chain/legs/preview panels. Baseline rows are locked;
+drafts expose quantities, assumed prices and cashflows, with contract details
+expandable. Preview results must match the displayed inputs; changed inputs hide
+older results during recalculation. Target prices have slider and manual controls.
+Session drafts survive New strategy and tab switches. Checkpoint 6 owns remaining
+consistency checks; screenshot/interaction verification remains pending.
+
 Routing: `/` landing, `/login`, then `AuthGuard` → `AppShell` → `/app`, `/app/positions`, `/app/holdings`, `/app/payoff`, `/app/risk`, `/app/settings`.
 
 - **`/app` is the capital-and-P&L dashboard, not a positions table.** It used to render the *same* `PositionsTable` as `/app/positions`, untruncated, behind a "View all" link to an identical table. Now: `features/dashboard/aggregate.ts` outer-joins positions, holdings and margins into one row per connection; `BrokerPnlTable` and `BrokerFundsTable`; five tiles (Total P&L, Day P&L, Margin available, Margin used, Collateral) with total margin and utilisation % riding as a hint on the used tile.
