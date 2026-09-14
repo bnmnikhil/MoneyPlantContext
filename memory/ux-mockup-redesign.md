@@ -16,6 +16,9 @@ and its header menus, leaving the public landing/login theme intact.
 The header's Live/Partial/Offline indicator describes broker sessions. It does
 not certify quote or risk-data freshness; those remain page-level facts. The
 broker count counts distinct broker providers, with accounts inside the dropdown.
+Known implementation gap: the backend currently marks every stored session as
+connected, so an expired token can still produce a Live header. Per-account
+session-validity handling is the next checkpoint, tracked in `UX-REDESIGN.md`.
 
 Visual changes must preserve real calculation results and existing unavailable,
 partial, mixed-expiry, holdings, and hypothetical-strategy semantics. The images'
@@ -77,3 +80,20 @@ account, baseline or draft hides the previous result immediately until the new
 calculation arrives. Cancelled requests cannot restore a prior result. This keeps
 the graph, summary and editable legs consistent without changing payoff math or
 automatically accepting new entry prices from a quote refresh.
+
+The outer payoff grids use an explicit zero-minimum column so the toolbar and
+mounted builder cannot widen a phone viewport to their intrinsic content width.
+On phones the curve controls take a separate flex row; wide financial tables
+retain scrolling inside their panels. Verified with populated data on 14 September
+2026 after browser access became available; remaining visual checks are tracked
+in `UX-REDESIGN.md`.
+
+Live and builder chart annotations use the measured plot width to place nearby
+spot/breakeven labels on separate rows and keep edge labels inside the plot.
+This is presentation only: reference lines retain their exact prices and zoom
+still leaves global payoff limits unchanged.
+
+Overview uses explicit summary/heading line heights and aligned broker icons to
+retain the mockup's compact rows. At phone widths numeric typography and padding
+fit the summary columns. Risk cards permit shrinking within an explicit grid
+column so wide tables scroll inside the cards instead of widening the page.

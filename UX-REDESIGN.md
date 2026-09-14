@@ -14,34 +14,44 @@ Branch in workspace, frontend, and tradestack: `feat/ux-mockup-redesign`.
 Starting branches: workspace `design/ux-view-proposals`; frontend and tradestack
 `fix/strategy-builder-quote-source`. Pre-existing untracked mockups, `.claude/`,
 backend configuration, crash dumps, and architecture reports must be preserved.
-The owner authorised committing and pushing checkpoints 1–5 on 13 September
-2026. This authorisation covers the task branches and supporting mockups/docs;
-merging, PR creation and deployment remain unrequested. Earlier handoff notes
-below describe their historical uncommitted state.
+The owner authorised committing, pushing and raising PRs for the completed work.
+Frontend checkpoints 1–5 were merged through PR #17 on 13 September 2026.
+Checkpoints 6a–6d are the follow-up implementation; checkpoint 6 remains in progress.
+Deployment is not part of this handoff. Dated notes below preserve the state at
+each checkpoint; this summary and the latest Git handoff supersede them.
+
+Current review links:
+- Frontend checkpoints 6a–6d: [PR #18](https://github.com/bnmnikhil/MoneyPlantFrontend/pull/18).
+- Mockups, design decisions and current status: [context PR #5](https://github.com/bnmnikhil/MoneyPlantContext/pull/5).
+- Frontend baseline: [PR #17](https://github.com/bnmnikhil/MoneyPlantFrontend/pull/17), merged.
 
 ## Checkpoints
 
-1. **IMPLEMENTED; VISUAL CHECK PENDING — shared shell.** Replace the desktop sidebar with the mockup's
+1. **IMPLEMENTED; BROWSER CHECKED — shared shell.** Replace the desktop sidebar with the mockup's
    top navigation, broker dropdown, session indicator, avatar and overflow menu.
    Apply navy/teal colours within the authenticated app, widen the page frame,
    and retain five primary mobile tabs. Keep Settings and connection actions reachable.
-2. **IMPLEMENTED; VISUAL CHECK PENDING — Overview.** Horizontal summary strip, paired broker tables, paired
+2. **IMPLEMENTED; BROWSER CHECKED — Overview.** Horizontal summary strip, paired broker tables, paired
    positions/holdings previews from `dashboard.png`.
-3. **IMPLEMENTED; VISUAL CHECK PENDING — Positions.** Summary strip, table header controls, separate P&L/day
+3. **IMPLEMENTED; POPULATED DESKTOP CHECKED — Positions.** Summary strip, table header controls, separate P&L/day
    columns, mockup hierarchy and row styling from `positions.png`.
-4. **IMPLEMENTED; VISUAL CHECK PENDING — Live payoff.** Selector toolbar, metrics strip, chart/legs columns
+4. **IMPLEMENTED; BROWSER CHECKED — Live payoff.** Selector toolbar, metrics strip, chart/legs columns
    from `payoff.png`; preserve holdings, ranges, and mixed-expiry handling.
-5. **IMPLEMENTED; VISUAL CHECK PENDING — Strategy builder.** Context toolbar and chain/legs/preview workspace
+5. **IMPLEMENTED; BROWSER CHECKED — Strategy builder.** Context toolbar and chain/legs/preview workspace
    from `strategybuilder.png`; preserve baseline and quote-source separation.
-6. **TODO — final consistency.** Responsive and state checks across all pages;
-   Holdings, Risk and Settings inherit the shared visual system.
+6. **IN PROGRESS — final consistency.** 6a–6d are implemented and verified:
+   phone payoff containment, chart reference labels, Overview spacing and Risk
+   table containment. Holdings and Settings phone layouts were checked.
+   Broker-session status consistency and full keyboard/empty/error-state checks
+   remain pending. Exact pixel matching is not certified by these targeted checks.
 
 ## Resume instructions
 
 Read this file, `CLAUDE.md`, and `memory/MEMORY.md`; inspect branch/status in
 each repository before editing. Review existing diffs instead of overwriting
-unfinished work. Continue the first incomplete checkpoint. No backend source
-change is expected for checkpoint 1.
+unfinished work. Continue with broker-session status consistency, then remaining
+keyboard/empty/error-state checks. The next session-status fix may need backend
+changes; checkpoints 1–6d contain no backend source changes.
 
 ## Verification
 
@@ -284,3 +294,136 @@ Pre-push verification on the frontend: `npm test` **52 passed, 0 failed**;
 staged `git diff --check` passed. No application code changed during this handoff.
 Checkpoint 6 and visual/interaction verification are still pending. No PR,
 merge or deployment was performed.
+
+## Checkpoint 6a — payoff responsive containment, 14 September 2026
+
+Browser access is now available in Chrome, and the owner reconnected all three
+broker sessions. Populated Overview, Positions, Live payoff and Strategy builder
+have been inspected. This starts the visual pass; the earlier pending labels
+remain historical, and exact mockup matching is not yet certified.
+
+At a 390px CSS viewport, Live payoff expanded the document to 432px, clipping
+the tabs, selector and summary. `frontend/src/index.css` now gives the outer
+payoff grids an explicit `minmax(0, 1fr)` track and makes the phone curve controls
+occupy their own flex row. This also contains the mounted builder. Table scrolling
+stays inside the relevant panels; desktop chart/legs columns remain side by side.
+
+Verification on the final CSS:
+- Phone widths 320px and 390px, tablet width 768px, and desktop width 1673px:
+  document scroll width equals its client width on Live payoff.
+- Populated builder at 320px and 390px: no document horizontal overflow.
+- Same-account Holdings added a shares leg at purchase cost; switching it off
+  returned to four option legs. A 5% chart view preserved the summary limits.
+- Imported a Kite baseline while using Alice Blue quotes. Added a hypothetical
+  chain leg, doubled its quantity, verified doubled draft cashflow, then removed
+  the test leg. No orders were placed.
+- Broker dropdown opens, exposes connection management, and closes with Escape.
+- Positions displays its existing stale-risk warning. Browser logs at that check
+  contained no errors, only the existing React Router future-version warnings.
+- `npm test`: **52 passed, 0 failed**. `npm run build`: **passed**; the existing
+  >500 kB bundle warning remains. No calculation or API change was made.
+
+Recovery: `%TEMP%/moneyplant-ux-checkpoint-06a-before` contains pre-edit CSS and
+design documentation. The matching `moneyplant-ux-checkpoint-06a` directory holds
+the completed checkpoint. Both contain source/docs only, without account data.
+
+**Resume next:** finish visual consistency checks, including chart reference-label
+collisions at narrow widths, Overview vertical spacing against the mockup, and
+the earlier contradiction between expired-session banners and a Live header.
+Holdings, Risk, Settings and the remaining keyboard/error states still need a
+complete viewport pass. Checkpoint 6 remains in progress.
+
+All three repositories remain on `feat/ux-mockup-redesign`; this checkpoint changes
+only frontend CSS and workspace documentation. No new commit, push, PR or deployment
+was made. Existing frontend PR #17 and context PR #5 were opened at the owner's
+earlier request; they contain checkpoints 1–5, not this uncommitted checkpoint.
+
+## Checkpoint 6b — chart reference labels, 14 September 2026
+
+`PayoffChart.tsx` now measures the rendered plot width and uses
+`referenceLabels.ts` to place spot/breakeven text in non-overlapping rows.
+Labels remain centred on their reference line when space permits, are shifted
+inside the plot at its edges, and reflow when resized or zoomed. Reference-line
+prices and all payoff calculations are unchanged. This applies to Live payoff
+and the builder's compact chart.
+
+Verified the previously overlapping HEROMOTOCO labels at 390px (actual DOM text
+rectangles do not intersect), zoom/reset, and the populated desktop AUBANK builder.
+`tests/reference-labels.test.mjs` covers nearby/coincident labels, separated labels,
+plot edges, off-screen filtering and preservation of input data.
+`npm test`: **56 passed, 0 failed**. `npm run build`: **passed**, with the existing
+bundle-size warning. Recovery copies are `%TEMP%/moneyplant-ux-checkpoint-06b-before`
+and `%TEMP%/moneyplant-ux-checkpoint-06b`. No new commit, push or deployment.
+
+Next: Overview vertical spacing, then remaining responsive/error-state checks.
+
+## Checkpoint 6c — Overview spacing, 14 September 2026
+
+Tightened the summary's line heights/padding, panel heading line heights and
+inline broker-logo alignment in `src/index.css`; `DashboardPage.tsx` now uses
+the explicit summary value class. Account preview buttons no longer enlarge
+their desktop rows. Mobile summary type/padding fit the narrow columns, and
+broker-table scrollbars use the existing dark palette.
+
+At 1673px the summary measured 104.7px (previously 123.5px; mockup target 104px),
+broker rows measured 49px (previously 55.1px), and preview panels measured 384px.
+The broker panels start at 213.6px, close to the mockup's 214px. Populated
+Overview has no document overflow at 320px, 390px or 768px; the 320px monetary
+figures fit inside their columns. Financial values and account groups are unchanged.
+
+`npm test`: **56 passed, 0 failed**. `npm run build`: **passed**, retaining the
+existing bundle warning. Pre/post copies: `%TEMP%/moneyplant-ux-checkpoint-06c-before`
+and `%TEMP%/moneyplant-ux-checkpoint-06c`. No commit, push or deployment.
+
+Additional read-only phone checks: Holdings cards and Settings fit at 390px.
+Risk's grid widened its document to 1030px; fix that next. Risk continues to
+show its existing STALE snapshot warnings; no snapshot behavior is being changed.
+
+## Checkpoint 6d — Risk table containment, 14 September 2026
+
+`RiskPage.tsx` gives the small-screen grid an explicit zero-minimum column and
+allows its cards to shrink. Its existing table scroll containers now take the
+overflow instead of expanding the entire page. At 390px the document shrank from
+1030px to its 373px client width, while the instrument table still has its full
+965px width inside a 292px scroll area. The document also fits at 320px, 768px
+and 1673px. Stale-risk warnings, data and calculations remain unchanged.
+
+`npm test`: **56 passed, 0 failed**. `npm run build`: **passed**, with the existing
+bundle warning. Pre/post recovery copies are `%TEMP%/moneyplant-ux-checkpoint-06d-before`
+and `%TEMP%/moneyplant-ux-checkpoint-06d`. Backend source remains unchanged.
+
+**Resume next:** broker-session status consistency. Read-only investigation found
+`tradestack/.../broker/session/SessionController.java` returns `connected: true`
+for every stored session, while `BrokerService.fanOut` reports SESSION_EXPIRED
+without changing that status. Merely polling status again cannot fix the header.
+Address session validity with per-account regression coverage; do not invalidate
+an unrelated account or discard a newly reconnected session because an older
+in-flight request failed. No implementation of that behavior is included here.
+
+Further complete keyboard and empty/error-state checks remain pending; checkpoint
+6 is still in progress. All three repositories use `feat/ux-mockup-redesign`.
+Checkpoints 6a–6d are local and uncommitted; no new push, PR or deployment.
+
+## Git handoff — 14 September 2026
+
+The owner requested updating all task statuses, pushing completed changes and
+raising PRs. Checkpoints 6a–6d are committed in the frontend as
+`7c783b91ded47e7a777e93280e9706eaaa68eedb` and pushed to
+`origin/feat/ux-mockup-redesign`; the remote hash was verified. PR #18 is the new
+frontend review because the original redesign PR #17 was already merged on
+13 September. The branch was fast-forwarded to that merged baseline before the
+follow-up commit; no application files changed during the fast-forward.
+
+Context PR #5 carries this updated tracker, `CLAUDE.md`, `P0-LAUNCH.md` and the
+durable design notes. It retains the original mockups and quote-source decision.
+The frontend PR links back to this documentation.
+
+Final checks: `npm test` **56 passed, 0 failed**; `npm run typecheck` **passed**;
+`npm run build` **passed** (existing >500 kB bundle warning); staged diff check
+**passed**. Browser verification is described per checkpoint above.
+
+All repositories remain on `feat/ux-mockup-redesign`. The backend has no new
+source changes or commits for these checkpoints and no diff requiring a new PR.
+Local backend configuration, architecture report and crash dumps remain excluded.
+No merge or deployment was performed in this handoff. Next work remains session
+status consistency and the rest of checkpoint 6's keyboard/empty/error-state checks.
