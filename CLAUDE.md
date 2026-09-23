@@ -4,7 +4,7 @@
 
 **`memory/` — read `memory/MEMORY.md` at the start of any non-trivial task.** It is the project memory: one file per durable decision or piece of project state, carrying the *reasoning* this file deliberately cuts. This file answers "what is true of the code now?"; `memory/` answers "why did we choose this, and when?". Keep the two from overlapping, and add a memory whenever a decision is made that a future reader would otherwise have to reverse-engineer from a diff.
 
-**Companion docs.** `P0-LAUNCH.md` — the production-launch tracker, and the **authority for what is being worked on now**; it owns status, this file owns code-truth, and the two must not overlap. `SPEC.md` — the Step 4 plan, and the authority for it. `CREDENTIALS-STEP3D.md` — per-user broker credentials. `UX-STEP2.md` — UI rework. `tradestack/docs/symbol-model.md`, `aliceblue-api.md`, `paytm-api.md`. `tradestack/deploy/README.md` — deploy runbook. `research/` — regulatory and IP findings. **`DEPLOY-STEP3.md` was deleted in `84bd89b`;** `SPEC.md`, `CREDENTIALS-STEP3D.md` and `research/REGULATORY-API-STATIC-IP.md` still cite it and those references now dangle.
+**Companion docs.** `P0-LAUNCH.md` — the production-launch tracker, and the **authority for what is being worked on now**; it owns status, this file owns code-truth, and the two must not overlap. `NEXT-STEPS.md` — the broad backlog for broker expansion, simulators, the landing page and testing. `BROKER-EXPANSION-PLAN.md` — the executable sequence for adding read-only brokers that require no static IP. `SPEC.md` — the Step 4 plan, and the authority for it. `CREDENTIALS-STEP3D.md` — per-user broker credentials. `UX-STEP2.md` — UI rework. `tradestack/docs/symbol-model.md`, `aliceblue-api.md`, `paytm-api.md`. `tradestack/deploy/README.md` — deploy runbook. `research/` — regulatory and IP findings. **`DEPLOY-STEP3.md` was deleted in `84bd89b`;** `SPEC.md`, `CREDENTIALS-STEP3D.md` and `research/REGULATORY-API-STATIC-IP.md` still cite it and those references now dangle.
 
 ---
 
@@ -180,6 +180,13 @@ Two separate git repos (`bnmnikhil/MoneyPlant`, `bnmnikhil/MoneyPlantFrontend`),
 
 Trunk-based, short-lived branches; **the branch name is identical in both repos** when a step spans them, so the two PRs are obviously a pair. Squash merge into `main`. **Never merge red:** backend gate `mvnw test`, frontend gate `npm run typecheck`. `dev` deliberately does not exist.
 
+**`TESTING.md` is the single verification entry point.** From the workspace root,
+`.\scripts\verify.ps1 -Scope changed` inspects all three repositories and prints
+the selected checks plus a pass/fail/skip summary. Use `-Scope broker -Broker
+<id>` for adapter work, `-Scope integration` for the Docker-backed `db` tests,
+and `-DryRun` to inspect selection without executing it. The `ui` scope remains
+an explicit skip until the browser smoke pack exists.
+
 - **`npm run lint` does not work** — the script is in `package.json` but `eslint` is not in `devDependencies`. `typecheck` (= `tsc -b`) is genuinely the only frontend gate. `npm run dev` does not typecheck, so it is the only thing that catches contract drift against the backend.
 - The backend has a **`db`-tagged Testcontainers suite excluded by default** (`mvnw test -DexcludedGroups=`, Docker required). It is the pattern for repository tests and **is not being followed** — `TypedSnapshotRepository` shipped with no repository test, and `CaptureRepositoryTest` has never run as a suite.
 - **"Delete the branch" is not being honoured, by choice.** Every merged branch is still local and on the remote (12 in `tradestack`, 12 in `frontend`), plus `origin/V1` and `origin/V2--payoff-graph-one-broker`.
@@ -213,9 +220,10 @@ Package-by-module under `com.MoneyPlant.tradestack`:
 | Package | Contents |
 |---|---|
 | `broker/` | Routing and discovery only: `BrokerService`, `BrokerRegistry`, `BrokerAuthRegistry`, `RawPortfolioParsers`, `PortfolioFetchedEvent` |
-| `broker/spi/` | What a new broker implements: `BrokerGateway`, `BrokerAuthProvider`, `RawPortfolioSource`, `RawPortfolioParser`, `MarginCalculator`, `PortfolioKind` |
+| `broker/spi/` | What a new broker implements: `BrokerGateway`, `BrokerCapability`, `BrokerAuthProvider`, `RawPortfolioSource`, `RawPortfolioParser`, `MarginCalculator`, `PortfolioKind` |
+| `broker/catalog/` | Backend-owned broker names, setup fields, console links, rollout state and the gateway-declared capability set; exposed at `GET /api/brokers` |
 | `broker/session/` | `BrokerSession`, `SessionStore`/`PostgresSessionStore`, `SessionStoreConfig`, `SessionController`, `ConnectionService`, `ConnectionIds`, `PendingConnect` |
-| `broker/error/` | `BrokerException` + the three subclasses |
+| `broker/error/` | `BrokerException` + session, connection, call and unsupported-capability subclasses |
 | `broker/kite/`, `/aliceblue/`, `/paytm/` | private per-broker gateway, session service, session controller, mapper, http config |
 | `portfolio/` | thin controllers (`Positions`, `Holdings`, `Account`) + `dto/` — `BrokerAggregate`, `BrokerWarning`, `PositionDto`, `HoldingDto`, `MarginDto`, `Freshness`, `Sourced` |
 | `instrument/` | `InstrumentService`, `InstrumentKey`, `BrokerInstrument`, `OptionInstrument`, `InstrumentType`, `UnderlyingRegistry`, `InstrumentController` |
@@ -233,6 +241,7 @@ Package-by-module under `com.MoneyPlant.tradestack`:
 ### Patterns and the rules that make multi-broker work
 
 - **Strategy** — `BrokerGateway` is the per-broker interface. **Adapter / anti-corruption** — each gateway owns private `toDto` methods; broker SDK types never leak past it. **Registry** — `BrokerRegistry` auto-discovers gateway beans via constructor `List<BrokerGateway>`, so a new broker needs zero changes there. **Facade** — `BrokerService` owns resolve-connection-then-call; controllers only talk to `BrokerService`.
+- **Broker capabilities are explicit.** Positions and holdings are required for every new integration; margins and instruments are optional. An unsupported optional read becomes `UNSUPPORTED_CAPABILITY`, never a fabricated zero or empty success. `BrokerCatalog` combines reviewed setup metadata with each gateway's capability declaration and drives the authenticated UI. See ADR 0028.
 - **`RawPortfolioSource` is a second interface, not a wider `BrokerGateway`.** All three gateways implement both. A raw-payload method on `BrokerGateway` would put a vendor-shaped leak in the one place the anti-corruption rule exists to keep clean.
 - **Gateways are stateless.** `BrokerSession` is a *parameter*, never a field; `KiteBrokerGateway` builds a fresh `KiteConnect` per call. This is what enables multi-user and multi-account-per-broker.
 - **Credentials are a parameter too**, for the same reason: `BrokerAuthProvider.loginUrl(BrokerCredentials, state)`. That is what lets one set of beans serve two users whose Kite apps differ.

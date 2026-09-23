@@ -28,6 +28,7 @@ below.
 
 ## Decisions
 
+- [New brokers require no static IP](new-brokers-require-no-static-ip.md) — app activation plus positions and holdings must work without an IP allowlist; order-only IP restrictions do not matter to the read-only product.
 - [Application sessions expire at midnight](application-sessions-expire-at-midnight.md) — the Google-authenticated web session has an absolute midnight-IST boundary; polling cannot extend it into the next day.
 
 - [Holdings in payoff](payoff-holdings.md) — optional same-account shares at purchase cost, with quantity validation and overlap protection.
@@ -54,6 +55,7 @@ below.
 
 ## State
 
+- [Broker expansion foundation handoff](broker-expansion-foundation-handoff.md) — uncommitted capability-driven catalogue work is green on `feat/read-only-broker-foundation`; resume with the reusable dummy-broker simulator and Upstox fixtures.
 - [Analysis is the product](analysis-step-is-the-product.md) — Step 8 is the core, blocked on market data; unblocking the feed outranks its roadmap position.
 - [Step 4 landed as one commit](step-4-landed-as-one-commit.md) — 4b/4c/4d shipped together against the plan; four acceptance shortfalls remain open.
 - [Brokers become user-configured](brokers-become-user-configured.md) — the three-broker assumption is temporary; directional only, priority "very far".
