@@ -414,6 +414,20 @@ Routing: `/` landing, `/login`, then `AuthGuard` → `AppShell` → `/app`, `/ap
 
 ## Payoff engine
 
+**Strategy Builder import contract (1 Oct 2026).** `POST /api/payoff/compare`
+preserves a finite signed `entryPrice` only for a baseline leg with
+`EXISTING_POSITION` origin and `POSITION_AVERAGE` price basis. Draft execution
+prices, quote/manual bases and holding costs remain nonnegative. An imported
+effective net-cash basis is not a market quote; the mapper and realised-P&L
+accounting are unchanged. See `memory/builder-signed-position-basis.md`.
+
+**Alice Blue option-chain boundary.** Expiry and chain calls resolve the
+canonical underlying to a typed exact vendor catalogue reference before building
+the request; returned snapshots remain canonical. M&M is still `MM` internally
+and `M&M` in the broker request. Unknown/ambiguous mappings fail explicitly;
+the shared catalogue cache contains no caller sessions or tokens. See
+`memory/option-chain-symbol-resolution.md`.
+
 Pure computation in `PayoffEngine.compute(List<Leg>, currentSpot)`: 201 regular samples plus exact option strikes, futures/equity entry prices and current spot. Futures' placeholder zero strikes do not set the chart range. Breakevens inside the window use linear interpolation and are deduplicated; chart segments are linear and P&L points are rounded to paise. Unlimited flags come from the exact net call/future/equity quantity at the upper tail. Finite extrema include spot zero even when it is off-screen. `PayoffService` maps positions → legs via `InstrumentService` and groups by `(connectionId, underlying)`. See `memory/payoff-ranges-and-limits.md`.
 
 ### No cross-broker merging (decided 29 Jul)
