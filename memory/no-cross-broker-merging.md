@@ -9,6 +9,10 @@ metadata:
 The same strike held at two brokers stays **two legs**. Payoff curves group by
 `(connectionId, underlying)`, not by underlying alone.
 
+This boundary is about positions, entry costs and margin. It does **not** require
+market data to come from the same broker: a curve for one account may be priced
+with an option-chain snapshot from another connection owned by the same user.
+
 **Why.** Two independent reasons, and the second is the load-bearing one:
 
 1. **Netting would change nothing on the chart.** `PayoffEngine` sums

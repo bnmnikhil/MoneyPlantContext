@@ -33,6 +33,7 @@ below.
 - [Holdings in payoff](payoff-holdings.md) — optional same-account shares at purchase cost, with quantity validation and overlap protection.
 
 - [No cross-broker merging](no-cross-broker-merging.md) — identical instruments at two brokers stay two legs; spreads only earn margin benefit inside one account.
+- [Quote source is independent of position account](quote-source-is-independent-of-position-account.md) — option-chain quotes may come from any capable connection owned by the user; positions and margin remain account-local.
 - [Payoff ranges and limits](payoff-ranges-and-limits.md) — futures use entry-price anchors; exact quantities determine unlimited tails, and mixed expiries remain an explicitly labelled scenario.
 - [P&L has two columns, always](pnl-has-two-columns.md) — brokers disagree on what "P&L" means, so `PositionDto` fixes both and each gateway fills the half its broker withholds.
 - [The app owns its symbols](app-owns-its-symbols.md) — broker symbols live only inside that broker's adapter; the symbol-model doc's middle path was overruled in favour of the full model.
