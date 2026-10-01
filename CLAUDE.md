@@ -393,13 +393,55 @@ The anti-corruption rule for *types*, extended to *names* — which had leaked m
 
 ## Frontend
 
+**UX shell:** authenticated pages use a full-width navy/teal
+workspace with top navigation (Overview, Positions, Holdings, Payoff, Risk), a
+broker dropdown, and account/settings menus. Below 1024px navigation uses five
+bottom tabs. The header's Live indicator reads session status, not data freshness.
+Known limitation: the backend reports stored sessions as connected even after a
+broker rejects a token, so Live can contradict an expired-session banner.
+The four `UX mockup/` PNGs are the selected visual reference;
+`UX-REDESIGN.md` records resumable checkpoints and visual-verification status.
+
+**Overview layout:** `/app` follows `dashboard.png` with
+a horizontal summary strip, paired P&L/capital tables and collapsible per-account
+positions/holdings previews. Partial totals are marked, unavailable figures use
+dashes, and combined capital is labelled as held separately per account. Explicit
+line heights keep the desktop summary near 104px and broker rows at 49px;
+phone figures fit their columns and tables scroll within their panels.
+
+**Positions layout:** `/app/positions` has the mockup's
+five-metric strip and nine-column table, with separate P&L/day P&L and collapsible
+accounts/underlyings. The headline margin sums matching displayed risk groups;
+broker rows retain their actual account bills. Incomplete values and stale risk
+timestamps remain explicit. See `memory/ux-mockup-redesign.md` for the semantics.
+
+**Live payoff layout:** `/app/payoff` follows `payoff.png` with
+a searchable account/underlying selector, five-metric strip and chart/legs panels.
+Range changes affect only the view; mixed-expiry, incomplete-data and holdings
+semantics remain visible. An empty curve list clears stale selection. Builder
+drafts survive tab changes; Adjust strategy imports the displayed response.
+Zero-minimum grid tracks contain the phone toolbar and mounted builder. Chart
+annotations use measured plot width to separate nearby labels and keep text
+inside plot edges; reference-line prices and global limits remain unchanged.
+
+**Strategy builder layout:** the context bar separates baseline
+account from quote source above chain/legs/preview panels. Baseline rows are locked;
+drafts expose quantities, assumed prices and cashflows, with contract details
+expandable. Preview results must match the displayed inputs; changed inputs hide
+older results during recalculation. Target prices have slider and manual controls.
+Session drafts survive New strategy and tab switches. The compact chart shares
+the adaptive reference-label layout. Risk cards also use zero-minimum grid tracks,
+so financial tables scroll inside their cards at phone widths.
+Browser access is available; `UX-REDESIGN.md` records completed checks and the
+remaining consistency work.
+
 Routing: `/` landing, `/login`, then `AuthGuard` → `AppShell` → `/app`, `/app/positions`, `/app/holdings`, `/app/payoff`, `/app/risk`, `/app/settings`.
 
-- **`/app` is the capital-and-P&L dashboard, not a positions table.** It used to render the *same* `PositionsTable` as `/app/positions`, untruncated, behind a "View all" link to an identical table. Now: `features/dashboard/aggregate.ts` outer-joins positions, holdings and margins into one row per connection; `BrokerPnlTable` and `BrokerFundsTable`; five tiles (Total P&L, Day P&L, Margin available, Margin used, Collateral) with total margin and utilisation % riding as a hint on the used tile.
+- **`/app` is the capital-and-P&L dashboard.** `features/dashboard/aggregate.ts` outer-joins positions, holdings and margins into one row per connection. `OverviewPnlTable`, `OverviewCapitalTable` and per-account previews render the details below Total P&L, Positions P&L, Holdings P&L, Day P&L and Capital summary metrics.
 
   **Three rules live in that join, each from a real trap.** (1) **Key on `connectionId`, never `brokerId`** — `/api/margins` returns one row per connection despite its javadoc, so two Kite accounts are two rows both labelled `kite`, and folding on the broker id sums them into one. (2) **Outer join, and `margin: null` rather than `0`** — a dead margin call must leave the P&L row intact and show a dash, not a zero that reads as an empty account. (3) **Day P&L is positions-only and says so** — `HoldingDto` has no `dayChange` field at all (the snapshot repository writes a hardcoded `0.0`). The old "P&L today" tile was mislabelled from the day it was written: it summed lifetime `Position.pnl`.
 
-  **The dashboard's tile hints were sized blind** and still have not been seen rendered. `aggregate.ts` was instead compiled standalone (its imports are type-only) and exercised under `node` against real `raw_capture` margins, 27 checks passing. **`frontend` has no test runner**, so that is the available technique for pure logic.
+  **Frontend verification:** `npm test` uses Node's test runner for pure logic and server-rendered component checks; `npm run build` runs TypeScript and Vite. Browser checks supplement these for actual layout and interaction. Current results are recorded in `UX-REDESIGN.md`.
 
   **The Chrome extension *can* screenshot `localhost` now** — it could not before ("Frame with ID 0 is showing error page"), and that outdated note is why later UI shipped unseen. `/app/positions` was verified live on 15 Aug 2026 against all three brokers. Two things only a rendered page caught: a sticky `<th>` clipping the first broker band (shadcn's `Table` wraps in `overflow-auto`, which becomes the sticky containing block), and a freshness caption that named the reassuring date instead of the load-bearing one.
 - **`/app/settings` is where broker credentials are entered.** The secret field is **write-only**: it renders empty with "Stored" beside it rather than dots, because a masked value would imply the real one is retrievable and it deliberately is not. That also settles what a blank secret means on update — nothing, since both values are always required.

@@ -28,6 +28,8 @@ below.
 
 ## Decisions
 
+- [UX mockup redesign](ux-mockup-redesign.md) — exact visual target from the four supplied PNGs, delivered in resumable checkpoints with a full-width top-navigation shell.
+
 - [Application sessions expire at midnight](application-sessions-expire-at-midnight.md) — the Google-authenticated web session has an absolute midnight-IST boundary; polling cannot extend it into the next day.
 
 - [Holdings in payoff](payoff-holdings.md) — optional same-account shares at purchase cost, with quantity validation and overlap protection.
