@@ -90,19 +90,19 @@ docker exec -it moneyplant-postgres psql -U moneyplant -d moneyplant   -c "selec
 - **Kite's `utilised.debits` is not `span + exposure`.** Measured 17 Aug: it also carries `optionPremium` and a CNC `delivery` obligation (20 ITC shares at full value, 5,471.00 — not a margin percentage). Calibrate against the two components, never the headline.
 - **Margin is bottom-up by default (17 Aug 2026).** `MarginAllocator` prices every contract from the engine. The old top-down split of the broker's `used` survives only as a per-connection fallback, for an account where nothing could be estimated — it footed to the bill, but a row's figure moved whenever anything else in the account did. **The column no longer totals to `used`, by design**, and the UI copy says so; the account's real bill is shown beside it, unaltered. Every risk request logs `margin estimate vs bill … ratio=` per connection, so drift is visible without waiting for someone to notice. `MarginBasis.BROKER_MODEL` is still never emitted — no broker basket call is wired.
 - **Visual Options Strategy Designer (Step 6):** Complete interactive strategy builder at `/app/payoff` (Strategy Builder tab) featuring:
-  - 10+ standard NSE option strategy recipes (Bull/Bear Call/Put Spreads, Straddles, Strangles, Iron Condor, Iron Butterfly) generated around ATM spot with canonical strike intervals.
+  - 10+ standard NSE option strategy recipes (Bull/Bear Call/Put Spreads, Straddles, Strangles, Iron Condor, Iron Butterfly) generated from live option-chain rows around ATM.
   - Interactive multi-leg editor with strike/lot stepper controls, Buy/Sell pills, and individual leg disable/enable toggles.
   - Real-time simulation API (`POST /api/payoff/simulate` and `GET /api/payoff/metadata`).
   - Target Spot Inspector (interactive slider across $\pm 10\%$ of spot with real-time expiry P&L probe).
   - Bottom-up SEBI margin & total capital breakdown with hedge benefit badges.
-  - "Open in Strategy Builder" bridge to import live held positions into the builder for what-if hedging experimentation.
-  - ⚠ **Its numbers rest on two wrong inputs.** Leg premiums are **invented** — a placeholder estimator, because nothing could quote a strike until 18 Aug 2026; the chain feed now can. And NIFTY's lot size is hardcoded **75** in `getStrategyMetadata` while the chain *and* the contract master both say **65**, so every NIFTY leg is sized 15% too large and margin, max profit, max loss and capital all inherit it. Fix the lot size by reading `InstrumentService`, not by editing the literal — see `memory/nifty-lot-size-is-hardcoded-and-stale.md`.
+  - Existing positions can be loaded directly inside the builder, or through "Adjust strategy" on the live payoff. They form an immutable `(connectionId, underlying)` baseline; closes and additions remain hypothetical draft trades.
+  - Option-chain market data is selected independently from the position account. A Kite or Paytm baseline can therefore use Alice Blue quotes, while the positions and margin context remain tied to their original account. Alice Blue is currently the only chain provider.
 
 ### Latest additions (18 Aug 2026 — `main`, via PR #14 / #12)
 
 **Alice Blue's option chain is verified and works.** Per-strike `ltp`/`oi`/`pdc`/`pdoi`/`tradingsymbol`, plus `spotLTP`, `futLTP`, `lotsize`, `ticksize` and `pcr` on the wrapper, for **181 underlyings**, free. Payload shapes, the live sample and the three places vendor docs were wrong are in `tradestack/docs/aliceblue-api.md`; the reasoning is in `memory/aliceblue-option-chain-verified.md`. Three traps worth carrying here: the strikes are nested **one level deeper than every other Alice Blue endpoint** (`result[0].data`, not `result`); **`interval` is the strike count either side of the money, not the strike step**; and **do not derive spot by put-call parity** — parity recovers the *forward*, and measured 33 points above the `spotLTP` sitting in the same payload.
 
-**The probe is `broker/aliceblue/AliceBlueOptionChain` + `AliceBlueDebugController`** (`GET /api/debug/aliceblue/option-chain`), and is **deliberately not a feature**. It does not implement `BrokerGateway` — partly so a controller may touch it under rule A4, partly because chains belong in `marketdata/` behind a canonical-underlying interface beside `SpotPriceProvider` when they graduate. Delete both classes at that point. **The pattern is the reusable part:** it probed a vendor payload using the session already in `ConnectionService`, so the token never left the JVM — prefer that to extracting a token and curling it, for any future vendor question.
+**The chain is now a production market-data capability** behind `marketdata/OptionChainProvider`; `AliceBlueOptionChainProvider` is the first implementation. `OptionChainService` discovers providers independently of the broker holding a strategy's positions, while resolving both connection IDs through `BrokerService` for user ownership. Quote caches are isolated by user, source connection and session generation.
 
 **Four strategy-builder bugs fixed** (frontend, folded into Step 6's commit `ddfe9fc`):
 
@@ -402,13 +402,55 @@ The anti-corruption rule for *types*, extended to *names* — which had leaked m
 
 ## Frontend
 
+**UX shell:** authenticated pages use a full-width navy/teal
+workspace with top navigation (Overview, Positions, Holdings, Payoff, Risk), a
+broker dropdown, and account/settings menus. Below 1024px navigation uses five
+bottom tabs. The header's Live indicator reads session status, not data freshness.
+Known limitation: the backend reports stored sessions as connected even after a
+broker rejects a token, so Live can contradict an expired-session banner.
+The four `UX mockup/` PNGs are the selected visual reference;
+`UX-REDESIGN.md` records resumable checkpoints and visual-verification status.
+
+**Overview layout:** `/app` follows `dashboard.png` with
+a horizontal summary strip, paired P&L/capital tables and collapsible per-account
+positions/holdings previews. Partial totals are marked, unavailable figures use
+dashes, and combined capital is labelled as held separately per account. Explicit
+line heights keep the desktop summary near 104px and broker rows at 49px;
+phone figures fit their columns and tables scroll within their panels.
+
+**Positions layout:** `/app/positions` has the mockup's
+five-metric strip and nine-column table, with separate P&L/day P&L and collapsible
+accounts/underlyings. The headline margin sums matching displayed risk groups;
+broker rows retain their actual account bills. Incomplete values and stale risk
+timestamps remain explicit. See `memory/ux-mockup-redesign.md` for the semantics.
+
+**Live payoff layout:** `/app/payoff` follows `payoff.png` with
+a searchable account/underlying selector, five-metric strip and chart/legs panels.
+Range changes affect only the view; mixed-expiry, incomplete-data and holdings
+semantics remain visible. An empty curve list clears stale selection. Builder
+drafts survive tab changes; Adjust strategy imports the displayed response.
+Zero-minimum grid tracks contain the phone toolbar and mounted builder. Chart
+annotations use measured plot width to separate nearby labels and keep text
+inside plot edges; reference-line prices and global limits remain unchanged.
+
+**Strategy builder layout:** the context bar separates baseline
+account from quote source above chain/legs/preview panels. Baseline rows are locked;
+drafts expose quantities, assumed prices and cashflows, with contract details
+expandable. Preview results must match the displayed inputs; changed inputs hide
+older results during recalculation. Target prices have slider and manual controls.
+Session drafts survive New strategy and tab switches. The compact chart shares
+the adaptive reference-label layout. Risk cards also use zero-minimum grid tracks,
+so financial tables scroll inside their cards at phone widths.
+Browser access is available; `UX-REDESIGN.md` records completed checks and the
+remaining consistency work.
+
 Routing: `/` landing, `/login`, then `AuthGuard` → `AppShell` → `/app`, `/app/positions`, `/app/holdings`, `/app/payoff`, `/app/risk`, `/app/settings`.
 
-- **`/app` is the capital-and-P&L dashboard, not a positions table.** It used to render the *same* `PositionsTable` as `/app/positions`, untruncated, behind a "View all" link to an identical table. Now: `features/dashboard/aggregate.ts` outer-joins positions, holdings and margins into one row per connection; `BrokerPnlTable` and `BrokerFundsTable`; five tiles (Total P&L, Day P&L, Margin available, Margin used, Collateral) with total margin and utilisation % riding as a hint on the used tile.
+- **`/app` is the capital-and-P&L dashboard.** `features/dashboard/aggregate.ts` outer-joins positions, holdings and margins into one row per connection. `OverviewPnlTable`, `OverviewCapitalTable` and per-account previews render the details below Total P&L, Positions P&L, Holdings P&L, Day P&L and Capital summary metrics.
 
   **Three rules live in that join, each from a real trap.** (1) **Key on `connectionId`, never `brokerId`** — `/api/margins` returns one row per connection despite its javadoc, so two Kite accounts are two rows both labelled `kite`, and folding on the broker id sums them into one. (2) **Outer join, and `margin: null` rather than `0`** — a dead margin call must leave the P&L row intact and show a dash, not a zero that reads as an empty account. (3) **Day P&L is positions-only and says so** — `HoldingDto` has no `dayChange` field at all (the snapshot repository writes a hardcoded `0.0`). The old "P&L today" tile was mislabelled from the day it was written: it summed lifetime `Position.pnl`.
 
-  **The dashboard's tile hints were sized blind** and still have not been seen rendered. `aggregate.ts` was instead compiled standalone (its imports are type-only) and exercised under `node` against real `raw_capture` margins, 27 checks passing. **`frontend` has no test runner**, so that is the available technique for pure logic.
+  **Frontend verification:** `npm test` uses Node's test runner for pure logic and server-rendered component checks; `npm run build` runs TypeScript and Vite. Browser checks supplement these for actual layout and interaction. Current results are recorded in `UX-REDESIGN.md`.
 
   **The Chrome extension *can* screenshot `localhost` now** — it could not before ("Frame with ID 0 is showing error page"), and that outdated note is why later UI shipped unseen. `/app/positions` was verified live on 15 Aug 2026 against all three brokers. Two things only a rendered page caught: a sticky `<th>` clipping the first broker band (shadcn's `Table` wraps in `overflow-auto`, which becomes the sticky containing block), and a freshness caption that named the reassuring date instead of the load-bearing one.
 - **`/app/settings` is where broker credentials are entered.** The secret field is **write-only**: it renders empty with "Stored" beside it rather than dots, because a masked value would imply the real one is retrievable and it deliberately is not. That also settles what a blank secret means on update — nothing, since both values are always required.
@@ -462,7 +504,7 @@ Host-level gotchas (Caddy hostname matching, nginx squatting on `:80`, `401` fro
 | 3 | Login / real authentication (3a–3d) | ✅ done, deployed, live |
 | 4 | Deploy — OCI + Cloudflare DNS-only | ✅ done, folded into 3c |
 | 5 | Paytm Money integration | ✅ mostly done |
-| 6 | Strategy builder | ✅ interactive visual designer shipped, on `main` — but see the two wrong inputs above |
+| 6 | Strategy builder | ✅ catalogue-backed designer with live chain quotes, recipes, existing-position import and independent market-data source |
 | 7 | Persistence — users + broker links | partly pulled into Step 3 |
 | 8 | Analysis — technical, fundamental, decay, risk/reward, LLM | **unblocked 18 Aug 2026** — the chain feed exists; history and greeks still do not |
 
@@ -476,7 +518,7 @@ Step 8 is described by the owner as the core of the product. It **was** blocked 
 
 ## Open decisions
 
-- **Market data — answered for premiums, 18 Aug 2026.** Alice Blue's option chain is **verified live**: per-strike `ltp`, `oi`, `pdc`, `pdoi`, `tradingsymbol` (all strings), plus `spotLTP`, `futLTP`, `lotsize`, `ticksize` and `pcr` on the wrapper, for 181 underlyings, free. Two documented assumptions were **wrong**: it *does* return spot (so **do not** use put-call parity — parity recovers the *forward*, and was 33 points high against a measured spot), and `interval` is the strike count either side of the money, not the strike step. **Still missing: history** (nothing stores a time series yet) and **greeks** (Alice Blue does not return them; Upstox does, free — see `memory/free-market-data-options-researched.md`). **Still open: whether broker terms permit using one broker's feed to price another's positions** — a real question for a multi-broker app, unanswered, and worth settling before the chain becomes load-bearing.
+- **Market data — answered for premiums, 18 Aug 2026.** Alice Blue's option chain is **verified live**: per-strike `ltp`, `oi`, `pdc`, `pdoi`, `tradingsymbol` (all strings), plus `spotLTP`, `futLTP`, `lotsize`, `ticksize` and `pcr` on the wrapper, for 181 underlyings, free. Two documented assumptions were **wrong**: it *does* return spot (so **do not** use put-call parity — parity recovers the *forward*, and was 33 points high against a measured spot), and `interval` is the strike count either side of the money, not the strike step. **Still missing: history** (nothing stores a time series yet) and **greeks** (Alice Blue does not return them; Upstox does, free — see `memory/free-market-data-options-researched.md`). Product behavior now permits a chain from one owned broker connection to price a strategy whose positions remain in another owned account; confirm that each provider's terms permit this use before adding providers or widening distribution.
 - **Regulatory** — full findings in `research/REGULATORY-API-STATIC-IP.md`. **Nothing binds MoneyPlant while it stays read-only**, and the reserved static IP is needed for DNS, TLS and redirect URIs, *not* by SEBI (whose static-IP mandate binds order placement only). Two findings price the addition of order placement: **NSE maps one static IP to exactly one client** (family excepted), which one shared VM egress IP cannot satisfy for two unrelated users; and **placing orders for another person makes MoneyPlant an "algo provider"** — the broker's agent, requiring exchange empanelment, per-algo registration and hosting on the broker's servers. The lane that stays open is self-and-family. Offering analysis or recommendations may separately fall under SEBI RA/IA rules — confirm before Step 8. Not legal advice.
 - **Credentials are correctly externalised** and no rotation is needed: every committed blob of `application.properties` holds placeholders. For future audits, `git log -S"api-secret"` flags commits where that string's *occurrence count* changed, so it fires when a placeholder line is merely added — read the blob (`git show <sha>:<path>`) before concluding anything.
 

@@ -34,6 +34,7 @@ below.
 - [Holdings in payoff](payoff-holdings.md) — optional same-account shares at purchase cost, with quantity validation and overlap protection.
 
 - [No cross-broker merging](no-cross-broker-merging.md) — identical instruments at two brokers stay two legs; spreads only earn margin benefit inside one account.
+- [Quote source is independent of position account](quote-source-is-independent-of-position-account.md) — option-chain quotes may come from any capable connection owned by the user; positions and margin remain account-local.
 - [Payoff ranges and limits](payoff-ranges-and-limits.md) — futures use entry-price anchors; exact quantities determine unlimited tails, and mixed expiries remain an explicitly labelled scenario.
 - [P&L has two columns, always](pnl-has-two-columns.md) — brokers disagree on what "P&L" means, so `PositionDto` fixes both and each gateway fills the half its broker withholds.
 - [The app owns its symbols](app-owns-its-symbols.md) — broker symbols live only inside that broker's adapter; the symbol-model doc's middle path was overruled in favour of the full model.
@@ -63,6 +64,8 @@ below.
 - [NIFTY lot size is hardcoded and stale](nifty-lot-size-is-hardcoded-and-stale.md) — the builder sizes every NIFTY leg 15% too large; fix by reading the contract master, not by editing the literal.
 
 ## Reference
+
+- [Strategy builder implementation plan](../STRATEGY-BUILDER-IMPLEMENTATION.md) — proposed Sensibull-style workflow with catalogue-backed stock search, real option-chain leg selection, and comparison against existing positions; documented 10 Sep 2026; phases A-F implemented the same day (tradestack 20b79e2, frontend c52fb37), phase G documentation still open.
 
 - [Free market data options, researched](free-market-data-options-researched.md) — Upstox gives per-strike IV and greeks for ₹0; NSE direct is blocked from the VM and its terms do not cover a product.
 - [NSE SPAN margin parameters](nse-span-margin-parameters.md) — the published scan ranges, exposure rates and sixteen scenarios, with the two σ inputs this stack cannot compute.
