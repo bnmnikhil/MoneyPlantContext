@@ -65,13 +65,13 @@ live on `goldenbook.in`. The slow step is DNS: **R3 has to start today.**
 | R3 | DNS points at the VM (Hostinger DNS) | **Fri 2 Oct** | `[x]` |
 | R4 | `support@goldenbook.in` mailbox that sends and receives | Fri 2 Oct | `[ ]` |
 | R5 | Frontend rebrand: every user-visible string, logo, favicon, meta | Sat 3 Oct | `[~]` |
-| R6 | Cutover: deploy + `migrate-to-goldenbook.sh` on the VM | Sat 3 – Sun 4 Oct | `[ ]` |
+| R6 | Cutover: deploy + `migrate-to-goldenbook.sh` on the VM | Sat 3 – Sun 4 Oct | `[x]` |
 | R7 | Google: Search Console, consent screen, redirect URI | Sat 3 – Sun 4 Oct | `[~]` |
 | R8 | Owner's broker apps re-pointed to the new callbacks | after R6 | `[ ]` |
 | R9 | Words outside the code: L1 emails, legal details, comms | before each is sent | `[~]` |
-| R10 | Docs and runbook use the new names | with R6 | `[~]` |
+| R10 | Docs and runbook use the new names | with R6 | `[x]` |
 | R11 | Retire the old host | after launch | `[ ]` |
-| R12 | Internal identifiers renamed in code | Fri 2 Oct | `[~]` |
+| R12 | Internal identifiers renamed in code | Fri 2 Oct | `[x]` |
 | R13 | This laptop: `GB_*` variables, local database and role renamed | before the next local run | `[x]` |
 | R14 | GitHub repos renamed; remotes and clone URLs updated | after R6 | `[ ]` |
 | R15 | Local folder `C:\Projects\Moneyplant` → `GoldenBook` | after launch | `[ ]` |
@@ -196,7 +196,39 @@ the wordmark on the page background.
 - the landing, login, privacy and terms pages are **seen rendered** at desktop and phone
   width. L7 still owes that check, so do both at once.
 
-### `[ ]` R6 — Cutover to the new host
+### `[x]` R6 — Cutover to the new host
+
+**Done 3 Oct 2026, 00:05 IST; outage 23:58–00:05 IST.** The migration ran on the VM
+from `main`. Two runs and two script fixes:
+
+- **Run 1** stopped at preflight, with nothing changed: git refused root in repositories
+  owned by `moneyplant` (MoneyPlant #26).
+- **Run 2** completed every step up to the deploy, then the deploy's `git fetch` failed.
+  `~/.ssh/config` named the GitHub key by its old home path. It was finished by hand
+  (`sed` on that file, then `deploy.sh main`), and the script now rewrites such paths.
+
+Before the first run, a read-only inventory of the VM had already caught four other
+failures (MoneyPlant #25).
+
+**Verified, from outside:**
+
+- `https://goldenbook.in` returns 200 with a Let's Encrypt certificate valid to 31 Dec 2026;
+- `/api/me` returns 401 signed out;
+- `www` 301s to the apex;
+- the old host's `/kite/callback?probe=1` 308s to the new host, with the query kept.
+
+**Verified, from the access log at 00:10 IST:** a Google sign-in completed, and a Kite
+connect returned through `/kite/callback` to `/app`.
+
+**Verified, on the VM:**
+
+- `goldenbook` is active and enabled; 8 migrations validated;
+- no `MP_*` keys are left;
+- the backup timer is installed but disabled, because backups are not set up (D1).
+
+**Rollback copy kept:** the `moneyplant-pgdata` volume and
+`/root/pre-goldenbook-20261002T182814Z`. Remove them after a week of normal running,
+and delete `/var/log/caddy/moneyplant*.log` within 30 days.
 
 The vehicle is a production deploy, because Google's reviewer needs a GoldenBook homepage
 with its privacy link on `goldenbook.in`. **Recommended:** bring the PUBLIC-LAUNCH L10
@@ -242,8 +274,9 @@ host it started from:
 
 ### `[~]` R7 — Google Cloud: domain, consent screen, redirect URI
 
-**2 Oct 2026:** the redirect URI is added (owner). Search Console, the consent screen
-branding and the L5 submission are still to do.
+**2 Oct 2026:** the redirect URI is added (owner), and **verified 3 Oct** by a real
+sign-in on the new host. Search Console, the consent screen branding and the L5
+submission are still to do.
 
 1. **Search Console:** add `goldenbook.in` as a *Domain* property and verify it with the
    TXT record, which goes in Cloudflare.
@@ -294,7 +327,11 @@ details and L16 are still to do.
 **Verify:** `grep -ci moneyplant research/BROKER-CONSENT-EMAILS.md` returns 0 before any
 email leaves.
 
-### `[~]` R10 — Docs use the new names
+### `[x]` R10 — Docs use the new names
+
+**Done 3 Oct 2026.** `CLAUDE.md` names `goldenbook.in` as live. `git grep bonamnikhilbabu`
+in the code repos matches only the Caddyfile's redirect block and the migration script's
+`OLD_HOST`, both by design.
 
 **2 Oct 2026:** every doc in the three repos is renamed on `launch/r-goldenbook-rename`.
 `CLAUDE.md` says plainly that the VM and this laptop still run the old names until R6
@@ -321,7 +358,10 @@ check the server log for traffic to the old host first.
 
 **Verify:** a week of access logs shows no request to the old host before it is removed.
 
-### `[~]` R12 — Internal identifiers, renamed in code
+### `[x]` R12 — Internal identifiers, renamed in code
+
+**Verified on the VM, 3 Oct 2026:** `goldenbook` active; the schema-history query runs
+as `goldenbook`; no `MP_*` keys in `/etc/goldenbook`.
 
 **2 Oct 2026, on `launch/r-goldenbook-rename`:**
 
