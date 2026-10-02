@@ -53,9 +53,9 @@ shares and hide unsupported holdings margin estimates. See `memory/payoff-holdin
 
 **`main` was deployed 6 Sep 2026** — `tradestack 0b95e40`, `frontend c8ab2ae`. Confirmed
 from outside the VM only: `GET /` returns 200 and `GET /api/me` returns 401, which is the
-runbook's success signal. **Not confirmed:** that Flyway actually applied V5–V8 (see
-below), and nothing on the host has been read — no log line, no schema query, no
-`systemctl` output.
+runbook's success signal. **Read on the host 2 Oct 2026:** production runs `tradestack cdf5b0a` / `frontend d2c779f`
+(deployed 1 Oct), and `flyway_schema_history` shows **V1–V8 all `success`**. Off-VM backups
+are still not set up there: no `backup.env`, no timer.
 
 **Historical baseline, 6 Sep 2026 (before the current payoff work).** Four PRs landed that day
 as merge commits, not squashes, so every commit keeps its identity on `main`:

@@ -62,17 +62,17 @@ live on `goldenbook.in`. The slow step is DNS: **R3 has to start today.**
 |---|---|---|---|
 | R1 | Spelling settled + trademark search | Fri 2 Oct | `[~]` |
 | R2 | Host layout: everything on the apex `goldenbook.in` | Fri 2 Oct | `[~]` |
-| R3 | DNS zone on Cloudflare, nameservers switched | **Fri 2 Oct** | `[ ]` |
+| R3 | DNS points at the VM (Hostinger DNS) | **Fri 2 Oct** | `[x]` |
 | R4 | `support@goldenbook.in` mailbox that sends and receives | Fri 2 Oct | `[ ]` |
 | R5 | Frontend rebrand: every user-visible string, logo, favicon, meta | Sat 3 Oct | `[~]` |
 | R6 | Cutover: deploy + `migrate-to-goldenbook.sh` on the VM | Sat 3 – Sun 4 Oct | `[ ]` |
-| R7 | Google: Search Console, consent screen, redirect URI | Sat 3 – Sun 4 Oct | `[ ]` |
+| R7 | Google: Search Console, consent screen, redirect URI | Sat 3 – Sun 4 Oct | `[~]` |
 | R8 | Owner's broker apps re-pointed to the new callbacks | after R6 | `[ ]` |
 | R9 | Words outside the code: L1 emails, legal details, comms | before each is sent | `[~]` |
 | R10 | Docs and runbook use the new names | with R6 | `[~]` |
 | R11 | Retire the old host | after launch | `[ ]` |
 | R12 | Internal identifiers renamed in code | Fri 2 Oct | `[~]` |
-| R13 | This laptop: `GB_*` variables, local database and role renamed | before the next local run | `[ ]` |
+| R13 | This laptop: `GB_*` variables, local database and role renamed | before the next local run | `[x]` |
 | R14 | GitHub repos renamed; remotes and clone URLs updated | after R6 | `[ ]` |
 | R15 | Local folder `C:\Projects\Moneyplant` → `GoldenBook` | after launch | `[ ]` |
 
@@ -111,7 +111,13 @@ added later.
 **Verify:** the owner confirms. Then this, the Caddyfile, `MP_FRONTEND_URL`, the Google
 redirect URI and L6's guide all name the same host. That is also L2's verification.
 
-### `[ ]` R3 — DNS on Cloudflare
+### `[x]` R3 — DNS on Cloudflare
+
+**Done 2 Oct 2026, at Hostinger instead.** The domain was bought at Hostinger, and its DNS
+stays there: the parking `A @ 2.57.91.91` was edited to `140.245.250.217`, TTL 300; `www`
+was already a CNAME to the apex, and there is no AAAA. Hostinger does not proxy, which is
+what Caddy's HTTP-01 needs. **Verified:** both names resolve to the VM via 1.1.1.1 and
+8.8.8.8, and from the VM itself (`getent`). Moving to Cloudflare is optional, not needed.
 
 Today's setup is Cloudflare DNS with a grey cloud (DNS only, no proxy) pointing at the OCI
 reserved IP. Repeat it for the new zone:
@@ -234,7 +240,10 @@ host it started from:
 - `/api/me` signed out returns 401;
 - the runbook's nine steps pass on the new host.
 
-### `[ ]` R7 — Google Cloud: domain, consent screen, redirect URI
+### `[~]` R7 — Google Cloud: domain, consent screen, redirect URI
+
+**2 Oct 2026:** the redirect URI is added (owner). Search Console, the consent screen
+branding and the L5 submission are still to do.
 
 1. **Search Console:** add `goldenbook.in` as a *Domain* property and verify it with the
    TXT record, which goes in Cloudflare.
@@ -331,7 +340,14 @@ check the server log for traffic to the old host first.
 - `docker exec goldenbook-postgres psql -U goldenbook -d goldenbook -c 'select count(*) from flyway_schema_history'` succeeds;
 - `grep -rE '^(export +)?MP_' /etc/goldenbook` returns nothing.
 
-### `[ ]` R13 — This laptop
+### `[x]` R13 — This laptop
+
+**Done 2 Oct 2026.** Five user variables moved to `GB_*` with unchanged values (only
+`GB_DB_URL`'s database name changed); database and role renamed. The role's password was
+set to `goldenbook`, because this laptop never set `MP_DB_PASSWORD` and relied on the old
+`moneyplant` default. **Verified:** a backend built from `main`, started with only `GB_*`
+set, answered `/api/me` 200, validated 8 migrations, and restored a sealed broker session,
+which proves the copied credential key.
 
 The renamed backend refuses to start while the `MP_*` user variables exist, and expects a
 `goldenbook` database.

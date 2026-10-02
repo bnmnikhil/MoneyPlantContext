@@ -242,7 +242,8 @@ Open Graph tags.
 
 ### `[~]` L8 — Screener out of the launch build
 
-**2 Oct 2026: split, committed locally, not pushed.** Settings redesign is
+**2 Oct 2026: split and merged** (frontend #22 settings; the screener stays on its own
+unpushed branch). Was: split, committed locally, not pushed. Settings redesign is
 `launch/l8-settings-redesign` in `frontend` (`cc01727` Sidebar removal, `698beb5` the
 redesign; 71 tests, build clean). The screener is `feat/index-spread-screener` in both
 repos (`frontend abb378e`, `tradestack 650e8c7`), each cut from `origin/main` and

@@ -610,10 +610,11 @@ rehearsal found one bug nothing else would have: Postgres's `encode(bytea,'base6
 at 76 characters**, so a long ciphertext split across lines, every row after it shifted, and
 the check reported three spurious failures out of six. The extraction is hex now.
 
-**Object Storage is set up, 6 Sep 2026.** Bucket `goldenbook-backups`, private, standard
+**Object Storage is set up, 6 Sep 2026.** Bucket `moneyplant-backups`, private, standard
 tier, in the **root** compartment (where the A1 VM lives), namespace `axz4vyr5vyas`, region
-`ap-hyderabad-1`. Lifecycle rule `delete-goldenbook-backups-after-30-days` is applied and
-enabled, prefix `goldenbook/`. **The rule will actually run** — a lifecycle policy is inert
+`ap-hyderabad-1`. Lifecycle rule `delete-moneyplant-backups-after-30-days` is applied and
+enabled, prefix `moneyplant/`. (Real OCI names: the 2 Oct rename changed no cloud resource.
+Once backups run under the new names, edit this rule's prefix to `goldenbook/`.) **The rule will actually run** — a lifecycle policy is inert
 without an IAM grant to the service, and `Allow service objectstorage-ap-hyderabad-1 to
 manage object-family in tenancy` was confirmed present rather than assumed. All three were
 done with the OCI CLI, not the console; the runbook's console steps are equivalent, not
@@ -627,7 +628,7 @@ them. Steps 2-4 below are now unblocked.
 
 1. **The write-only PAR** — the one piece of setup still outstanding, because minting it
    produces the credential itself. Bucket-level, `AnyObjectWrite`, listing **denied**:
-   `oci os preauth-request create --namespace axz4vyr5vyas --bucket-name goldenbook-backups
+   `oci os preauth-request create --namespace axz4vyr5vyas --bucket-name moneyplant-backups
    --name goldenbook-vm-write --access-type AnyObjectWrite --bucket-listing-action Deny
    --time-expires 2027-09-06T00:00:00Z`. Prefix the returned `access-uri` with
    `https://objectstorage.ap-hyderabad-1.oraclecloud.com` to get `GB_BACKUP_PAR_URL`.
