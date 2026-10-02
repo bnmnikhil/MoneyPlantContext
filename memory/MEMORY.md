@@ -1,4 +1,4 @@
-# MoneyPlant — project memory
+# GoldenBook — project memory
 
 **What this is.** One file per durable decision or piece of project state, with
 the reasoning that produced it. `CLAUDE.md` is the *current-state* snapshot and
@@ -11,7 +11,7 @@ survives. The two are complementary and must not overlap:
 | Shape | assertions, verifiable against the working tree | decisions, dated, including what was rejected |
 | On change | regenerate the affected section in place | append a new memory; amend an old one only when the decision itself is revisited |
 
-**Scope: the MoneyPlant application only.** Not working preferences, not machine
+**Scope: the GoldenBook application only.** Not working preferences, not machine
 setup, not anything about the people building it.
 
 **Types.** `decision` — a choice made, with alternatives rejected. `state` — where
@@ -28,7 +28,7 @@ below.
 
 ## Decisions
 
-- [Renamed to GoldenBook](renamed-to-goldenbook.md) — Oct 2026: `goldenbook.in` replaces the old host; only what users, Google and brokers see is renamed, internal `moneyplant` identifiers stay.
+- [Renamed to GoldenBook](renamed-to-goldenbook.md) — Oct 2026: `goldenbook.in` replaces the old host and everything is renamed, internals included; the VM moves by copy-then-rename with a full rollback.
 
 - [Observability stays on the VM](observability-stays-on-the-vm.md) — only pings and counts leave the server; Prometheus/Grafana self-hosted, Telegram alerts, self-built crash reports.
 
@@ -61,7 +61,7 @@ below.
 - [Positions margin comes from risk](positions-margin-comes-from-risk.md) — both the subtotal and the account total read `/api/risk/summary`, never `/api/margins`, or the column stops footing.
 - [Premium left is negated market value](premium-left-is-negated-market-value.md) — `-(qty × LTP)` for known *live options* only; missing types or quotes make totals incomplete, and non-options are excluded.
 - [Bottom-up margin engine](heuristic-margin-engine.md) — now the default per-instrument figure: SPAN scanned per expiry group + exposure per leg, calibrated to 8.6% over a real Zerodha bill.
-- [Dev auth bypasses Google locally](dev-auth-bypasses-google-locally.md) — `MP_DEV_AUTH` swaps sign-in for a fixed OIDC identity on loopback only; a second way in, never a second code path.
+- [Dev auth bypasses Google locally](dev-auth-bypasses-google-locally.md) — `GB_DEV_AUTH` swaps sign-in for a fixed OIDC identity on loopback only; a second way in, never a second code path.
 - [Strategy builder architecture](strategy-builder-architecture.md) — visual multi-leg designer on `/app/payoff` with 1-click recipes, live simulation, target price probe, and what-if import.
 - [Positions carry their contract facts](positions-carry-their-contract-facts.md) — strike, expiry and lot size as one nullable object, free from a lookup already being made; nothing reads it yet, and that is deliberate.
 - [An unmeasured zero is a claim](an-unmeasured-zero-is-a-claim.md) — `priceKnown` makes "nothing could quote this" visible, because a consumer that cannot tell it from ₹0 will render the ₹0.

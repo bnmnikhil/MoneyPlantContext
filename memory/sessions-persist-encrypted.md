@@ -31,5 +31,5 @@ broker needs zero changes outside its own package*.
   startup.
 
 **Consequence worth holding on to:** the token map is sealed with the same key as
-credentials, so `MP_CREDENTIAL_KEY` now protects **live logins**, not merely the
+credentials, so `GB_CREDENTIAL_KEY` now protects **live logins**, not merely the
 ability to start one. A Paytm access token can place orders.

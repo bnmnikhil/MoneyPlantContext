@@ -33,7 +33,7 @@ Traders need to design, simulate, and analyze multi-leg options strategies (e.g.
 > thirteenth strategy.
 
 - Automated 1-click generators for 10+ standard strategies, defined in
-  [`StrategyTemplate.java`](file:///c:/Projects/Moneyplant/tradestack/src/main/java/com/MoneyPlant/tradestack/analytics/StrategyTemplate.java)
+  [`StrategyTemplate.java`](file:///c:/Projects/Moneyplant/tradestack/src/main/java/com/goldenbook/tradestack/analytics/StrategyTemplate.java)
   *and*, separately and actually-executing, in `StrategyBuilderView.tsx`:
   - *Bullish:* Bull Call Spread (Debit), Bull Put Spread (Credit), Long Call.
   - *Bearish:* Bear Put Spread (Debit), Bear Call Spread (Credit), Long Put.

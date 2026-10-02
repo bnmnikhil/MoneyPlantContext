@@ -36,7 +36,7 @@ confirmation. Angel One, ICICI Direct and HDFC currently appear to require
 static-IP information during app or API-key activation and therefore remain
 conditional.
 
-If MoneyPlant makes no-static-IP app creation a hard launch requirement, replace
+If GoldenBook makes no-static-IP app creation a hard launch requirement, replace
 the three conditional additions, in reach order, with Motilal Oswal, 5paisa and
 FYERS.
 
@@ -49,7 +49,7 @@ The report total is 45,961,187.
 
 Counts are broker-level active-client records, not unique people: one person with
 accounts at two brokers can be counted twice. The measure is a useful proxy for
-integration reach, not market share of unique investors or MoneyPlant's expected
+integration reach, not market share of unique investors or GoldenBook's expected
 user mix.
 
 The fixed three plus the seven additions account for 35,619,715 records, or
@@ -76,11 +76,11 @@ These questions are intentionally separate:
 
 1. Can the user create and activate an app or API key without supplying a static
    IP?
-2. Can MoneyPlant fetch positions and holdings from a changing source IP?
+2. Can GoldenBook fetch positions and holdings from a changing source IP?
 3. Are order endpoints restricted to a whitelisted static IP?
 
 The third answer is generally yes under the current retail-algo framework, but
-MoneyPlant is read-only. It does not settle the first two questions. Actual
+GoldenBook is read-only. It does not settle the first two questions. Actual
 developer portals can also impose fields that the public documentation omits.
 
 ## Broker evidence
@@ -135,7 +135,7 @@ developer portals can also impose fields that the public documentation omits.
   explicitly excludes standard holdings, positions, funds and historical-data
   APIs from static-IP restriction.
 - The long-lived Analytics Token is a different product and does require static
-  IP for account-specific portfolio access. MoneyPlant should use the normal
+  IP for account-specific portfolio access. GoldenBook should use the normal
   OAuth flow.
 - Confidence: high.
 
@@ -163,7 +163,7 @@ developer portals can also impose fields that the public documentation omits.
   holdings and positions.
 - [Authentication documentation](https://dhanhq.co/docs/v2/authentication/)
   limits static-IP requirements to order-placement APIs.
-- MoneyPlant's hosted multi-user model may require Dhan partner onboarding rather
+- GoldenBook's hosted multi-user model may require Dhan partner onboarding rather
   than individual trading-app credentials.
 - Confidence: high for an individual's read-only API behavior; medium for the
   applicable hosted partner model until Dhan confirms it in writing.
@@ -193,7 +193,7 @@ developer portals can also impose fields that the public documentation omits.
   static-IP field is absent, optional or mandatory.
 - Fetch empty and non-empty holdings and positions from a non-whitelisted IP.
 - Confirm token lifetime, daily login, callback rules, price and rate limits.
-- Confirm that MoneyPlant's hosted multi-user use is allowed; retail APIs meant
+- Confirm that GoldenBook's hosted multi-user use is allowed; retail APIs meant
   only for an account owner's personal scripts may require partner onboarding.
 - Review display, retention, caching, branding and redistribution terms.
 - Store only redacted observations and synthetic fixtures; never archive user

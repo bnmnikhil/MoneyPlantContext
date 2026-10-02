@@ -1,6 +1,6 @@
 # Observability: logs, metrics, alerts
 
-**Created 2 Oct 2026.** The plan for knowing what MoneyPlant is doing once strangers use it.
+**Created 2 Oct 2026.** The plan for knowing what GoldenBook is doing once strangers use it.
 It expands P0 item **D2** ("no health endpoint, no monitoring") into **O-items**, tiered
 against the public launch (`PUBLIC-LAUNCH.md`), which carries the schedule. Status markers
 and the `[x]`-only-after-verification rule are the same as `P0-LAUNCH.md`'s. Branch names
@@ -12,7 +12,7 @@ carry the id (`launch/o1-health`).
 |---|---|
 | Health | **None.** No actuator in the pom. `deploy.sh`'s readiness probe curls `/api/me` and is itself broken (D3). |
 | Metrics | **None.** No Micrometer, no Prometheus, no host metrics. |
-| Logs | Plain-text Logback to stdout → journald (`SyslogIdentifier=moneyplant`). No logging config at all. 16 debug, 19 info, 44 warn and 2 error statements. **No request id or MDC**, so one user's request cannot be followed through the log. |
+| Logs | Plain-text Logback to stdout → journald (`SyslogIdentifier=goldenbook`). No logging config at all. 16 debug, 19 info, 44 warn and 2 error statements. **No request id or MDC**, so one user's request cannot be followed through the log. |
 | Errors | Nothing catches unexpected exceptions (B6); they reach Spring's default handler. Frontend errors are invisible: no error boundary (B2), no reporting. |
 | Alerting | **None.** `backup.sh --check` exists to be called by a monitor that does not exist. |
 | Retention | **Breaks the privacy policy's "server logs ≤ 30 days".** journald is capped by size, not age. Caddy's file log uses Caddy's defaults (by default `roll_keep_for` is 90 days). Docker's `json-file` driver for Postgres never rotates. |
@@ -64,7 +64,7 @@ Re-check each free tier's limits when signing up; they change.
 | O6 | Structured JSON logs + log hygiene rules (no secrets, tokens, emails or rupee amounts) | 1 | `[ ]` |
 | O7 | JVM flags: heap, exit on OOM, crash dumps out of the app dir; restart is alerted | 1 | `[ ]` |
 | O8 | Audit events for security-relevant actions | 1 | `[ ]` |
-| O9 | Micrometer metrics: built-ins + the MoneyPlant catalogue below | 2 | `[ ]` |
+| O9 | Micrometer metrics: built-ins + the GoldenBook catalogue below | 2 | `[ ]` |
 | O10 | Prometheus + Grafana + node_exporter on the VM, loopback only | 2 | `[ ]` |
 | O11 | Three dashboards: Overview, Brokers, Host | 2 | `[ ]` |
 | O12 | Alert rules: page vs notify vs daily digest, market-hours aware | 2 | `[ ]` |
@@ -90,7 +90,7 @@ and every promise in the privacy policy about logs is true. It replaces D2 in
 readiness includes the DB. Publicly, add **`GET /api/health` → `{"status":"UP"}`** only:
 no components, no versions, permitted without auth. That is what UptimeRobot hits. Point
 `deploy.sh`'s readiness loop at the loopback readiness probe; this fixes D3 for free.
-**Never** let broker reachability into health: a Paytm outage must not mark MoneyPlant DOWN.
+**Never** let broker reachability into health: a Paytm outage must not mark GoldenBook DOWN.
 
 **Verify:** `curl 127.0.0.1:8081/actuator/health/readiness` returns UP, and DOWN with
 Postgres stopped. The public `/api/health` carries no detail. `:8081` is unreachable from
@@ -102,12 +102,12 @@ outside the VM.
 manager. Add two UptimeRobot monitors, the site root and `/api/health`, alerting to
 Telegram after two consecutive failures.
 
-**Verify:** `systemctl stop moneyplant` pages the phone within 10 minutes, and recovery
+**Verify:** `systemctl stop goldenbook` pages the phone within 10 minutes, and recovery
 is announced too.
 
 ### `[ ]` O3 — Heartbeats for scheduled work
 
-**Do:** one Healthchecks.io check each for `moneyplant-backup` (period 24 h, grace 12 h,
+**Do:** one Healthchecks.io check each for `goldenbook-backup` (period 24 h, grace 12 h,
 matching `backup.sh --check`'s 36 h) and the EOD capture job. On success, the backup unit
 runs `curl -fsS -m 10 --retry 3 https://hc-ping.com/<uuid>`, and the commented
 `OnFailure=` line gets used. The EOD job pings from Java on success, with the URL in the env file.
@@ -117,7 +117,7 @@ runs `curl -fsS -m 10 --retry 3 https://hc-ping.com/<uuid>`, and the commented
 ### `[ ]` O4 — Retention: make the privacy policy true
 
 **Do:**
-- journald: `/etc/systemd/journald.conf.d/moneyplant.conf` with `MaxRetentionSec=30day`
+- journald: `/etc/systemd/journald.conf.d/goldenbook.conf` with `MaxRetentionSec=30day`
   and `SystemMaxUse=2G`.
 - Caddy: inside `log { output file … { roll_keep_for 720h  roll_size 50MiB } }`. In the same
   edit, fix C2 by stripping the query string. `log_skip` the callback routes, or filter
@@ -156,20 +156,20 @@ metric), and the `user={}` placeholders in the `snapshot/` warnings move to MDC.
 
 **Verify:** a grep of a day's journal for `@`, `token`, `secret` and `₹`/amount-shaped
 numbers finds nothing. One request's lines are retrievable by id with
-`journalctl -u moneyplant -o cat | jq 'select(.requestId=="…")'`.
+`journalctl -u goldenbook -o cat | jq 'select(.requestId=="…")'`.
 
 ### `[ ]` O7 — JVM behaviour under failure
 
-**Do:** in `moneyplant.service`: `-Xms512m -Xmx2g` (revisit after L13),
+**Do:** in `goldenbook.service`: `-Xms512m -Xmx2g` (revisit after L13),
 `-XX:+ExitOnOutOfMemoryError` (a dead JVM restarts clean, instead of limping on),
-`-XX:ErrorFile=/var/log/moneyplant/hs_err_%p.log` and
-`-Xlog:gc*:file=/var/log/moneyplant/gc.log:time:filecount=5,filesize=10m`. Add the log
+`-XX:ErrorFile=/var/log/goldenbook/hs_err_%p.log` and
+`-Xlog:gc*:file=/var/log/goldenbook/gc.log:time:filecount=5,filesize=10m`. Add the log
 dir to `ReadWritePaths`. Alerting on a restart arrives with O12. Until then,
 `systemctl status` shows the restart count. While editing the unit, also fix D5's stale
-`MP_SESSION_STORE` comment there.
+`GB_SESSION_STORE` comment there.
 
 **Verify:** a deliberate OOM in a dev profile restarts the service, and the crash file
-lands in `/var/log/moneyplant`.
+lands in `/var/log/goldenbook`.
 
 ### `[ ]` O8 — Audit events
 
@@ -193,23 +193,23 @@ The built-ins arrive with actuator and `micrometer-registry-prometheus`:
 JVM memory/GC/threads, `hikaricp.*`, `process.uptime`, and **`logback.events{level}`**.
 The last one is how O12 alerts on errors without shipping logs anywhere.
 
-MoneyPlant's own, with **tags limited to `broker`, `op` and `outcome`**:
+GoldenBook's own, with **tags limited to `broker`, `op` and `outcome`**:
 
 | Metric | Type | Answers |
 |---|---|---|
-| `moneyplant.broker.calls{broker,op,outcome}` | timer | Is Kite slow or failing right now? (`outcome` = ok / session_expired / call_failed) |
-| `moneyplant.broker.sessions{broker}` | gauge | How many live connections per broker |
-| `moneyplant.instrument.master{broker,outcome}` | timer + age gauge | Did today's contract master load, and how stale is it (A3, B1) |
-| `moneyplant.margin.estimate.ratio{broker}` | distribution | Estimate ÷ bill. Replaces the INFO log line in O6 |
-| `moneyplant.signin{outcome}` | counter | ok / not_invited / disabled / terms_pending |
-| `moneyplant.ratelimit.rejected{endpoint}` | counter | Is C4's limiter biting real users |
-| `moneyplant.cache{cache,result}` | counter | Spot and chain cache hit rate (L18 changes the spot cache's shape) |
-| `moneyplant.capture.runs{status}` | counter | EOD capture health |
-| `moneyplant.db.bytes{table}` | gauge, refreshed every 15 min | `raw_capture` growth (L14), the disk forecast |
-| `moneyplant.users{state}` | gauge, refreshed every 15 min | total / active today, from the DB, with no per-user tags |
-| `moneyplant.client.errors` | counter | Frontend error rate (O13) |
+| `goldenbook.broker.calls{broker,op,outcome}` | timer | Is Kite slow or failing right now? (`outcome` = ok / session_expired / call_failed) |
+| `goldenbook.broker.sessions{broker}` | gauge | How many live connections per broker |
+| `goldenbook.instrument.master{broker,outcome}` | timer + age gauge | Did today's contract master load, and how stale is it (A3, B1) |
+| `goldenbook.margin.estimate.ratio{broker}` | distribution | Estimate ÷ bill. Replaces the INFO log line in O6 |
+| `goldenbook.signin{outcome}` | counter | ok / not_invited / disabled / terms_pending |
+| `goldenbook.ratelimit.rejected{endpoint}` | counter | Is C4's limiter biting real users |
+| `goldenbook.cache{cache,result}` | counter | Spot and chain cache hit rate (L18 changes the spot cache's shape) |
+| `goldenbook.capture.runs{status}` | counter | EOD capture health |
+| `goldenbook.db.bytes{table}` | gauge, refreshed every 15 min | `raw_capture` growth (L14), the disk forecast |
+| `goldenbook.users{state}` | gauge, refreshed every 15 min | total / active today, from the DB, with no per-user tags |
+| `goldenbook.client.errors` | counter | Frontend error rate (O13) |
 
-**Verify:** `curl 127.0.0.1:8081/actuator/prometheus | grep moneyplant_` lists every row
+**Verify:** `curl 127.0.0.1:8081/actuator/prometheus | grep goldenbook_` lists every row
 above, and no series has a user or connection label.
 
 ### `[ ]` O10 — Prometheus, Grafana, node_exporter

@@ -117,7 +117,7 @@ exists because every wrong claim this project has carried was a claim nobody re-
 
 ## What P0 means
 
-MoneyPlant is already live and works for its author. P0 is not "make it run" — it is
+GoldenBook is already live and works for its author. P0 is not "make it run" — it is
 **make it safe to put in front of someone who is not you, whose money is on the other side
 of the numbers it prints.**
 
@@ -128,7 +128,7 @@ Three decisions frame everything below, taken 20 Aug 2026:
    still does not bind — but *only* because the app places no orders. Per
    `research/REGULATORY-API-STATIC-IP.md`, order placement for non-family users is
    permanently closed without re-architecture: NSE maps one static IP to exactly one
-   client, and placing orders for another person makes MoneyPlant an "algo provider"
+   client, and placing orders for another person makes GoldenBook an "algo provider"
    required to run on the broker's servers. **Read-only is now a product constraint, not a
    deferral.**
 2. **Scope: dashboard, positions, holdings, payoff, risk, settings.** The Strategy Builder
@@ -185,13 +185,13 @@ moment there is a second user. → **B1**
 | C3 | Debug endpoints live in production | C · security | `[ ]` |
 | C4 | No rate limit, body cap, or validation | C · security | `[ ]` |
 | C5 | No disconnect / revoke path | C · security | `[ ]` |
-| C6 | Prove `MP_DEV_AUTH` is off in prod | C · security | `[ ]` |
+| C6 | Prove `GB_DEV_AUTH` is off in prod | C · security | `[ ]` |
 | C7 | Stale "MUST NOT SHIP AS-IS" comment | C · security | `[ ]` |
 | D1 | **No backups** | D · operability | `[~]` |
 | D2 | No health endpoint, no monitoring | D · operability | `[ ]` |
 | D3 | Deploy readiness check is decorative | D · operability | `[ ]` |
 | D4 | No rollback path | D · operability | `[ ]` |
-| D5 | Stale runbook step on `MP_SESSION_STORE` | D · operability | `[ ]` |
+| D5 | Stale runbook step on `GB_SESSION_STORE` | D · operability | `[ ]` |
 | D6 | `position_snapshot` / `holding_snapshot` backfill | D · operability | `[ ]` |
 | E1 | No privacy/terms pages, no app footer | E · legal | `[~]` |
 | E2 | Privacy notice, DPDP-shaped | E · legal | `[~]` |
@@ -468,7 +468,7 @@ self-contained, so a tight policy is achievable); `X-Content-Type-Options: nosni
 `X-Frame-Options: DENY` plus `frame-ancestors 'none'`; `Referrer-Policy: no-referrer`;
 `Permissions-Policy` denying camera, microphone and geolocation.
 
-**Verify:** `curl -I https://moneyplant.bonamnikhilbabu.in` and check each header, then run
+**Verify:** `curl -I https://goldenbook.in` and check each header, then run
 the site through an external headers scanner.
 
 ### `[ ]` C2 — Caddy logs callback query strings
@@ -536,7 +536,7 @@ row was laid out to leave room for a per-account control there; nothing else nee
 **Verify:** connect a broker, disconnect it, confirm it is gone from `/api/session/status`
 **and** from the `broker_session` table, and that no warning recurs.
 
-### `[ ]` C6 — Prove `MP_DEV_AUTH` is off in production
+### `[ ]` C6 — Prove `GB_DEV_AUTH` is off in production
 
 The loopback guard in `auth/DevAuthConfig` (it refuses to start unless `app.frontend-url`
 is loopback) is good defence. What is missing is a positive signal.
@@ -547,10 +547,10 @@ deploy verification list.
 **Verify:** the production log names Google OIDC as the active mode on every boot.
 
 **Partial evidence, 6 Sep 2026, from outside the VM.** An unauthenticated `GET /api/me`
-against production returned **401**. Had `MP_DEV_AUTH` been on, `DevAuthConfig` permits
+against production returned **401**. Had `GB_DEV_AUTH` been on, `DevAuthConfig` permits
 every path and signs every caller in as the fixed principal, so that call would have
 returned 200 with a user. That is a real negative signal but it is not the positive one
-this item asks for, and the direct checks (`grep MP_DEV_AUTH /etc/moneyplant/moneyplant.env`,
+this item asks for, and the direct checks (`grep GB_DEV_AUTH /etc/goldenbook/goldenbook.env`,
 the boot log) have **not** been run. Item stays open.
 
 ### `[ ]` C7 — Stale "MUST NOT SHIP AS-IS" comment
@@ -572,7 +572,7 @@ will stop a future reader, or an auditor, cold.
 The first of the two headline findings. Nothing existed.
 
 **Do:** nightly `pg_dump`, encrypted with `gpg`, pushed to OCI Object Storage (20 GB on the
-always-free tier), 30-day retention. Re-verify the off-VM `MP_CREDENTIAL_KEY` backup as
+always-free tier), 30-day retention. Re-verify the off-VM `GB_CREDENTIAL_KEY` backup as
 part of this — the dump is worthless without it, and it is the only unrecoverable secret in
 the stack.
 
@@ -581,10 +581,10 @@ and confirm a stored broker credential decrypts with the backed-up key. An untes
 is not a backup.
 
 **Merged to `main` 6 Sep 2026 (PR #16). Code written; the VM setup is not done.** The
-scripts land on the VM at `/opt/moneyplant/src/tradestack/deploy/` with the next deploy,
+scripts land on the VM at `/opt/goldenbook/src/tradestack/deploy/` with the next deploy,
 which is what the runbook's paths assume — so **deploy before doing the VM steps below.**
 Originally branch `p0/d1-backups`, commit `4fa5d01`. Six files in `tradestack/deploy/`: `backup.sh`, `restore-verify.sh`,
-`CredentialDecryptCheck.java`, the `moneyplant-backup` service and timer, and
+`CredentialDecryptCheck.java`, the `goldenbook-backup` service and timer, and
 `backup.env.example`, plus a "Backups" section in `deploy/README.md` carrying the runbook.
 
 Three design choices worth knowing before touching any of it; reasoning in
@@ -595,8 +595,8 @@ Three design choices worth knowing before touching any of it; reasoning in
   history nor destroy it. The costs are real: retention has to be a bucket lifecycle rule,
   and `restore-verify.sh` needs a second read-only PAR kept off the VM.
 - **Symmetric gpg, not a public key.** Anything that can read the passphrase off the VM can
-  already read `MP_CREDENTIAL_KEY` and the database password out of
-  `/etc/moneyplant/moneyplant.env` — strictly more than the backup holds. Asymmetric buys
+  already read `GB_CREDENTIAL_KEY` and the database password out of
+  `/etc/goldenbook/goldenbook.env` — strictly more than the backup holds. Asymmetric buys
   nothing against that and costs a second unrecoverable secret to lose.
 - **`backup.sh` refuses to upload a dump with no `broker_credential` table data.** The
   failure this item exists to prevent is not a backup that errors; it is one that uploads
@@ -605,15 +605,15 @@ Three design choices worth knowing before touching any of it; reasoning in
 **Rehearsed end to end against the local Postgres, 20 Aug 2026** — dump, the emptiness
 guard, gpg seal and open (byte-identical round trip, wrong passphrase refused), restore into
 a scratch database, row counts, Flyway history, and all four real `broker_credential` rows
-decrypting under the live `MP_CREDENTIAL_KEY` while a random key failed all four. The
+decrypting under the live `GB_CREDENTIAL_KEY` while a random key failed all four. The
 rehearsal found one bug nothing else would have: Postgres's `encode(bytea,'base64')` **wraps
 at 76 characters**, so a long ciphertext split across lines, every row after it shifted, and
 the check reported three spurious failures out of six. The extraction is hex now.
 
-**Object Storage is set up, 6 Sep 2026.** Bucket `moneyplant-backups`, private, standard
+**Object Storage is set up, 6 Sep 2026.** Bucket `goldenbook-backups`, private, standard
 tier, in the **root** compartment (where the A1 VM lives), namespace `axz4vyr5vyas`, region
-`ap-hyderabad-1`. Lifecycle rule `delete-moneyplant-backups-after-30-days` is applied and
-enabled, prefix `moneyplant/`. **The rule will actually run** — a lifecycle policy is inert
+`ap-hyderabad-1`. Lifecycle rule `delete-goldenbook-backups-after-30-days` is applied and
+enabled, prefix `goldenbook/`. **The rule will actually run** — a lifecycle policy is inert
 without an IAM grant to the service, and `Allow service objectstorage-ap-hyderabad-1 to
 manage object-family in tenancy` was confirmed present rather than assumed. All three were
 done with the OCI CLI, not the console; the runbook's console steps are equivalent, not
@@ -622,28 +622,28 @@ required.
 **What is left:**
 
 **The scripts are on the VM as of the 6 Sep deploy**, at
-`/opt/moneyplant/src/tradestack/deploy/`, which is where every path in the runbook expects
+`/opt/goldenbook/src/tradestack/deploy/`, which is where every path in the runbook expects
 them. Steps 2-4 below are now unblocked.
 
 1. **The write-only PAR** — the one piece of setup still outstanding, because minting it
    produces the credential itself. Bucket-level, `AnyObjectWrite`, listing **denied**:
-   `oci os preauth-request create --namespace axz4vyr5vyas --bucket-name moneyplant-backups
-   --name moneyplant-vm-write --access-type AnyObjectWrite --bucket-listing-action Deny
+   `oci os preauth-request create --namespace axz4vyr5vyas --bucket-name goldenbook-backups
+   --name goldenbook-vm-write --access-type AnyObjectWrite --bucket-listing-action Deny
    --time-expires 2027-09-06T00:00:00Z`. Prefix the returned `access-uri` with
-   `https://objectstorage.ap-hyderabad-1.oraclecloud.com` to get `MP_BACKUP_PAR_URL`.
+   `https://objectstorage.ap-hyderabad-1.oraclecloud.com` to get `GB_BACKUP_PAR_URL`.
    The URL is shown once and is itself the credential; calendar the expiry.
 2. Install `backup.env` and the two units, enable the timer, run it once by hand.
 3. **Run `restore-verify.sh` against an object downloaded from Object Storage** — not the
    local copy, which tests the dump but not the upload — with the off-VM copy of
-   `MP_CREDENTIAL_KEY` pasted from the password manager. This is the step that flips D1 to
+   `GB_CREDENTIAL_KEY` pasted from the password manager. This is the step that flips D1 to
    `[x]`. Nothing before it does.
-4. Re-confirm both off-VM secrets are current: `MP_CREDENTIAL_KEY` and the new
-   `MP_BACKUP_PASSPHRASE`. A restore needs both — one opens the file, the other opens the
+4. Re-confirm both off-VM secrets are current: `GB_CREDENTIAL_KEY` and the new
+   `GB_BACKUP_PASSPHRASE`. A restore needs both — one opens the file, the other opens the
    broker secrets inside it.
 
 **It is silent when it stops.** `backup.sh --check` exits non-zero when the last success is
 older than 36 hours, and exists to be the command **D2**'s monitor calls;
-`moneyplant-backup.service` carries a commented `OnFailure=` line for the same reason. Until
+`goldenbook-backup.service` carries a commented `OnFailure=` line for the same reason. Until
 D2 lands, `systemctl list-timers` is the whole story.
 
 ### `[ ]` D2 — No health endpoint, no monitoring
@@ -686,7 +686,7 @@ the D1 restore. All four pending migrations are additive (`create table`, `creat
 
 ### `[ ]` D5 — Stale runbook step
 
-`tradestack/deploy/README.md` verification step 9 tells you to confirm `MP_SESSION_STORE`
+`tradestack/deploy/README.md` verification step 9 tells you to confirm `GB_SESSION_STORE`
 is **off**. It now defaults **on** in `application.properties`. As written the step has you
 "fix" a correct configuration. (`broker/session/SessionStore.java:53`'s javadoc says the
 same stale thing.)
@@ -721,7 +721,7 @@ regulatory research is already done in `research/REGULATORY-API-STATIC-IP.md`.*
 
 **2 Oct 2026, in progress:** frontend branch `launch/e1-legal-pages` (worktree `frontend-legal/`, uncommitted) adds `/privacy`, `/terms` and one shared `LegalFooter` on the landing page, the login page and in `AppShell`. The login page carries the agreement line and E4's disclosure. Operator details sit in `src/features/legal/details.ts`, and the pages show a **draft notice** until no `[placeholder]` remains. `npm test` 63 passing, `npm run build` clean. **Not yet seen in a browser** (the Chrome extension did not respond). See `PUBLIC-LAUNCH.md` for which claims must become true before the pages take effect.
 
-`LandingPage.tsx:88-91` holds the only footer in the codebase (`© {year} MoneyPlant` and
+`LandingPage.tsx:88-91` holds the only footer in the codebase (`© {year} GoldenBook` and
 the literal text `Private system`) — that is where the links go. `AppShell.tsx:43-53` has
 no footer element at all and needs one added after `<Outlet />`, accounting for the `pb-24`
 mobile tab-bar clearance. Add `/privacy` and `/terms` routes in `App.tsx`.
@@ -783,8 +783,8 @@ the DPDP grievance contact.
 
 ### `[ ]` F1 — The allowlist is an env var and needs a restart
 
-Adding a user today means SSH to the VM, editing `MP_ALLOWED_EMAILS` in
-`/etc/moneyplant/moneyplant.env`, and `systemctl restart moneyplant` — which drops every
+Adding a user today means SSH to the VM, editing `GB_ALLOWED_EMAILS` in
+`/etc/goldenbook/goldenbook.env`, and `systemctl restart goldenbook` — which drops every
 other user's HTTP session. Workable for two people, painful for eight.
 
 **Do:** a small `invited_email` table read at sign-in. No restart, and E3's erasure gets

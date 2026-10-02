@@ -141,7 +141,7 @@ All must be true. Anything false means **stay allowlisted**, not "launch and fix
 - [ ] D2: stopping the service paged the owner's phone.
 - [ ] L11: a second account saw none of the first account's data on production.
 - [ ] Sign-up kill switch tested: off → a new Google account is refused, existing users unaffected.
-- [ ] `MP_CREDENTIAL_KEY` and `MP_BACKUP_PASSPHRASE` are both in the password manager and current.
+- [ ] `GB_CREDENTIAL_KEY` and `GB_BACKUP_PASSPHRASE` are both in the password manager and current.
 
 ---
 
@@ -187,7 +187,7 @@ name the same host.
 Open sign-up must be **an explicit mode, never an empty list**. Keep that property.
 
 **Do:** `V9` creates `app_user (user_id = Google sub, email, created_at, last_seen_at,
-disabled_at, terms_version, terms_accepted_at)`. Add `moneyplant.signup = allowlist | open
+disabled_at, terms_version, terms_accepted_at)`. Add `goldenbook.signup = allowlist | open
 | closed`: `closed` admits existing `app_user` rows only, which is the kill switch. Add a
 `disabled_at` check at sign-in so one abusive account can be cut off. Keep rejection inside
 the token exchange, as `SecurityConfig` does now, so there is no half-logged-in state. Log
@@ -212,11 +212,11 @@ cap without a security review. Brand verification (name and logo on the consent 
 needs a verified domain, a live privacy-policy URL on it, and a support email. It takes days.
 
 **Verify:** a Google account not on any test-user list completes sign-in, and the consent
-screen shows MoneyPlant's name.
+screen shows GoldenBook's name.
 
 ### `[ ]` L6 — Self-serve broker setup guide
 
-A stranger cannot use MoneyPlant until they create a developer app at each broker, a step
+A stranger cannot use GoldenBook until they create a developer app at each broker, a step
 no one will walk them through in person. Kite Connect's Personal tier costs ₹0. Alice Blue
 needs its admin team to activate the app, otherwise login answers `"Invalid vendor id"`.
 Paytm needs a KYC'd account. This absorbs F2.
@@ -299,7 +299,7 @@ every `connectionId`-taking endpoint (`/api/payoff/{u}?connectionId=`, `DELETE
 
 **Do:** run `/security-review` over the merged launch diff, plus `npm audit --omit=dev`
 and an OWASP dependency check (or `mvn versions:display-dependency-updates`) on the
-backend. Confirm `MP_COOKIE_SECURE=true` on the VM. Re-read CSRF and session-fixation
+backend. Confirm `GB_COOKIE_SECURE=true` on the VM. Re-read CSRF and session-fixation
 settings with open sign-up in mind.
 
 **Verify:** findings fixed, or recorded here with a reason.
@@ -347,7 +347,7 @@ a retention job (e.g. 90 days), or a documented decision that it isn't needed ye
 ### `[ ]` L15 — Incident runbook
 
 **Do:** add a short section to `tradestack/deploy/README.md` covering: switch sign-up to
-`closed`; disable one user; rotate `MP_CREDENTIAL_KEY` (the `key_version` backfill, never
+`closed`; disable one user; rotate `GB_CREDENTIAL_KEY` (the `key_version` backfill, never
 an in-place edit); force-expire all broker sessions; and the DPDP breach notice (users plus
 the Data Protection Board; legally due from May 2027, but state the commitment now in E2).
 

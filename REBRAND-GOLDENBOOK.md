@@ -7,17 +7,41 @@ settles `PUBLIC-LAUNCH.md` **L2** (final domain), which is carried out here.
 `memory/renamed-to-goldenbook.md`.
 
 Status markers and the rule are `P0-LAUNCH.md`'s: `[ ]` `[~]` `[x]` `[-]`, and **`[x]`
-only after the verification line has actually been run.** Branch names carry the id
-(`launch/r5-rebrand-frontend`).
+only after the verification line has actually been run.** The work is on one branch name,
+`launch/r-goldenbook-rename`, in all three repos.
 
 ## The one decision that shapes everything
 
-**Rename what people see; keep the internal names.** Users, Google, the brokers and the
-legal pages see the brand and the host. The Java package, `moneyplant.*` property keys,
-`MP_*` variables, the database, role, container and volume, the systemd unit and the
-`/opt` paths stay as they are. Users see none of them. Renaming them in launch week would
-conflict with every open branch, and would turn a config change into a database and
-volume migration on a VM that has no tested rollback (D4). See R12.
+**Everything is renamed, internal names included** (owner, 2 Oct 2026). That covers:
+
+- what people see: UI, legal pages, host, consent screen, broker app names;
+- the Java package (`com.goldenbook.tradestack`) and Maven groupId;
+- `goldenbook.*` property keys and `GB_*` variables;
+- the database, role, container and volume;
+- systemd units, the `/opt`, `/etc`, `/var/www` and `/var/backups` paths, and the
+  backup object prefix;
+- the GitHub repos, and eventually the local folder.
+
+The first draft of this plan kept the internals. The owner chose a full rename instead.
+The two risks that draft named are handled rather than avoided:
+
+- **Open branches:** the screener branch is already rebased onto the rename. The two
+  launch frontend branches merge cleanly with it.
+- **No tested rollback (D4):** `deploy/migrate-to-goldenbook.sh` copies the database
+  volume and renames only the copy. The untouched original, plus a saved copy of the
+  configuration and the live build, is a complete rollback.
+
+`LegacyEnvironmentGuard` makes the backend refuse to start while any `MP_*` variable is
+left. A half-migrated environment would otherwise drop `GB_COOKIE_SECURE` back to
+`false` without a sound.
+
+**Deliberately not renamed:**
+
+- the Flyway migrations: changing a byte, even in a comment, fails checksum validation
+  on the VM;
+- the GitHub URLs, until R14 renames the repos;
+- `C:\Projects\Moneyplant`, until R15;
+- historical facts such as the old host and `~/.moneyplant/sessions.json`.
 
 ## Why this sits on the launch's critical path
 
@@ -36,28 +60,30 @@ live on `goldenbook.in`. The slow step is DNS: **R3 has to start today.**
 
 | ID | Item | When | Status |
 |---|---|---|---|
-| R1 | Spelling settled + trademark search | Fri 2 Oct | `[ ]` |
+| R1 | Spelling settled + trademark search | Fri 2 Oct | `[~]` |
 | R2 | Host layout: everything on the apex `goldenbook.in` | Fri 2 Oct | `[~]` |
 | R3 | DNS zone on Cloudflare, nameservers switched | **Fri 2 Oct** | `[ ]` |
 | R4 | `support@goldenbook.in` mailbox that sends and receives | Fri 2 Oct | `[ ]` |
-| R5 | Frontend rebrand: every user-visible string, logo, favicon, meta | Sat 3 Oct | `[ ]` |
-| R6 | Cutover: Caddy, `MP_FRONTEND_URL`, old host 308-redirects | Sat 3 – Sun 4 Oct | `[ ]` |
+| R5 | Frontend rebrand: every user-visible string, logo, favicon, meta | Sat 3 Oct | `[~]` |
+| R6 | Cutover: deploy + `migrate-to-goldenbook.sh` on the VM | Sat 3 – Sun 4 Oct | `[ ]` |
 | R7 | Google: Search Console, consent screen, redirect URI | Sat 3 – Sun 4 Oct | `[ ]` |
 | R8 | Owner's broker apps re-pointed to the new callbacks | after R6 | `[ ]` |
-| R9 | Words outside the code: L1 emails, legal details, comms | before each is sent | `[ ]` |
-| R10 | Docs and runbook name the new host | with R6 | `[ ]` |
+| R9 | Words outside the code: L1 emails, legal details, comms | before each is sent | `[~]` |
+| R10 | Docs and runbook use the new names | with R6 | `[~]` |
 | R11 | Retire the old host | after launch | `[ ]` |
-| R12 | Internal identifiers kept, on purpose | — | `[-]` |
+| R12 | Internal identifiers renamed in code | Fri 2 Oct | `[~]` |
+| R13 | This laptop: `GB_*` variables, local database and role renamed | before the next local run | `[ ]` |
+| R14 | GitHub repos renamed; remotes and clone URLs updated | after R6 | `[ ]` |
+| R15 | Local folder `C:\Projects\Moneyplant` → `GoldenBook` | after launch | `[ ]` |
 
 ---
 
 ## Fri 2 Oct: start the clocks
 
-### `[ ]` R1 — Spelling and a trademark search
+### `[~]` R1 — Spelling and a trademark search
 
-**Decide:** `GoldenBook` (camel case, as `MoneyPlant` was) or `Goldenbook`. Every string
-in R5, the consent screen and the broker emails uses the same one. The domain is lowercase
-either way.
+**Spelling: `GoldenBook`** (owner, 2 Oct 2026). The code and docs use it everywhere, and
+the domain is lowercase. **The trademark search is still open.**
 
 **Search:** check IP India's public trademark search (`tmrsearch.ipindia.gov.in`) for
 "GOLDENBOOK" and "GOLDEN BOOK" in classes **9** (software), **36** (financial services)
@@ -125,7 +151,13 @@ mailbox.
 
 ## Sat 3 – Sun 4 Oct: rebrand and cut over (markets closed)
 
-### `[ ]` R5 — Frontend rebrand
+### `[~]` R5 — Frontend rebrand
+
+**2 Oct 2026: done in code, not yet seen rendered.** `frontend 538d44f` on
+`launch/r-goldenbook-rename`, stacked on `launch/e1-legal-pages`. Every string is
+renamed, the open-book mark (gold) replaces the sprout in both logos and the favicon, and
+`og:url` is set. 63 tests pass, the build is clean, and `git grep -i 'money ?plant'`
+returns nothing. **Still open:** `og:image`, and the rendered check.
 
 Commit on top of `launch/e1-legal-pages`. Since the legal pages name the operator and the
 product, the two have to ship together. All of these are user-visible today (counted on
@@ -144,10 +176,8 @@ that branch, 2 Oct):
 | `components/layout/Topbar.tsx` | aria-label |
 | `package.json` | `"name"`: harmless; rename it for tidiness |
 
-**Not renamed**, deliberately (R12): `BROKER_SESSION_LOST_EVENT`'s value
-`"moneyplant:broker-session-lost"` in `lib/api.ts`, which no user sees and whose rename
-would need both halves to deploy together, and the code comments in `aggregate.ts` and
-`types/api.ts`. Also out of scope: a gold colour palette. That is a design decision for
+The in-page event (`goldenbook:broker-session-lost`) and the code comments are renamed
+too; both halves of that event are in this one repo. Out of scope: a gold colour palette. That is a design decision for
 after launch, not part of a rename.
 
 An `og:image` is a 1200×630 PNG in `public/`; with nothing better, use the new mark plus
@@ -155,8 +185,7 @@ the wordmark on the page background.
 
 **Verify:**
 
-- `git grep -n -i -E 'money ?plant' -- src index.html public package.json` returns only
-  the event-name line and the two comments;
+- `git grep -n -i -E 'money ?plant'` returns nothing;
 - `npm test` passes and `npm run build` is clean;
 - the landing, login, privacy and terms pages are **seen rendered** at desktop and phone
   width. L7 still owes that check, so do both at once.
@@ -173,6 +202,13 @@ Wednesday's L10 then becomes a smaller second deploy.
 **Before it:** D1's restore-verify has been run. There is no rollback path yet (D4), so
 a working backup is the safety net.
 
+**On the VM, the cutover is `deploy/migrate-to-goldenbook.sh`** (runbook: "Migrating to
+GoldenBook names" in `deploy/README.md`). It does steps 2–3 below together with the
+internal renames (R12), so there is one maintenance window, not two. It refuses to run
+until `goldenbook.in` resolves to the VM. `CONFIRM=yes` vouches for the three manual
+preconditions: step 1 below, a lifecycle rule for the new `goldenbook/` backup prefix
+(**without it, new backups are never deleted**), and the branch being pushed.
+
 **Order matters**, because Google sign-in breaks if the host it returns to is not the
 host it started from:
 
@@ -184,7 +220,7 @@ host it started from:
    **308, not 301,** so that a broker callback arriving as a POST stays a POST, and
    `{uri}` carries the query string with the request token. While users still have the
    old callback registered (R8), this redirect is what keeps their connect flow working.
-3. `/etc/moneyplant/moneyplant.env`: `MP_FRONTEND_URL=https://goldenbook.in`. Restart.
+3. `/etc/goldenbook/goldenbook.env`: `GB_FRONTEND_URL=https://goldenbook.in`. Restart.
 4. Everyone signed in on the old host is signed out once, because the cookie was per host.
    That is expected; tell the allowlisted users in advance.
 
@@ -234,7 +270,10 @@ it before anyone else follows the guide.
 **Verify:** one live connect per broker on production, where the broker returns straight
 to `goldenbook.in` with no 308 in the network log.
 
-### `[ ]` R9 — Words outside the code
+### `[~]` R9 — Words outside the code
+
+**2 Oct 2026:** the L1 email drafts are renamed; the `grep` below returns 0. The legal
+details and L16 are still to do.
 
 | Where | Count | Notes |
 |---|---|---|
@@ -246,18 +285,16 @@ to `goldenbook.in` with no 308 in the network log.
 **Verify:** `grep -ci moneyplant research/BROKER-CONSENT-EMAILS.md` returns 0 before any
 email leaves.
 
-### `[ ]` R10 — Docs name the new host
+### `[~]` R10 — Docs use the new names
 
-Done at R6, not before, because `CLAUDE.md` describes code truth:
+**2 Oct 2026:** every doc in the three repos is renamed on `launch/r-goldenbook-rename`.
+`CLAUDE.md` says plainly that the VM and this laptop still run the old names until R6
+and R13. What remains at R6:
 
 - the `Live at` line in `CLAUDE.md`;
 - `tradestack/deploy/README.md`: the host table, the verification curls, and the
   troubleshooting `-H "Host: …"`;
-- `deploy/moneyplant.env.example`'s `MP_FRONTEND_URL` (the file name stays, per R12);
 - `PUBLIC-LAUNCH.md` L2 → `[x]`.
-
-`DevAuthSecurityTest:73` uses the old host only as an example of a non-loopback URL, so
-it is optional; changing it costs one line.
 
 **Verify:** `git grep bonamnikhilbabu` in both code repos matches only the Caddyfile's
 redirect block.
@@ -275,16 +312,66 @@ check the server log for traffic to the old host first.
 
 **Verify:** a week of access logs shows no request to the old host before it is removed.
 
-### `[-]` R12 — Internal identifiers, kept on purpose
+### `[~]` R12 — Internal identifiers, renamed in code
 
-| Identifier | Where | Why it stays |
-|---|---|---|
-| `com.MoneyPlant.tradestack` | every Java file | No user sees it, and renaming it conflicts with every open branch. If it is ever done, do it in a post-launch PR **when no other branch is open**, and fix the non-standard capital at the same time (`com.goldenbook`). |
-| `moneyplant.*` property keys, `MP_*` variables | `application.properties`, VM env | Renaming means changing the VM env and the code in the same deploy, for no gain. |
-| database / role `moneyplant`, `moneyplant-postgres`, `moneyplant-pgdata` | VM, `docker-compose.yml`, `backup.sh` | A volume rename is a dump-and-restore on the one machine with no rollback. Never worth it. |
-| `moneyplant.service`, `/opt/moneyplant`, `/etc/moneyplant`, `/var/www/moneyplant` | VM, `deploy/` | The same: host plumbing that nobody else sees. |
-| `"moneyplant:broker-session-lost"` | `lib/api.ts` | An in-page event name. |
-| GitHub repos, `tradestack` | GitHub | GitHub redirects renamed repos, so this is cheap whenever it is wanted; it is not needed for launch. |
+**2 Oct 2026, on `launch/r-goldenbook-rename`:**
 
-Revisit after launch only if one of these starts confusing a contributor. That is the
-only cost they carry.
+- `tradestack 7e0a269`: the package, groupId, property keys, `GB_*` variables, default
+  database and role, deploy files and the Caddyfile (the old host 308-redirects), plus
+  `LegacyEnvironmentGuard`. **475 tests pass** (the previous 471 plus its 4).
+- `tradestack 1f0231c`: `migrate-to-goldenbook.sh` and the runbook section with rollback.
+  `bash -n` passes. **It has never run against a VM**: there is no second machine to
+  rehearse on, so its first run is the real one. That is why it copies rather than renames
+  the volume.
+- `feat/index-spread-screener` is rebased onto the rename (`3e533ca`, **481 tests pass**).
+
+**Verify:** after R6, on the VM:
+
+- `systemctl status goldenbook` is active;
+- `docker exec goldenbook-postgres psql -U goldenbook -d goldenbook -c 'select count(*) from flyway_schema_history'` succeeds;
+- `grep -rE '^(export +)?MP_' /etc/goldenbook` returns nothing.
+
+### `[ ]` R13 — This laptop
+
+The renamed backend refuses to start while the `MP_*` user variables exist, and expects a
+`goldenbook` database.
+
+**Do**, with the local backend stopped:
+
+- copy each `MP_*` user variable to `GB_*`, then delete the `MP_*` one;
+- `GB_DB_URL` names `/goldenbook`;
+- on 5433, as `postgres`:
+  `alter database moneyplant rename to goldenbook; alter role moneyplant rename to goldenbook;`.
+
+The role keeps its password because local Postgres 16 stores SCRAM; check
+`pg_authid.rolpassword` first. **Pre-rename branches stop running locally after this**,
+which is the point.
+
+**Verify:** a fresh shell starts the backend on `launch/r-goldenbook-rename` with dev
+auth, and `/api/me` answers.
+
+### `[ ]` R14 — GitHub repositories
+
+**Do:**
+
+- `MoneyPlant` → `GoldenBook`, `MoneyPlantFrontend` → `GoldenBookFrontend`,
+  `MoneyPlantContext` → `GoldenBookContext`;
+- `git remote set-url` in every local clone and on the VM;
+- the two clone lines in `deploy/README.md`.
+
+GitHub redirects the old URLs, so nothing breaks in between. Do it after R6, so the
+migration fetches from URLs it already knows.
+
+**Verify:** `git ls-remote` against each new URL, locally and on the VM.
+
+### `[ ]` R15 — The local folder
+
+`C:\Projects\Moneyplant` → `C:\Projects\GoldenBook`, after launch. Three things key off
+that path:
+
+- the `frontend-legal` worktree's absolute links: run `git worktree repair`;
+- editor workspaces;
+- Claude Code's per-project memory directory, which must be moved by hand.
+
+**Verify:** `git worktree list` is clean in both code repos, and the project memory loads
+in a new session.

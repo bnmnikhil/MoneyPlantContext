@@ -20,7 +20,7 @@ seriousness:
    production.
 4. NSE's site terms permit "personal, non-commercial use only", and its Data
    Usage & Data Sharing Policy requires an agreement and fees for commercial
-   use, with redistribution needing a separate agreement. MoneyPlant is
+   use, with redistribution needing a separate agreement. GoldenBook is
    [[real-product-not-personal-tool]], so that carve-out is not ours.
 
 **Upstox is the find, and the best free option located.** All trading and

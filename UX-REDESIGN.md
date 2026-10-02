@@ -118,8 +118,8 @@ Verification:
 - Browser inventory still has no browsers/apps. No screenshot, pixel comparison,
   or interactive expand/collapse check was possible. These remain pending.
 
-Recovery copies are in `%TEMP%/moneyplant-ux-checkpoint-01` (pre-Overview tracked
-diffs and documents) and `%TEMP%/moneyplant-ux-checkpoint-02` (explicit copies of
+Recovery copies are in `%TEMP%/goldenbook-ux-checkpoint-01` (pre-Overview tracked
+diffs and documents) and `%TEMP%/goldenbook-ux-checkpoint-02` (explicit copies of
 the task's frontend files and workspace documents). They contain no broker data
 or credentials. These are local recovery copies, not git commits.
 
@@ -162,8 +162,8 @@ Verification:
 - Browser inventory remains empty. Exact visual/viewport matching and interactive
   fold/keyboard checks remain pending; no screenshot verification is claimed.
 
-Recovery: `%TEMP%/moneyplant-ux-checkpoint-03-before` stores the files as they were
-before this step. `%TEMP%/moneyplant-ux-checkpoint-03` stores the resulting source
+Recovery: `%TEMP%/goldenbook-ux-checkpoint-03-before` stores the files as they were
+before this step. `%TEMP%/goldenbook-ux-checkpoint-03` stores the resulting source
 and documents. These local copies are not commits.
 
 **Checkpoint 3 handoff:** Live payoff was subsequently implemented in checkpoint 4 below.
@@ -204,8 +204,8 @@ Verification:
 - Browser inventory has no browsers/apps. Pixel matching, responsive rendering,
   dropdown keyboard interaction and holdings interactions remain unverified.
 
-Recovery: `%TEMP%/moneyplant-ux-checkpoint-04-before` contains the pre-step files;
-`%TEMP%/moneyplant-ux-checkpoint-04` contains cumulative task source and documents.
+Recovery: `%TEMP%/goldenbook-ux-checkpoint-04-before` contains the pre-step files;
+`%TEMP%/goldenbook-ux-checkpoint-04` contains cumulative task source and documents.
 These local recovery copies contain no broker data and are not commits.
 
 **Checkpoint 4 handoff:** Strategy builder was subsequently implemented in
@@ -264,8 +264,8 @@ Verification:
 - Browser inventory remains empty. Exact pixels, dropdown/stepper/slider interaction,
   asynchronous races and responsive rendering have not been browser-verified.
 
-Recovery: `%TEMP%/moneyplant-ux-checkpoint-05-before` holds the pre-step files;
-`%TEMP%/moneyplant-ux-checkpoint-05` holds cumulative task source and documentation.
+Recovery: `%TEMP%/goldenbook-ux-checkpoint-05-before` holds the pre-step files;
+`%TEMP%/goldenbook-ux-checkpoint-05` holds cumulative task source and documentation.
 These are local recovery copies, not commits, and contain no broker data.
 
 **Resume next:** review current diffs, then checkpoint 6 (consistency and state
@@ -278,13 +278,13 @@ was committed, pushed, opened as a PR, or deployed.
 
 The owner requested pushing the work completed so far. Frontend checkpoints 1–5
 are committed as `565931a0db5793cbd8c5fb3850e7badc8311804f` and pushed to
-`origin/feat/ux-mockup-redesign` in `MoneyPlantFrontend`. The matching branch in
-`MoneyPlant` is pushed at the unchanged backend baseline
+`origin/feat/ux-mockup-redesign` in `GoldenBookFrontend`. The matching branch in
+`GoldenBook` is pushed at the unchanged backend baseline
 `135493e80197d5d77d0c7259b240bc2eae1f1203`; no backend commit was created.
 Both remote branch hashes were checked with `git ls-remote`.
 
 This documentation handoff includes all four source PNG mockups, the checkpoint
-record and the durable design notes in `MoneyPlantContext` on the same branch.
+record and the durable design notes in `GoldenBookContext` on the same branch.
 The local checkpoint recovery copies remain available in addition to Git.
 Unrelated backend configuration, architecture reports and JVM crash logs are
 excluded and remain local.
@@ -323,8 +323,8 @@ Verification on the final CSS:
 - `npm test`: **52 passed, 0 failed**. `npm run build`: **passed**; the existing
   >500 kB bundle warning remains. No calculation or API change was made.
 
-Recovery: `%TEMP%/moneyplant-ux-checkpoint-06a-before` contains pre-edit CSS and
-design documentation. The matching `moneyplant-ux-checkpoint-06a` directory holds
+Recovery: `%TEMP%/goldenbook-ux-checkpoint-06a-before` contains pre-edit CSS and
+design documentation. The matching `goldenbook-ux-checkpoint-06a` directory holds
 the completed checkpoint. Both contain source/docs only, without account data.
 
 **Resume next:** finish visual consistency checks, including chart reference-label
@@ -352,8 +352,8 @@ rectangles do not intersect), zoom/reset, and the populated desktop AUBANK build
 `tests/reference-labels.test.mjs` covers nearby/coincident labels, separated labels,
 plot edges, off-screen filtering and preservation of input data.
 `npm test`: **56 passed, 0 failed**. `npm run build`: **passed**, with the existing
-bundle-size warning. Recovery copies are `%TEMP%/moneyplant-ux-checkpoint-06b-before`
-and `%TEMP%/moneyplant-ux-checkpoint-06b`. No new commit, push or deployment.
+bundle-size warning. Recovery copies are `%TEMP%/goldenbook-ux-checkpoint-06b-before`
+and `%TEMP%/goldenbook-ux-checkpoint-06b`. No new commit, push or deployment.
 
 Next: Overview vertical spacing, then remaining responsive/error-state checks.
 
@@ -372,8 +372,8 @@ Overview has no document overflow at 320px, 390px or 768px; the 320px monetary
 figures fit inside their columns. Financial values and account groups are unchanged.
 
 `npm test`: **56 passed, 0 failed**. `npm run build`: **passed**, retaining the
-existing bundle warning. Pre/post copies: `%TEMP%/moneyplant-ux-checkpoint-06c-before`
-and `%TEMP%/moneyplant-ux-checkpoint-06c`. No commit, push or deployment.
+existing bundle warning. Pre/post copies: `%TEMP%/goldenbook-ux-checkpoint-06c-before`
+and `%TEMP%/goldenbook-ux-checkpoint-06c`. No commit, push or deployment.
 
 Additional read-only phone checks: Holdings cards and Settings fit at 390px.
 Risk's grid widened its document to 1030px; fix that next. Risk continues to
@@ -389,8 +389,8 @@ overflow instead of expanding the entire page. At 390px the document shrank from
 and 1673px. Stale-risk warnings, data and calculations remain unchanged.
 
 `npm test`: **56 passed, 0 failed**. `npm run build`: **passed**, with the existing
-bundle warning. Pre/post recovery copies are `%TEMP%/moneyplant-ux-checkpoint-06d-before`
-and `%TEMP%/moneyplant-ux-checkpoint-06d`. Backend source remains unchanged.
+bundle warning. Pre/post recovery copies are `%TEMP%/goldenbook-ux-checkpoint-06d-before`
+and `%TEMP%/goldenbook-ux-checkpoint-06d`. Backend source remains unchanged.
 
 **Resume next:** broker-session status consistency. Read-only investigation found
 `tradestack/.../broker/session/SessionController.java` returns `connected: true`

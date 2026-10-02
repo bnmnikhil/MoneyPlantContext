@@ -1,12 +1,12 @@
 ---
 name: application-sessions-expire-at-midnight
-description: "MoneyPlant's Google-authenticated web session lasts until midnight IST; API polling cannot extend it into the next day"
+description: "GoldenBook's Google-authenticated web session lasts until midnight IST; API polling cannot extend it into the next day"
 metadata:
   type: decision
   decided: 2026-09-10
 ---
 
-The MoneyPlant application login has an **absolute expiry at the next midnight
+The GoldenBook application login has an **absolute expiry at the next midnight
 in Asia/Kolkata**. A request at or after that boundary invalidates the servlet
 session; API requests then receive 401, which the frontend already turns into a
 redirect to `/login`. With the authenticated shell's session-status polling, a
@@ -27,10 +27,10 @@ request after midnight grants no access, and the first later request destroys
 it before authorization.
 
 **Application and broker sessions remain separate.** This boundary signs the
-user out of MoneyPlant. It does not delete encrypted broker sessions from
+user out of GoldenBook. It does not delete encrypted broker sessions from
 `ConnectionService`/`broker_session`; those already have their own daily token
 lifecycle and can be available again after the same Google user signs in.
 
-Local `MP_DEV_AUTH=true` remains intentionally exempt in effect: its fixed dev
+Local `GB_DEV_AUTH=true` remains intentionally exempt in effect: its fixed dev
 identity authenticates every request again, so Sign out and end-of-day expiry
 cannot persist on a development laptop.

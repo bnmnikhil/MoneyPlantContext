@@ -5,7 +5,7 @@ metadata:
   type: decision
 ---
 
-**Decided 2 Oct 2026 (owner).** "Taking MoneyPlant public" means **open sign-up**: any
+**Decided 2 Oct 2026 (owner).** "Taking GoldenBook public" means **open sign-up**: any
 Google account may sign in. It supersedes the P0 framing of 20 Aug ("a small invited group,
 not family", see [[real-product-not-personal-tool]]). Open-sourcing the repos was offered
 and not chosen.

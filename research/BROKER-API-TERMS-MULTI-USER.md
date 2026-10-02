@@ -1,4 +1,4 @@
-# Broker API terms for a multi-user, open sign-up MoneyPlant
+# Broker API terms for a multi-user, open sign-up GoldenBook
 
 **Researched 2 Oct 2026**, for the public-launch plan (`PUBLIC-LAUNCH.md`, item L1).
 Regulatory and contractual reference, **not legal advice**. Quotes are from the broker's
@@ -6,9 +6,9 @@ own terms page or PDF; anything from a forum is labelled as such.
 
 ## The question
 
-MoneyPlant's model (ADR / `memory/credentials-per-user-per-registration.md`): every user
+GoldenBook's model (ADR / `memory/credentials-per-user-per-registration.md`): every user
 registers **their own** developer app at each broker, pastes its API key and secret into
-MoneyPlant, and MoneyPlant's server holds the encrypted secret, performs the login
+GoldenBook, and GoldenBook's server holds the encrypted secret, performs the login
 handshake, and holds the resulting access token to read that user's positions, holdings
 and margins. Read-only; no orders.
 
@@ -35,9 +35,9 @@ from grey to the thing the terms address directly.**
   The API-secret FAQ thread says never to share the secret with a third party
   ([discussion 7796](https://kite.trade/forum/discussion/7796/is-it-safe-to-share-my-api-secret-key-to-third-party)).
 
-**Reading.** The user owning their own app avoids *sublicensing* MoneyPlant's app, which
+**Reading.** The user owning their own app avoids *sublicensing* GoldenBook's app, which
 is why 3d was designed that way. It does **not** clearly answer §4(b): a user who pastes
-their secret into MoneyPlant is letting a third party use their credentials. And
+their secret into GoldenBook is letting a third party use their credentials. And
 `raw_capture` / the snapshot tables are "permanent copies" of API content, but not
 redistributed: each user sees only their own data. Zerodha's own staff name the route:
 **ask compliance, with a project description.**
@@ -79,7 +79,7 @@ free of cost. Contact: `openapi.care@paytmmoney.com`. **Unanswered, not permissi
    preference: (a) keep sign-up allowlisted (the P0 invite beta) until it answers;
    (b) open sign-up with Kite marked "owner's own account only" (connect disabled for
    other users); (c) launch anyway. (c) risks a revoked API app **for the user, not for
-   MoneyPlant**, and it puts that risk on users who cannot see it.
+   GoldenBook**, and it puts that risk on users who cannot see it.
 4. A design mitigation, if compliance objects specifically to the server holding the
    secret: Kite's token exchange needs only `sha256(api_key + request_token + api_secret)`.
    That checksum can be computed **in the user's browser**, so the secret never reaches the
@@ -93,7 +93,7 @@ free of cost. Contact: `openapi.care@paytmmoney.com`. **Unanswered, not permissi
   "research" or recommendations on securities, including algorithmic tools (SEBI RA FAQs,
   circular SEBI/HO/MIRSD/MIRSD-PoD/P/CIR/2025/105, 23 Jul 2025). The comparable Indian
   options platforms, Sensibull and the LTP Calculator, are **themselves registered RAs**.
-  That proves nothing about MoneyPlant, but it is a signal. A payoff calculator over legs
+  That proves nothing about GoldenBook, but it is a signal. A payoff calculator over legs
   the user chose is the defensible end. A screener that **ranks specific trades** is the
   exposed end, which is why it stays hidden at launch.
 - **DPDP Rules 2025** were notified Nov 2025. Data Fiduciary obligations (notice, consent,
