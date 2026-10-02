@@ -28,9 +28,19 @@ below.
 
 ## Decisions
 
+- [Renamed to GoldenBook](renamed-to-goldenbook.md) — Oct 2026: `goldenbook.in` replaces the old host; only what users, Google and brokers see is renamed, internal `moneyplant` identifiers stay.
+
+- [Observability stays on the VM](observability-stays-on-the-vm.md) — only pings and counts leave the server; Prometheus/Grafana self-hosted, Telegram alerts, self-built crash reports.
+
+- [Public launch is open sign-up](public-launch-is-open-signup.md) — Oct 2026: any Google account may sign in; builder ships, screener stays hidden; written broker consent gates the date.
+
 - [Strategy Builder preserves signed imported position bases](builder-signed-position-basis.md) — effective existing-position costs may be signed; new trade premiums remain nonnegative, regardless of instrument.
 
 - [Option-chain symbol resolution](option-chain-symbol-resolution.md) — broker adapters resolve canonical codes to exact catalogue names; M&M stays MM internally, with explicit missing/ambiguous failures.
+
+- [One dropdown adds any registration](one-dropdown-adds-any-registration.md) — broker becomes a field inside one add panel, collapsing two add paths; the layout finally separates broker, registration and account.
+
+- [Index spread screener](index-spread-screener.md) — caller-scoped, read-only search over three index chains with explicit quote, liquidity and bounded-payoff filters.
 
 - [Application sessions expire at midnight](application-sessions-expire-at-midnight.md) — the Google-authenticated web session has an absolute midnight-IST boundary; polling cannot extend it into the next day.
 

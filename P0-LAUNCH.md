@@ -4,6 +4,8 @@
 done, what is in flight, what is still untouched. `CLAUDE.md` owns code-truth and points
 here; `memory/` owns the reasoning. Do not duplicate status into either of them.
 
+**Superseded framing, 2 Oct 2026.** The launch is now **open sign-up**, not a small invited group, and the Strategy Builder ships. The schedule, the new L-items and the tier of each item below now live in `PUBLIC-LAUNCH.md`. This file still owns the detail and status of A1–F2.
+
 **Item IDs (A1 … F2) are the unit of work.** Take one, do it, run its verification, flip
 its marker. One item per branch where the change is non-trivial; the branch name carries
 the id (`p0/a2-nifty-lot-size`).
@@ -54,6 +56,26 @@ exists because every wrong claim this project has carried was a claim nobody re-
   are excluded.
 - Production deployment: **not performed**. No P0 checklist item is closed by
   these two fixes; outstanding snapshot/risk and accounting reviews remain open.
+
+## Other local work — 30 Sep 2026
+
+- In flight: **broker credentials redesign**, frontend only, uncommitted.
+  `/app/settings` rebuilt as broker groups → registration rows → account badges,
+  with one `AddRegistrationPanel` (broker as a `Select` field) replacing both
+  former add paths. Three defects closed along the way, none of which were on
+  this list: the page ignored `connection.connected` and printed "Linked" for a
+  dead session while `Topbar` printed "Partial" for the same account;
+  `fieldByKey` threw for any broker whose catalogue was not exactly
+  `apiKey` + `apiSecret`; and one open form disabled every other add button.
+- Verification run: `tsc -b` clean, `npm test` **69 passing / 0 failing**,
+  `vite build` clean, no console errors. Four desktop states checked in Chrome
+  against the local database. **Unverified: phone width** (`resize_window` had
+  no effect in that session) **and the amber "needs reconnect" badge** (every
+  local broker session had expired, so accounts read absent, not disconnected).
+- **No P0 item changed state.** Nothing below is closed by this work.
+- This unrelated work remains local and excluded from the M&M fix PRs. Matching
+  M&M task branches do not certify the uncommitted screener or broker-settings
+  changes for deployment.
 
 ## Previous release status — 9 Sep 2026
 
@@ -128,7 +150,7 @@ moment there is a second user. → **B1**
 | A3 | Paytm contract master fails silently for a day | A · numbers | `[ ]` |
 | A4 | `₹NaN` can reach the screen | A · numbers | `[ ]` |
 | A5 | Payoff engine: duplicate breakeven, window floor | A · numbers | `[ ]` |
-| A6 | Hide the Strategy Builder behind a flag | A · numbers | `[ ]` |
+| A6 | Hide the Strategy Builder behind a flag | A · numbers | `[-]` |
 | A7 | Label the SPAN estimate and the unbounded flags | A · numbers | `[ ]` |
 | B1 | `ensureLoaded` stalls every user | B · resilience | `[~]` |
 | B2 | No React error boundary → blank white page | B · resilience | `[ ]` |
@@ -150,10 +172,10 @@ moment there is a second user. → **B1**
 | D4 | No rollback path | D · operability | `[ ]` |
 | D5 | Stale runbook step on `MP_SESSION_STORE` | D · operability | `[ ]` |
 | D6 | `position_snapshot` / `holding_snapshot` backfill | D · operability | `[ ]` |
-| E1 | No privacy/terms pages, no app footer | E · legal | `[ ]` |
-| E2 | Privacy notice, DPDP-shaped | E · legal | `[ ]` |
+| E1 | No privacy/terms pages, no app footer | E · legal | `[~]` |
+| E2 | Privacy notice, DPDP-shaped | E · legal | `[~]` |
 | E3 | No data erasure path | E · legal | `[ ]` |
-| E4 | No risk disclosure | E · legal | `[ ]` |
+| E4 | No risk disclosure | E · legal | `[~]` |
 | E5 | Broker ToS on cross-broker market data | E · legal | `[ ]` |
 | E6 | No support / grievance contact | E · legal | `[ ]` |
 | F1 | Allowlist in an env var needs a restart | F · onboarding | `[ ]` |
@@ -258,7 +280,9 @@ under A7 rather than rewriting it for P0.
 **Verify:** unit tests — a curve with a sample exactly at zero yields one breakeven, not
 two; a long put's `maxProfit` equals its premium-adjusted value at spot 0.
 
-### `[ ]` A6 — Hide the Strategy Builder
+### `[-]` A6 — Hide the Strategy Builder
+
+**Dropped 2 Oct 2026:** the owner decided the builder ships at the public launch. Its preconditions (A2, A4's input fix, B5, C4) are now launch blockers, and `PUBLIC-LAUNCH.md` L9 covers the no-quote-source case.
 
 One flag on the tab in `PayoffPage`. Its premiums are invented placeholders and A2's lot
 size inherits into every figure it prints. B5 and the A4 input-formatting fix ride with it
@@ -484,6 +508,10 @@ ago is re-fanned-out on every request and produces a warning forever.
 `session(connectionId)` already checks it, plus the button. This is both a security control
 and the fix for the warning spam.
 
+**Where the button goes, as of 30 Sep:** each account is now its own badge inside
+`features/credentials/RegistrationRow`, carrying the `connectionId` the DELETE needs. The
+row was laid out to leave room for a per-account control there; nothing else needs moving.
+
 **Verify:** connect a broker, disconnect it, confirm it is gone from `/api/session/status`
 **and** from the `broker_session` table, and that no warning recurs.
 
@@ -668,7 +696,9 @@ connected broker, and each matches its `raw_capture` archive payload.
 *Required specifically because users are invited non-family. Cheap to build, and the
 regulatory research is already done in `research/REGULATORY-API-STATIC-IP.md`.*
 
-### `[ ]` E1 — No privacy/terms pages, no app footer
+### `[~]` E1 — No privacy/terms pages, no app footer
+
+**2 Oct 2026, in progress:** frontend branch `launch/e1-legal-pages` (worktree `frontend-legal/`, uncommitted) adds `/privacy`, `/terms` and one shared `LegalFooter` on the landing page, the login page and in `AppShell`. The login page carries the agreement line and E4's disclosure. Operator details sit in `src/features/legal/details.ts`, and the pages show a **draft notice** until no `[placeholder]` remains. `npm test` 63 passing, `npm run build` clean. **Not yet seen in a browser** (the Chrome extension did not respond). See `PUBLIC-LAUNCH.md` for which claims must become true before the pages take effect.
 
 `LandingPage.tsx:88-91` holds the only footer in the codebase (`© {year} MoneyPlant` and
 the literal text `Private system`) — that is where the links go. `AppShell.tsx:43-53` has
@@ -677,7 +707,9 @@ mobile tab-bar clearance. Add `/privacy` and `/terms` routes in `App.tsx`.
 
 **Verify:** both routes render and are reachable from signed-out and signed-in states.
 
-### `[ ]` E2 — Privacy notice, DPDP-shaped
+### `[~]` E2 — Privacy notice, DPDP-shaped
+
+**2 Oct 2026, in progress:** frontend branch `launch/e1-legal-pages` (worktree `frontend-legal/`, uncommitted) adds `/privacy`, `/terms` and one shared `LegalFooter` on the landing page, the login page and in `AppShell`. The login page carries the agreement line and E4's disclosure. Operator details sit in `src/features/legal/details.ts`, and the pages show a **draft notice** until no `[placeholder]` remains. `npm test` 63 passing, `npm run build` clean. **Not yet seen in a browser** (the Chrome extension did not respond). See `PUBLIC-LAUNCH.md` for which claims must become true before the pages take effect.
 
 As a Data Fiduciary you owe: notice of what is collected and why (Google email, name and
 picture; broker API keys and secrets; positions, holdings and margins), the legal basis,
@@ -696,7 +728,9 @@ somewhere to hang.
 
 **Verify:** run it against a test user and confirm no row anywhere carries that `user_id`.
 
-### `[ ]` E4 — No risk disclosure
+### `[~]` E4 — No risk disclosure
+
+**2 Oct 2026, in progress:** frontend branch `launch/e1-legal-pages` (worktree `frontend-legal/`, uncommitted) adds `/privacy`, `/terms` and one shared `LegalFooter` on the landing page, the login page and in `AppShell`. The login page carries the agreement line and E4's disclosure. Operator details sit in `src/features/legal/details.ts`, and the pages show a **draft notice** until no `[placeholder]` remains. `npm test` 63 passing, `npm run build` clean. **Not yet seen in a browser** (the Chrome extension did not respond). See `PUBLIC-LAUNCH.md` for which claims must become true before the pages take effect.
 
 Two sentences, on the login page and in the app footer: this is a read-only position
 viewer, it places no orders, it is not investment advice; **all figures are estimates and
