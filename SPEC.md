@@ -1,4 +1,4 @@
-# MoneyPlant — Step 4: risk core, packaging and constraints
+# GoldenBook — Step 4: risk core, packaging and constraints
 
 **Written 7 Aug 2026 from an interview with the owner.** This is a *decision* document: it records what was chosen, what was rejected and why, and what it commits the codebase to. It supersedes nothing in `CLAUDE.md` except where it says so explicitly.
 
@@ -29,7 +29,7 @@ These bound every decision below.
 | **Cost** | Not fixed, but "as low as possible". Default assumption: OCI always-free tier, ₹0/month infra. | No managed services. No Redis unless it fits on the same box. Any paid dependency needs an explicit justification when proposed. |
 | **Scale target** | Design for **tens**. Do not foreclose **hundreds**. Thousands is out of scope. | Single JVM is acceptable. Every decision that would break at hundreds must be *written down* (§9), not silently accepted. |
 | **Speed** | "Super smooth." Concretely: no user-visible wait on broker latency. | Drives the snapshot-first read model (§4). |
-| **Users** | 2 now. Invite-only and curated at "public" — from a DB table, not an env var, so adding a user is not a redeploy. | `MP_ALLOWED_EMAILS` survives this step and dies at the multi-user step. |
+| **Users** | 2 now. Invite-only and curated at "public" — from a DB table, not an env var, so adding a user is not a redeploy. | `GB_ALLOWED_EMAILS` survives this step and dies at the multi-user step. |
 | **Deployment** | Exactly one JVM instance. | Recorded as an ADR, not an assumption. See §9. |
 
 ---
@@ -53,7 +53,7 @@ ArchUnit is the cheapest option that turns prose invariants into build failures,
 | **A3 — Gateways are stateless** | No implementation of `BrokerGateway` may declare a field of type `BrokerSession` or `BrokerCredentials`. | This is the invariant that makes multi-user possible at all. A field here means one bean cannot serve two users, and the failure is silent cross-user data leakage, not a crash. |
 | **A4 — Controllers depend on services** | No `@RestController` may depend on a `*Repository`, a `BrokerGateway`, or any vendor type. | Keeps the facade rule real as the file count grows. |
 
-Rules live in `src/test/java/com/MoneyPlant/tradestack/arch/`. Each rule carries a comment naming the ADR it enforces — a failing arch test must be able to tell the next person *why*, not just *what*.
+Rules live in `src/test/java/com/goldenbook/tradestack/arch/`. Each rule carries a comment naming the ADR it enforces — a failing arch test must be able to tell the next person *why*, not just *what*.
 
 **Note on A2 and the `dto/` package.** `risk/` will consume `PositionDto`, which currently lives in `broker/dto/`. A2 as written would forbid that. Resolve it by moving the DTOs the whole app shares — `PositionDto`, `HoldingDto`, `MarginDto`, `BrokerAggregate`, `BrokerWarning`, `Sourced` — out of `broker/dto/` into a neutral package (`portfolio/dto/`, see D6). This is a real refactor with a wide blast radius and it belongs in 4a, before anything depends on the current location.
 
@@ -197,7 +197,7 @@ Enforced by ArchUnit rule A2.
 Collapse the three one-controller packages; add three new ones.
 
 ```
-com.MoneyPlant.tradestack
+com.goldenbook.tradestack
 ├── auth/            unchanged
 ├── broker/          unchanged + user-explicit fan-out (D3)
 │   ├── kite/  aliceblue/  paytm/
@@ -384,7 +384,7 @@ Accepted for two consenting, known users. Fidelity is the whole point of `raw`, 
 
 `ConnectionService` is a `ConcurrentHashMap`. This is what pins the app to one JVM. Unchanged here, because tokens still die daily and no broker issues a refresh token, so there is nothing durable worth persisting.
 
-**Revisit when:** a second instance is needed (scaling, blue/green, zero-downtime restart), or `FileSessionStore` — which still writes plaintext tokens under `MP_SESSION_STORE` — needs to die.
+**Revisit when:** a second instance is needed (scaling, blue/green, zero-downtime restart), or `FileSessionStore` — which still writes plaintext tokens under `GB_SESSION_STORE` — needs to die.
 
 ### Greeks and IV — on the feature list, not committed
 
@@ -404,7 +404,7 @@ Written down now so the wall is visible before it's hit. None of this is work fo
 |---|---|---|---|
 | 1 | **Single JVM** | `ConnectionService` is in-memory; `@Scheduled` assumes one instance | Sessions to Postgres, plus ShedLock or a PG advisory lock |
 | 2 | **EOD capture burst** | N users × 3 brokers, all at 15:35, sequentially | Stagger the window, bound concurrency, respect per-broker rate limits |
-| 3 | **`MP_ALLOWED_EMAILS`** | Every new user is a redeploy | `users` table — already the plan for invite-only |
+| 3 | **`GB_ALLOWED_EMAILS`** | Every new user is a redeploy | `users` table — already the plan for invite-only |
 | 4 | **Sequential fan-out** | `BrokerService.fanOut` is sequential on purpose ("two or three brokers… does not justify an executor") | True per request; false for the capture job across users. Parallelise the *job*, not the request |
 | 5 | **Snapshot table growth** | Every user × every position × every day, with a `raw` blob each | Partition by `trading_day`; the retention policy from §3 |
 | 6 | **No per-user quota** | One user's refresh loop can exhaust a broker rate limit shared with nobody — but LLM spend, when it arrives, *is* shared | Per-user budget at the LLM boundary |

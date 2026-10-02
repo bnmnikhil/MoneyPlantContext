@@ -1,4 +1,4 @@
-# MoneyPlant working guide
+# GoldenBook working guide
 
 This file applies to the workspace repository and the nested `frontend` and
 `tradestack` repositories.

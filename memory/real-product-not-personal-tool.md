@@ -1,12 +1,12 @@
 ---
 name: real-product-not-personal-tool
-description: "MoneyPlant is a real product for a limited number of real users on deliberately minimal infrastructure — not a personal script, and not a startup chasing scale"
+description: "GoldenBook is a real product for a limited number of real users on deliberately minimal infrastructure — not a personal script, and not a startup chasing scale"
 metadata:
   type: decision
   decided: 2026-07-29
 ---
 
-MoneyPlant serves **a limited number of real users, run safely, on deliberately
+GoldenBook serves **a limited number of real users, run safely, on deliberately
 minimal infrastructure cost.**
 
 **Why it matters.** It settles a whole class of arguments at once, in both
@@ -19,7 +19,7 @@ directions:
   the same VM rather than managed services, and why the next service added will
   be another block in the existing `docker-compose.yml` rather than a second
   deployment style.
-- *"Limited number"* is what keeps `MP_ALLOWED_EMAILS` an acceptable substitute
+- *"Limited number"* is what keeps `GB_ALLOWED_EMAILS` an acceptable substitute
   for a `users` table.
 
 **How to apply.** Price every proposal against the free tier first — a managed

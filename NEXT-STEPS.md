@@ -1,4 +1,4 @@
-# MoneyPlant next steps — discussion draft
+# GoldenBook next steps — discussion draft
 
 **Captured:** 21 September 2026
 **Status:** Draft backlog for discussion; not yet an implementation commitment.
@@ -64,7 +64,7 @@ verify, not conclusions to copy into product claims.
   on positions/holdings calls, and is it checked only on order calls? Record
   IPv4/IPv6, allowlist count and change process where relevant.
 - [ ] **BR-07 — Verify permitted use.** Check whether read data may be displayed
-  in MoneyPlant, retained as snapshots, or combined with market data from another
+  in GoldenBook, retained as snapshots, or combined with market data from another
   broker. Record restrictions on caching, redistribution, logos and naming.
 - [ ] **BR-08 — Portal-check ambiguous claims.** Documentation alone is not
   enough when the actual developer portal imposes extra fields. Capture a
@@ -86,7 +86,7 @@ verify, not conclusions to copy into product claims.
 | App creation | Required fields, price, approval, callback constraints |
 | Static IP: registration | Required, optional or absent; portal evidence |
 | Static IP: read-only calls | Enforced or not enforced for positions/holdings |
-| Static IP: orders | Recorded separately; MoneyPlant remains read-only |
+| Static IP: orders | Recorded separately; GoldenBook remains read-only |
 | Authentication | Flow, token lifetime, refresh/re-login, multi-account model |
 | Instruments | Contract master availability and identifier stability |
 | Terms | Display, retention, cross-broker data, branding restrictions |
@@ -103,7 +103,7 @@ verify, not conclusions to copy into product claims.
   brokers.** Preserve the existing distinction between a developer app and an
   authorised account, including multiple accounts per registration.
 - [ ] **ARCH-03 — Standardise adapter boundaries.** Keep vendor DTOs and SDKs
-  inside each broker adapter; map into MoneyPlant's canonical position, holding,
+  inside each broker adapter; map into GoldenBook's canonical position, holding,
   margin and instrument contracts at the boundary.
 - [ ] **ARCH-04 — Standardise failure semantics.** Define common behavior for
   expired sessions, partial responses, missing quotes, throttling, vendor
@@ -124,7 +124,7 @@ verify, not conclusions to copy into product claims.
 A broker is not “supported” until all applicable items are complete:
 
 - The dated research dossier and static-IP findings have accepted evidence.
-- Positions and holdings map correctly into canonical MoneyPlant data, including
+- Positions and holdings map correctly into canonical GoldenBook data, including
   missing/partial values and broker-specific quantity rules.
 - Authentication, expiry, reconnect and account ownership are tested.
 - Synthetic happy-path and failure fixtures exist and contain no user data or
@@ -239,14 +239,14 @@ what passed, failed or was skipped, and paste the same result into the handoff.
 ## Workstream E — public landing page and user confidence
 
 - [ ] **LAND-01 — Define the audience and trust questions.** A visitor should
-  quickly understand what MoneyPlant does, who it is for, what data it reads,
+  quickly understand what GoldenBook does, who it is for, what data it reads,
   what it never does, what setup is required and where estimates may differ from
   a broker.
 - [ ] **LAND-02 — Redesign the information hierarchy.** Proposed order: clear
   value statement; real product preview; how connecting works; supported broker
   capabilities; security/privacy facts; read-only and risk limitations; FAQ;
   support/grievance contact; sign-in action.
-- [ ] **LAND-03 — Use precise confidence signals.** State that MoneyPlant is
+- [ ] **LAND-03 — Use precise confidence signals.** State that GoldenBook is
   read-only and places no orders, users provide their own broker API app, secrets
   are write-only in the UI and encrypted at rest, and the broker remains the
   source of truth. Cite privacy, terms and risk-disclosure pages once they exist.

@@ -8,14 +8,14 @@
 
 ## Goal
 
-Grow MoneyPlant from three broker integrations to ten while keeping it strictly
+Grow GoldenBook from three broker integrations to ten while keeping it strictly
 read-only. Every **new** broker must let a user activate a data-only integration
 and fetch both positions and holdings without supplying or routing through a
 static IP.
 
 The existing Alice Blue and Paytm Money integrations are not removed by this
 rule. They predate it and currently have static-IP onboarding friction. The rule
-governs which brokers MoneyPlant adds next.
+governs which brokers GoldenBook adds next.
 
 ## Hard eligibility gate
 
@@ -27,15 +27,15 @@ A new broker is eligible only when all of these are evidenced:
    IP.
 3. Both positions and holdings work from a normal changing source IP.
 4. Static-IP enforcement, if present, is limited to order placement, modification
-   and cancellation endpoints that MoneyPlant does not call.
+   and cancellation endpoints that GoldenBook does not call.
 5. The broker permits the applicable hosted use model. If a retail key is only
-   for the account owner's personal scripts, MoneyPlant has the required partner
+   for the account owner's personal scripts, GoldenBook has the required partner
    approval before integration work starts.
 6. The evidence comes from current broker documentation plus a portal observation,
    support confirmation or a controlled real-account test. Marketing pages alone
    are insufficient.
 
-Do not work around a failed gate with a fake IP, shared proxy or one MoneyPlant IP
+Do not work around a failed gate with a fake IP, shared proxy or one GoldenBook IP
 registered against multiple users. Mark that broker `deferred` and evaluate the
 next candidate instead.
 
@@ -49,7 +49,7 @@ gate to be completed before implementation.
 |---:|---|---:|---|---|
 | 1 | Upstox | 5 | First pilot | Standard OAuth holdings and positions are explicitly outside static-IP restrictions |
 | 2 | Kotak Neo | 6 | Planned | Portfolio, report and login APIs are explicitly outside IP validation; IP is added separately for orders |
-| 3 | Dhan | 8 | Planned after partner check | Documentation limits IP validation to order APIs; confirm MoneyPlant's hosted multi-user onboarding model |
+| 3 | Dhan | 8 | Planned after partner check | Documentation limits IP validation to order APIs; confirm GoldenBook's hosted multi-user onboarding model |
 | 4 | FYERS | 21 | Planned | FYERS explicitly leaves apps in data-only mode for positions and holdings without trading activation |
 | 5 | Groww | 1 | Certification required | Documentation scopes IP to orders but does not explicitly guarantee no-IP portfolio access and activation |
 | 6 | Motilal Oswal | 10 | Certification required | Documentation has both endpoints and scopes IP language to orders; portal behavior needs proof |
@@ -101,7 +101,7 @@ added. The Upstox pilot proves the design before it is repeated.
   and holdings from two unregistered egress IPs. Record status and response shape,
   not personal portfolio data.
 - [ ] **CERT-04 — Confirm hosted use.** Obtain written confirmation or applicable
-  partner terms for MoneyPlant's multi-user model.
+  partner terms for GoldenBook's multi-user model.
 - [ ] **CERT-05 — Decide the candidate.** Mark `eligible`, `deferred` or `rejected`
   with evidence. Only `eligible` brokers enter an implementation branch.
 - [ ] **CERT-06 — Freeze contract samples.** Derive sanitized synthetic examples
@@ -259,5 +259,5 @@ or internet access.
 5. Review metrics and support findings before enabling the next broker.
 6. Repeat one broker at a time until the eligible roster reaches ten total.
 
-At every stage, MoneyPlant remains read-only. Order endpoints, order scopes and
+At every stage, GoldenBook remains read-only. Order endpoints, order scopes and
 static-IP workarounds are explicitly outside this plan.

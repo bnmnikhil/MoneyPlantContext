@@ -189,7 +189,7 @@ function Add-BrokerScope {
         throw "-Scope broker requires -Broker <id>, for example -Broker kite."
     }
 
-    $testRoot = Join-Path $backend "src\test\java\com\MoneyPlant\tradestack\broker"
+    $testRoot = Join-Path $backend "src\test\java\com\goldenbook\tradestack\broker"
     $brokerTestRoot = Join-Path $testRoot $Broker
     if (-not (Test-Path $brokerTestRoot -PathType Container)) {
         $available = @(Get-ChildItem $testRoot -Directory | Where-Object {
@@ -259,7 +259,7 @@ switch ($Scope) {
 }
 
 Write-Host ""
-Write-Host "MoneyPlant verification" -ForegroundColor Cyan
+Write-Host "GoldenBook verification" -ForegroundColor Cyan
 Write-Host "  scope:     $Scope"
 if ($Broker) {
     Write-Host "  broker:    $Broker"

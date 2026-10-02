@@ -4,11 +4,11 @@ Date: 10 September 2026
 
 Status: Proposed implementation; this document does not implement the feature.
 
-Scope: MoneyPlant workspace, `frontend`, and `tradestack`.
+Scope: GoldenBook workspace, `frontend`, and `tradestack`.
 
 ## 1. Product outcome
 
-Build a Sensibull-style strategy-building workflow inside MoneyPlant. Users can
+Build a Sensibull-style strategy-building workflow inside GoldenBook. Users can
 search for a stock or index, select an expiry, add several buy/sell option legs
 from its option chain, edit their quantities and assumed prices, and immediately
 inspect the combined payoff. They can start from an empty strategy or import an
@@ -18,7 +18,7 @@ existing account's positions to test a hedge or strategy adjustment.
 cover the available exchange instrument catalogue, including stocks the user
 does not hold. ITC is an example, not a special case. A stock with no listed
 options remains discoverable and selectable, with an explicit options-availability
-state. The initial market is MoneyPlant's existing NSE stock/index universe;
+state. The initial market is GoldenBook's existing NSE stock/index universe;
 other exchanges are exposed when their catalogue and provider support exist.
 
 The product reference is the interaction: chain-based leg selection, a persistent
@@ -49,7 +49,7 @@ Order execution, broker position mutation, saved strategies in the database,
 historical tracking, T+0/target-date valuation, IV controls, Greeks, probability
 of profit and automatic hedge recommendations are later features. Sensibull's
 [target-day payoff table](https://blog.sensibull.com/2023/07/06/payoff-table-on-strategy-builder-analyse-widgets/)
-requires valuation capabilities beyond MoneyPlant's current expiry engine.
+requires valuation capabilities beyond GoldenBook's current expiry engine.
 The initial builder can include an expiry payoff table using the same graph data.
 
 ## 2. Verified starting point
@@ -57,7 +57,7 @@ The initial builder can include an expiry payoff table using the same graph data
 Inspected local revisions: workspace `c2ae648`, frontend `cf379f3`, backend
 `22270ba`. These are local code references, not a claim about production deployment.
 Source paths below are relative to the workspace; backend Java paths share
-`tradestack/src/main/java/com/MoneyPlant/tradestack/`.
+`tradestack/src/main/java/com/goldenbook/tradestack/`.
 
 | Area | Current code | Required change |
 |---|---|---|
@@ -289,7 +289,7 @@ chosen quote provider can currently serve.
 Allow only owned connections; do not accept a client-supplied user ID or token.
 Pass AbortSignals through `lib/api.ts` for search/chain requests. Normalize source
 errors into the current API conventions: broker session expiration is a 409
-reconnect condition, upstream failure is 502/retry, and MoneyPlant login expiration
+reconnect condition, upstream failure is 502/retry, and GoldenBook login expiration
 alone uses 401. Add typed validation errors with affected fields/leg IDs. A
 partially quoted chain may return 200 with row warnings; a failed whole request
 must not masquerade as an empty valid chain.
@@ -478,7 +478,7 @@ separate work. No snapshot risk-report figures are presented as live inputs.
   nonempty draft with a recipe is explicit and preserves another draft or offers
   a clear replacement confirmation. Background metadata changes never reset legs.
 - A market-data session failure surfaces the correct reconnect action without
-  logging the user out of MoneyPlant or clearing their draft.
+  logging the user out of GoldenBook or clearing their draft.
 
 ## 8. Work breakdown and file ownership
 

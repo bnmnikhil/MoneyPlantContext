@@ -13,7 +13,7 @@ The sections below describe the earlier premium investigation checkpoint.
 
 ## Current Task
 
-The user asked to understand MoneyPlant and investigate an apparently incorrect
+The user asked to understand GoldenBook and investigate an apparently incorrect
 available-premium calculation on the positions page. They also asked for frequent,
 clear progress commentary and for this handoff to be kept current so work can
 resume after context exhaustion.
@@ -117,7 +117,7 @@ No backend source was changed.
   Exec session ID: 1265. Java PID at startup: 31672.
   Startup completed successfully; PostgreSQL localhost:5433 is reachable,
   Flyway schema version 8 is current, and no migration was necessary.
-- Development app authentication is enabled by existing `MP_DEV_AUTH` settings.
+- Development app authentication is enabled by existing `GB_DEV_AUTH` settings.
   The user needs broker connection/login in the app, not Google app sign-in.
   Startup discarded three expired/unreadable stored broker sessions as designed.
 - Environment credentials were checked only for presence and not printed.

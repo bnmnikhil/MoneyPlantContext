@@ -1,12 +1,12 @@
 ---
 name: app-owns-its-symbols
-description: "MoneyPlant speaks its own instrument vocabulary end to end; the symbol-model doc's recommended middle path was overruled in favour of the full model"
+description: "GoldenBook speaks its own instrument vocabulary end to end; the symbol-model doc's recommended middle path was overruled in favour of the full model"
 metadata:
   type: decision
   decided: 2026-08-03
 ---
 
-> **MoneyPlant speaks its own vocabulary end to end. Broker symbols exist only
+> **GoldenBook speaks its own vocabulary end to end. Broker symbols exist only
 > inside that broker's adapter, and only at the moment a call is made.**
 
 **Why.** This is the anti-corruption rule already enforced for *types*, extended

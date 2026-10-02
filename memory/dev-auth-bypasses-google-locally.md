@@ -1,12 +1,12 @@
 ---
 name: dev-auth-bypasses-google-locally
-description: "MP_DEV_AUTH replaces Google sign-in with a fixed OIDC identity on localhost — a second way in, deliberately not a second code path"
+description: "GB_DEV_AUTH replaces Google sign-in with a fixed OIDC identity on localhost — a second way in, deliberately not a second code path"
 metadata:
   type: decision
   decided: 2026-08-20
 ---
 
-`auth/DevAuthConfig` — off unless `MP_DEV_AUTH=true`, and when on it replaces
+`auth/DevAuthConfig` — off unless `GB_DEV_AUTH=true`, and when on it replaces
 `SecurityConfig` entirely (both are `@ConditionalOnProperty` on the same flag,
 opposite values). Every request arrives authenticated as a fixed identity and
 every path is permitted, so a laptop needs no `GOOGLE_CLIENT_ID`, no redirect URI
@@ -31,7 +31,7 @@ That value was chosen as the second signal because it must already differ per
 host and is load-bearing in three places, so it cannot be left at its localhost
 default on the VM without sign-in and the broker callbacks breaking first.
 
-**`MP_DEV_USER_ID` is the Google `sub`, and it matters.** Everything user-scoped
+**`GB_DEV_USER_ID` is the Google `sub`, and it matters.** Everything user-scoped
 keys off it — `broker_credential` rows, the `{userId}:{brokerId}:{label}`
 connection id, session ownership. Set to the sub already in the local database
 (`select distinct user_id from broker_credential`) and the broker credentials and
@@ -44,8 +44,8 @@ sign-in to gate, demanding a list would mean a fresh clone still could not boot
 without knowing an address to name. The check is unchanged when the flag is off.
 
 **Rejected: a Spring profile.** Every other per-host switch in this stack is an
-`MP_`-prefixed environment variable read through `application.properties`
-(`MP_SESSION_STORE`, `MP_COOKIE_SECURE`, `MP_FRONTEND_URL`), and one mechanism is
+`GB_`-prefixed environment variable read through `application.properties`
+(`GB_SESSION_STORE`, `GB_COOKIE_SECURE`, `GB_FRONTEND_URL`), and one mechanism is
 worth more than a marginally more idiomatic second one.
 
 Frontend impact is zero: `LoginPage`'s button still points at

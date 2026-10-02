@@ -26,8 +26,8 @@ the machine. Accept both; they are the price of the property.
 **Symmetric gpg, not a public key.** Asymmetric sounds strictly better — the VM
 would hold only a public key and could not decrypt its own backups. It is not,
 here. Anything that can read the passphrase off this host can already read
-`MP_CREDENTIAL_KEY` and the database password out of
-`/etc/moneyplant/moneyplant.env`, which is **strictly more than the backup
+`GB_CREDENTIAL_KEY` and the database password out of
+`/etc/goldenbook/goldenbook.env`, which is **strictly more than the backup
 holds**. So asymmetric buys nothing against the realistic threat and costs a
 second unrecoverable secret to lose. The threats it does defend against — the
 object at rest in Object Storage, an OCI account compromise, a stray copy of the
@@ -45,10 +45,10 @@ a failure rather than a pass.
 ## The restore test is the item; the timer is not
 
 **Two secrets have to survive the VM and only one of them is in the dump.**
-`MP_CREDENTIAL_KEY` is deliberately not in the database (see
+`GB_CREDENTIAL_KEY` is deliberately not in the database (see
 [[credentials-per-user-per-registration]]), so a restore without it yields a
 table of unreadable bytes and the only recovery is every user re-entering their
-broker credentials. `MP_BACKUP_PASSPHRASE` opens the file itself. A verification
+broker credentials. `GB_BACKUP_PASSPHRASE` opens the file itself. A verification
 that reads the key out of the live env file proves the VM agrees with itself,
 which is not the question — so `restore-verify.sh` requires the key to be pasted
 in from the off-VM copy, and compares it to the live one by digest without ever
@@ -80,7 +80,7 @@ finding.
 
 A backup that quietly stopped running looks exactly like one that is working.
 `backup.sh --check` exits non-zero when the last success is older than 36 hours
-and exists to be the command **D2**'s monitor calls; `moneyplant-backup.service`
+and exists to be the command **D2**'s monitor calls; `goldenbook-backup.service`
 carries a commented `OnFailure=` line for the same hook. Until D2 lands,
 `systemctl list-timers` is the whole story, and that is a known gap rather than
 an oversight.
