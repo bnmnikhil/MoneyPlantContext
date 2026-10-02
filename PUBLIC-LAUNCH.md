@@ -56,7 +56,7 @@ week after.
 | L7 | Landing + login copy rewritten for strangers | 1 · onboarding | `[~]` |
 | L8 | Screener kept out of the launch build | 1 · scope | `[~]` |
 | L9 | Builder is honest without an Alice Blue quote source | 1 · numbers | `[ ]` |
-| L10 | Release integration: merge, deploy `main`, verify Flyway V5–V8 in prod | 1 · release | `[ ]` |
+| L10 | Release integration: merge, deploy `main`, verify Flyway V5–V8 in prod | 1 · release | `[~]` |
 | L11 | Cross-user data isolation test on production | 1 · security | `[ ]` |
 | L12 | Security review of the launch diff + dependency audit | 1 · security | `[ ]` |
 | L18 | Spot cache shared across users: one user's broker quote served to another | 1 · terms | `[ ]` |
@@ -274,7 +274,12 @@ user.
 **Verify:** a Kite-only account sees a clear "needs a quote source" state; an Alice Blue
 account sees live premiums; `GET /api/payoff/metadata` returns 65 for NIFTY.
 
-### `[ ]` L10 — Release integration and the dark deploy
+### `[~]` L10 — Release integration and the dark deploy
+
+**3 Oct 2026:** current `main` is deployed (`tradestack 36d5f58`, `frontend 03e1091`) by
+the R6 migration, with sign-up still allowlisted. V1–V8 are confirmed `success` on the
+host. Still open: V9 does not exist until L3 lands, and the runbook's nine checks have
+not all been run.
 
 The last **recorded** production deploy is 6 Sep (`tradestack 0b95e40`, `frontend
 c8ab2ae`). Every later status note says "no production change", so assume backend PRs

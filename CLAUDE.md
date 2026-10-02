@@ -49,13 +49,13 @@ shares use purchase cost and appear as EQ legs. The UI exposes a toggle and shar
 quantity, with explicit unavailable/overlap handling. Builder imports preserve
 shares and hide unsupported holdings margin estimates. See `memory/payoff-holdings.md`.
 
-**Live at `https://moneyplant.bonamnikhilbabu.in`, moving to `https://goldenbook.in`.** The product was renamed GoldenBook on 2 Oct 2026 (`REBRAND-GOLDENBOOK.md`). The code on `launch/r-goldenbook-rename` uses the new names everywhere; **the VM still runs the old ones** (`moneyplant` user, `/opt/moneyplant`, `/etc/moneyplant/moneyplant.env`, `MP_*` keys, `moneyplant-postgres`) until `deploy/migrate-to-goldenbook.sh` runs at R6. Read `goldenbook` in a VM path or command below as "after R6". Cloudflare DNS (grey cloud) → OCI static IP → Caddy → `/var/www/goldenbook` for the SPA, `:8080` for the API. Google sign-in, Postgres on the VM via `deploy/docker-compose.yml`, and the Kite prod redirect all work end to end. Steps 1, 2, 3 (a–d) and 5 are done and deployed.
+**Live at `https://goldenbook.in`** since 3 Oct 2026, 00:05 IST (renamed from MoneyPlant; `REBRAND-GOLDENBOOK.md`). DNS for `goldenbook.in` is at **Hostinger** (A record, no proxy) → OCI static IP `140.245.250.217` → Caddy → `/var/www/goldenbook` for the SPA, `:8080` for the API. `www` 301s to the apex; the old host `moneyplant.bonamnikhilbabu.in` (Cloudflare, grey cloud) **308s** to the new one, so broker apps still registered with the old callback keep working until R11. The VM runs entirely under the new names: `goldenbook` user, `/opt/goldenbook`, `/etc/goldenbook/goldenbook.env` (`GB_*` keys), `goldenbook-postgres` on the `goldenbook-pgdata` volume. **The old `moneyplant-pgdata` volume and `/root/pre-goldenbook-20261002T182814Z` are the rollback copy; remove them after a week of normal running.** Google sign-in and a Kite connect were verified end to end on the new host (access log, 00:10 IST, 3 Oct). Steps 1, 2, 3 (a–d) and 5 are done and deployed.
 
-**`main` was deployed 6 Sep 2026** — `tradestack 0b95e40`, `frontend c8ab2ae`. Confirmed
-from outside the VM only: `GET /` returns 200 and `GET /api/me` returns 401, which is the
-runbook's success signal. **Read on the host 2 Oct 2026:** production runs `tradestack cdf5b0a` / `frontend d2c779f`
-(deployed 1 Oct), and `flyway_schema_history` shows **V1–V8 all `success`**. Off-VM backups
-are still not set up there: no `backup.env`, no timer.
+**`main` deployed 3 Oct 2026** by the R6 migration: `tradestack 36d5f58`, `frontend 03e1091`.
+Read on the host: `flyway_schema_history` shows **V1–V8 all `success`**, validated again at
+startup. **Off-VM backups are still not set up** (no `backup.env`; the backup timer is installed
+but disabled), so the only copies are the migration's local dump and the old volume. That is
+P0 **D1**, and it is next.
 
 **Historical baseline, 6 Sep 2026 (before the current payoff work).** Four PRs landed that day
 as merge commits, not squashes, so every commit keeps its identity on `main`:
@@ -215,7 +215,7 @@ an explicit skip until the browser smoke pack exists.
 ## Local development
 
 - **Google sign-in is off locally: `GB_DEV_AUTH=true`.** `auth/DevAuthConfig` replaces `SecurityConfig` (both `@ConditionalOnProperty` on that flag, opposite values), signs every request in as a fixed `DefaultOidcUser` inside a real `OAuth2AuthenticationToken`, and permits every path — so no `GOOGLE_CLIENT_ID`, redirect URI, network or allowlist entry is needed to run. The principal shape is identical to Google's, so `CurrentUser`, `AuthController` and CSRF are untouched. **`GB_DEV_USER_ID` is the Google `sub` and is load-bearing** — `broker_credential`, connection ids and session ownership all key off it; it is set to `110150585954237860845` in the user environment, the sub already in the local database, so the broker credentials there keep working. **It refuses to start unless `app.frontend-url` is loopback**, and `AllowedEmails` skips its empty-list startup failure while it is on. Both set with `setx`, so only new processes see them. Why, in `memory/dev-auth-bypasses-google-locally.md`.
-- **This laptop is still on the pre-rename names** until its local cutover (REBRAND R13): `MP_*` user variables and a `moneyplant` database and role on 5433. The renamed backend refuses to start while any `MP_*` variable is set (`LegacyEnvironmentGuard`), so a pre-rename branch and a post-rename branch cannot both run from one environment.
+- **This laptop moved to the new names on 2 Oct 2026** (REBRAND R13). `GB_*` user variables replace `MP_*`. The local database and role are `goldenbook`, and the role's password is `goldenbook`, the app's default; this laptop never sets `GB_DB_PASSWORD`. The backend refuses to start while any `MP_*` variable is set (`LegacyEnvironmentGuard`), so a shell or editor opened before the switch must be restarted, and pre-rename branches no longer run here.
 - **PostgreSQL 16 on port 5433** (`winget install PostgreSQL.PostgreSQL.16 --force`; the plain install 403s partway through EDB's CDN). Installed unattended, so the superuser password is winget's default `postgres`. Role/database `goldenbook`/`goldenbook`, owner `goldenbook`.
 - A pre-existing **PostgreSQL 17 holds 5432**, set to Manual and stopped to save memory. `Start-Service postgresql-x64-17` if anything wants it.
 - `GB_DB_URL=jdbc:postgresql://localhost:5433/goldenbook` and `GB_CREDENTIAL_KEY` (32 random bytes, base64) are in the **user** environment. **`setx` only affects new processes** — a shell or editor started before it was run still dies at startup naming `GB_CREDENTIAL_KEY`. That is the guard working.
