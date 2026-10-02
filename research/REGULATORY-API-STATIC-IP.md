@@ -2,16 +2,16 @@
 
 **Researched 6 Aug 2026 from primary sources.** Regulatory reference, not legal advice. Every clause below is quoted from the circular text, not from a summary; where a fact comes from a broker forum or a vendor blog it is labelled as such.
 
-**The framework has been fully in force since 1 April 2026.** This is not upcoming work to plan for — it is the environment MoneyPlant is already deployed into.
+**The framework has been fully in force since 1 April 2026.** This is not upcoming work to plan for — it is the environment GoldenBook is already deployed into.
 
 ---
 
 ## ▶ The short version, for this project
 
-1. **MoneyPlant places no orders.** Verified in the code, not assumed: nothing in `tradestack/src` calls an order endpoint. The one grep hit, `PaytmBrokerGateway.POSITIONS = "/orders/v1/position"`, is a read path. Positions, holdings, margins and payoff are all read-only.
-2. **Therefore the static-IP mandate does not currently bind MoneyPlant.** NSE's FAQ is explicit that the client static IP is required "only in case of Tech savvy Investor using API for placing orders", and Zerodha enforces it on order endpoints alone — orderbook, positions and the WebSocket feed stay reachable from any IP.
+1. **GoldenBook places no orders.** Verified in the code, not assumed: nothing in `tradestack/src` calls an order endpoint. The one grep hit, `PaytmBrokerGateway.POSITIONS = "/orders/v1/position"`, is a read path. Positions, holdings, margins and payoff are all read-only.
+2. **Therefore the static-IP mandate does not currently bind GoldenBook.** NSE's FAQ is explicit that the client static IP is required "only in case of Tech savvy Investor using API for placing orders", and Zerodha enforces it on order endpoints alone — orderbook, positions and the WebSocket feed stay reachable from any IP.
 3. **CLAUDE.md's "static IP (SEBI requirement)" is wrong as stated** for what the app does today. The reserved OCI IP is needed for the DNS A record, the TLS certificate and the broker redirect URIs. Those are operational reasons and they are sufficient — keep the reserved IP, just stop attributing it to SEBI.
-4. **The moment MoneyPlant places an order for anyone, three walls appear at once**, and the middle one is close to fatal for the multi-user shape. See "What changes if orders are ever added" below. Worth knowing *now*, because Step 6 (strategy builder) sits one step away from it.
+4. **The moment GoldenBook places an order for anyone, three walls appear at once**, and the middle one is close to fatal for the multi-user shape. See "What changes if orders are ever added" below. Worth knowing *now*, because Step 6 (strategy builder) sits one step away from it.
 5. **3d's per-user credentials are now backed by a rule, not only by a terms-of-service argument.** SEBI requires access "only through a unique vendor client specific API key and static IP whitelisted by the broker". One shared app key serving several users is the thing the clause exists to forbid.
 
 ---
@@ -106,7 +106,7 @@ Note what the clause is *for*: attribution. Every order must be traceable to a p
 
 ---
 
-## Broker-by-broker — the three MoneyPlant integrates
+## Broker-by-broker — the three GoldenBook integrates
 
 ### Zerodha / Kite Connect — well documented, high confidence
 
@@ -134,14 +134,14 @@ Note what the clause is *for*: attribution. Every order must be traceable to a p
 
 ---
 
-## What this means for MoneyPlant today
+## What this means for GoldenBook today
 
 **Nothing needs to change.** The app reads positions, holdings and margins and draws payoff curves. It sends no order messages, so it is neither a client algo nor an algo provider, and the static-IP mandate has nothing to bite on.
 
 Three things already line up with the framework, by accident or by earlier reasoning:
 
-- **A.8, daily API session logout.** Broker tokens die daily under SEBI rules anyway, which is why sessions are in-memory. `SessionStore.isFresh` restores only sessions created on the same IST calendar day (`SessionStore.java:47-49`), so `MP_SESSION_STORE` cannot carry a session across a trading day even when enabled. That is A.8-shaped behaviour without having aimed at it.
-- **OAuth-only plus 2FA.** All three broker integrations are redirect flows, and MoneyPlant's own sign-in is Google OIDC.
+- **A.8, daily API session logout.** Broker tokens die daily under SEBI rules anyway, which is why sessions are in-memory. `SessionStore.isFresh` restores only sessions created on the same IST calendar day (`SessionStore.java:47-49`), so `GB_SESSION_STORE` cannot carry a session across a trading day even when enabled. That is A.8-shaped behaviour without having aimed at it.
+- **OAuth-only plus 2FA.** All three broker integrations are redirect flows, and GoldenBook's own sign-in is Google OIDC.
 - **Unique per-client API keys.** Step 3d gave every user their own broker app and their own key. SEBI I(d) asks for exactly that. The decision was taken on redistribution grounds — see `CREDENTIALS-STEP3D.md` — and it happens to satisfy the clause too.
 
 One correction to carry back: **`DEPLOY-STEP3.md` and `CLAUDE.md` both call the static IP a SEBI requirement.** It is a requirement of the deployment (DNS, TLS, three redirect URIs), and it would become a SEBI requirement the day orders are added. It is not one now.
@@ -152,7 +152,7 @@ Order placement is currently out of scope — CLAUDE.md lists "propose-and-confi
 
 **1. Order hygiene — annoying, tractable.** No market orders. Market protection must not be `0`. 10 OPS ceiling with 429s. Standard algo tagging on every order. Five-year audit trail identifying the actual user.
 
-**2. One static IP, one client — this is the wall.** NSE A.7 maps a static IP to exactly one client, family excepted. MoneyPlant runs on a single OCI VM with a single reserved egress IP, and is deliberately multi-user: two allow-listed accounts today, more intended. The moment two non-family users place orders through that VM, both users' orders arrive at their brokers from one IP registered to whichever of them whitelisted it — and the other user's broker rejects, correctly, because that IP is not mapped to them.
+**2. One static IP, one client — this is the wall.** NSE A.7 maps a static IP to exactly one client, family excepted. GoldenBook runs on a single OCI VM with a single reserved egress IP, and is deliberately multi-user: two allow-listed accounts today, more intended. The moment two non-family users place orders through that VM, both users' orders arrive at their brokers from one IP registered to whichever of them whitelisted it — and the other user's broker rejects, correctly, because that IP is not mapped to them.
 
 There is no clever fix inside the current architecture. The options are:
 
@@ -162,16 +162,16 @@ There is no clever fix inside the current architecture. The options are:
 
 Note this is also where read-only multi-tenancy stops being free: the app is multi-user *because* reads have no IP rule to violate.
 
-**3. Algo-provider empanelment — near-fatal for a hosted product.** Placing orders on behalf of another person through a broker's API makes MoneyPlant an algo provider and, by SEBI I(a), the broker's agent. That means empanelment with each exchange, registration of every algo with a unique ID, broker due diligence before onboarding, brokers permitted to deal with empanelled providers only — and NSE I(h): the algos must run **on the broker's servers**, with order messages originating there. A self-hosted OCI VM placing orders for other people does not fit the shape at all.
+**3. Algo-provider empanelment — near-fatal for a hosted product.** Placing orders on behalf of another person through a broker's API makes GoldenBook an algo provider and, by SEBI I(a), the broker's agent. That means empanelment with each exchange, registration of every algo with a unique ID, broker due diligence before onboarding, brokers permitted to deal with empanelled providers only — and NSE I(h): the algos must run **on the broker's servers**, with order messages originating there. A self-hosted OCI VM placing orders for other people does not fit the shape at all.
 
-The lane that stays open is the one the regulation carves out on purpose: a **tech-savvy investor** running their own algo, on their own static IP, at their own end, for **self and family only**. Below 10 OPS it needs no algo registration — only the static IP and the tagging. Everything MoneyPlant might plausibly want to do lives comfortably inside it, provided "users" means "me and my family".
+The lane that stays open is the one the regulation carves out on purpose: a **tech-savvy investor** running their own algo, on their own static IP, at their own end, for **self and family only**. Below 10 OPS it needs no algo registration — only the static IP and the tagging. Everything GoldenBook might plausibly want to do lives comfortably inside it, provided "users" means "me and my family".
 
 **And one adjacent trap for Step 8.** LLM-driven analysis offered to other users, where the user cannot see or replicate the logic, is a **black box** algo the moment it drives orders — which pulls in Research Analyst registration and a maintained research report per algo, re-registered on every logic change. That compounds the SEBI RA/IA exposure already flagged under Open decisions in CLAUDE.md. It does not touch analysis that only informs a human who then trades manually elsewhere.
 
 ## Open items
 
 1. **Read Paytm Money's app settings for its static IP rules.** The only one of the three with no primary source. Do it during the next connect.
-2. **Confirm Alice Blue exempts non-order endpoints**, ideally from Alice Blue rather than from a forum thread. Everything MoneyPlant calls there is a read.
+2. **Confirm Alice Blue exempts non-order endpoints**, ideally from Alice Blue rather than from a forum thread. Everything GoldenBook calls there is a read.
 3. **Confirm how many IPs Alice Blue accepts** — NSE allows a primary and a secondary; whether Alice Blue exposes both is unknown.
 4. **Check the OCI VM's actual egress IP family.** If anything ever egresses over IPv6 while an IPv4 address is whitelisted, orders are rejected. Irrelevant while read-only; a half-hour of confusion later.
 5. **NSE/INVG/69255 (22 Jul 2025) has not been read in full** — only the paragraphs the FAQ quotes (2.8 and 14). If order placement is ever seriously considered, read it end to end before designing anything.

@@ -48,7 +48,7 @@ exchange for standing on solid ground with the brokers.
 | Brokers | All three, per-user. No app-level fallback. |
 | Database | Postgres in Docker now; only the JDBC URL changes to go managed later |
 | Access | Spring `JdbcClient` + Flyway |
-| Users | **No users table.** `MP_ALLOWED_EMAILS` still governs sign-in; rows key off the Google `sub` already in use |
+| Users | **No users table.** `GB_ALLOWED_EMAILS` still governs sign-in; rows key off the Google `sub` already in use |
 | Secrets | AES-256-GCM, key in the environment, never in the database |
 
 Nothing is Supabase-specific — plain JDBC, plain SQL — so moving to a managed provider is a
@@ -116,7 +116,7 @@ Laid out like `auth/`.
 | Class | Role |
 |---|---|
 | `BrokerCredentials` | record `(brokerId, apiKey, apiSecret)` — the parameter passed around |
-| `CredentialCipher` | AES-256-GCM. Key from `MP_CREDENTIAL_KEY` (base64, 32 bytes), asserted at startup via the existing `common/RequiredConfig.requireResolved` |
+| `CredentialCipher` | AES-256-GCM. Key from `GB_CREDENTIAL_KEY` (base64, 32 bytes), asserted at startup via the existing `common/RequiredConfig.requireResolved` |
 | `BrokerCredentialRepository` | `JdbcClient`, four statements |
 | `BrokerCredentialService` | `find`, `require`, `save`, `delete`, `brokerIdsFor(userId)` |
 | `BrokerCredentialController` | `GET /api/broker-credentials`, `PUT /{brokerId}`, `DELETE /{brokerId}` |
@@ -135,7 +135,7 @@ Laid out like `auth/`.
 - `KiteBrokerGateway` — api key from the session, not from properties.
 - `SessionController.status()` — `brokers` becomes `credentials.brokerIdsFor(userId)`.
 - `application.properties` — drop the six broker variables, add the datasource and
-  `MP_CREDENTIAL_KEY`. Same removal in `tradestack/deploy/moneyplant.env.example`.
+  `GB_CREDENTIAL_KEY`. Same removal in `tradestack/deploy/goldenbook.env.example`.
 - `docker-compose.yml` — `postgres:16`, named volume, published on 5432.
 
 ### Frontend
@@ -172,4 +172,4 @@ Connect button that cannot work.
 ## Explicitly not in this step
 
 A users table, self-service sign-up, account deletion, key-rotation tooling, saved strategies.
-`MP_ALLOWED_EMAILS` keeps governing who may sign in.
+`GB_ALLOWED_EMAILS` keeps governing who may sign in.

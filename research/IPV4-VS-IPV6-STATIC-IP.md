@@ -2,7 +2,7 @@
 
 **Researched 6 Aug 2026.** Companion to `REGULATORY-API-STATIC-IP.md`, which establishes *when* a whitelisted static IP is required (order placement only, in force since 1 April 2026). This one answers the follow-ups: does the IPv6 path actually work end to end, what does each protocol cost, and where is the cheapest place to buy an address that can later be attached to a bigger VM.
 
-**Reminder of scope:** MoneyPlant is read-only today and needs none of this for compliance. Everything below is either (a) present-day operational cost of running the VM, or (b) preparation for a decision that only becomes real if order placement is ever added.
+**Reminder of scope:** GoldenBook is read-only today and needs none of this for compliance. Everything below is either (a) present-day operational cost of running the VM, or (b) preparation for a decision that only becomes real if order placement is ever added.
 
 ---
 
@@ -115,7 +115,7 @@ The requirement was an address that comes with usable networking and can be **at
 
 The realistic alternative *if Indian latency ever matters*. Mumbai and Delhi regions, single-digit-millisecond RTT to NSE-adjacent endpoints, reserved IPs that detach and reattach. The $2.50 tier is IPv6-only and therefore useless for broker whitelisting unless every broker involved accepts IPv6 — which, per the table above, is not established for two of the three.
 
-Latency is irrelevant to MoneyPlant as it stands. Read-only aggregation on a 30-second refetch does not care about 150 ms.
+Latency is irrelevant to GoldenBook as it stands. Read-only aggregation on a 30-second refetch does not care about 150 ms.
 
 ### 3. Hetzner — €0.50/mo for IPv4, but reconsider
 
@@ -137,7 +137,7 @@ While researching broker IPv6 support I found direct confirmation of the "one IP
 
 Zerodha's staff confirm the restriction on their forum. So NSE implementation standard A.7 is not a policy someone might overlook — **it is enforced at the point of registration**, before any order is ever sent.
 
-For MoneyPlant this settles a question the cost analysis cannot touch: **buying a better or cheaper IP does not enable multi-user order placement.** One IP serves one client. Two unrelated users placing orders need two addresses and two separate egress paths, which means per-user outbound proxying — and that is before the algo-provider empanelment problem in the companion doc, which is the harder wall anyway.
+For GoldenBook this settles a question the cost analysis cannot touch: **buying a better or cheaper IP does not enable multi-user order placement.** One IP serves one client. Two unrelated users placing orders need two addresses and two separate egress paths, which means per-user outbound proxying — and that is before the algo-provider empanelment problem in the companion doc, which is the harder wall anyway.
 
 If order placement is ever added, the cheapest compliant shape is the one the regulation carves out on purpose: **self and family, one static IP, under 10 OPS.** The current OCI reserved IPv4, at ₹0, already is that shape.
 

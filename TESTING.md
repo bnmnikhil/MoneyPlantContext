@@ -1,4 +1,4 @@
-# MoneyPlant testing entry point
+# GoldenBook testing entry point
 
 Use one command from the workspace root:
 

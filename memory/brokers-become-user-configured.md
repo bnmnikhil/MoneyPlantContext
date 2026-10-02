@@ -6,7 +6,7 @@ metadata:
   decided: 2026-08-05
 ---
 
-MoneyPlant's broker list is currently a global assumption: `BrokerRegistry`
+GoldenBook's broker list is currently a global assumption: `BrokerRegistry`
 enumerates every broker the *build* knows about (kite, aliceblue, paytm). **The
 long-term model is the opposite** — each user configures which brokers they use
 and how many accounts they hold at each. Stated by the owner on **5 Aug 2026**
