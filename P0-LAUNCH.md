@@ -22,6 +22,40 @@ exists because every wrong claim this project has carried was a claim nobody re-
 
 ---
 
+## Current release status — 1 Oct 2026
+
+- Scope: **M&M Strategy Builder option-chain and payoff fixes** on
+  `fix/builder-signed-baseline-prices` in context, frontend and tradestack.
+- Option-chain loading: canonical `MM` is resolved to Alice Blue's exact `M&M`
+  catalogue name for both expiry and chain requests. Missing/ambiguous mappings
+  fail explicitly; catalogue caching is caller-independent and stores no tokens.
+- Payoff preview: imported `EXISTING_POSITION` / `POSITION_AVERAGE` baseline
+  prices may be finite signed effective bases. Draft premiums, manual/quote
+  bases and holding costs remain nonnegative. No symbol-model migration or
+  broker-mapper / realised-P&L accounting rewrite is included.
+- Full local working-tree verification (1 Oct): `mvn clean verify` **477 passed**,
+  `npm test` **71 passed**, `npm run build` passed, `git diff --check` passed.
+  Database-tagged tests were excluded; Vite reported its existing chunk-size
+  warning. These counts include unrelated local work that is not being published.
+- Browser verification: the rebuilt local backend restored its broker sessions;
+  M&M loaded three expiries and 20 strikes, and the imported five-leg payoff
+  preview rendered with `Calculated · expiry`, preserving the signed basis.
+- Exact committed-tree verification: detached clean worktrees at backend
+  `ed16652` and frontend `29eb651`; `mvn clean verify` **471 passed**, `npm test`
+  **61 passed**, `npm run build` passed after `npm ci`, and both PR diffs pass
+  `git diff --check`. Database-tagged tests remain excluded and the existing
+  Vite chunk-size warning remains. The initial isolated frontend run needed
+  dependencies installed and an unsandboxed esbuild run; the final checks passed.
+- Published for review: [backend PR #23](https://github.com/bnmnikhil/MoneyPlant/pull/23)
+  and [frontend PR #21](https://github.com/bnmnikhil/MoneyPlantFrontend/pull/21),
+  both from `fix/builder-signed-baseline-prices` into `main`. Context documentation
+  accompanies them on the same-name branch. Review/merge remains pending;
+  unrelated screener, broker-settings, local MCP configuration and crash dumps
+  are excluded.
+- Production deployment: **not performed**. No P0 checklist item is closed by
+  these two fixes; outstanding snapshot/risk and accounting reviews remain open.
+
+
 ## Current release status — 14 Sep 2026
 
 - Active branch: `feat/ux-mockup-redesign` in context, frontend and tradestack.
@@ -43,6 +77,7 @@ exists because every wrong claim this project has carried was a claim nobody re-
   JVM crash dumps and the stale generated architecture report out of commits.
 
 ## Previous release checkpoint — 9 Sep 2026
+
 
 - Release branch: `feat/payoff-chart-range` in context, frontend and tradestack.
 - Scope: option-only premium totals; futures payoff limits and mixed-expiry labels;
