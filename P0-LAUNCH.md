@@ -77,7 +77,28 @@ exists because every wrong claim this project has carried was a claim nobody re-
   M&M task branches do not certify the uncommitted screener or broker-settings
   changes for deployment.
 
-## Previous release status — 9 Sep 2026
+## Release status — 14 Sep 2026
+
+- Active branch: `feat/ux-mockup-redesign` in context, frontend and tradestack.
+- Frontend redesign checkpoints 1–5 merged through PR #17 on 13 Sep. Browser
+  access is now available; populated portfolio/payoff/builder checks were run.
+- Checkpoints 6a–6d are implemented and verified: payoff phone containment,
+  chart label placement, Overview spacing and Risk table containment. Frontend
+  has 56 passing tests and a passing TypeScript/Vite build; the >500 kB bundle
+  warning remains. Detailed coverage and recovery notes: `UX-REDESIGN.md`.
+- Checkpoint 6 remains in progress: correct expired-session/header consistency
+  and finish keyboard/empty/error-state checks. No P0 item is marked complete
+  merely by this UX handoff. Existing snapshot-risk limitations remain deferred.
+- The owner requested status updates, pushing completed changes and PRs.
+  Frontend checkpoints 6a–6d are pushed as `7c783b9` in
+  [PR #18](https://github.com/bnmnikhil/MoneyPlantFrontend/pull/18); documentation
+  is in [context PR #5](https://github.com/bnmnikhil/MoneyPlantContext/pull/5).
+  Backend source is unchanged. No deployment is performed by this handoff;
+  current production parity has not been verified. Keep local MCP configuration,
+  JVM crash dumps and the stale generated architecture report out of commits.
+
+## Previous release checkpoint — 9 Sep 2026
+
 
 - Release branch: `feat/payoff-chart-range` in context, frontend and tradestack.
 - Scope: option-only premium totals; futures payoff limits and mixed-expiry labels;
