@@ -80,7 +80,7 @@ week after.
 | L10 | Release integration: merge, deploy `main`, verify Flyway V5–V8 in prod | 1 · release | `[~]` |
 | L11 | Cross-user data isolation test on production | 1 · security | `[ ]` |
 | L12 | Security review of the launch diff + dependency audit | 1 · security | `[ ]` |
-| L18 | Spot and chain: own brokers first, then a flagged admin feed; never another user's | 1 · terms | `[ ]` |
+| L18 | Spot and chain: own brokers first, then a flagged admin feed; never another user's | 1 · terms | `[~]` |
 | L13 | Capacity: resize the VM to the free 4 OCPU / 24 GB, set JVM heap, smoke-load | 2 · ops | `[ ]` |
 | L14 | `raw_capture` growth: measure per user/day, add retention | 2 · ops | `[ ]` |
 | L15 | Incident runbook: breach, key rotation, disabling sign-up | 2 · ops | `[ ]` |
@@ -356,7 +356,7 @@ settings with open sign-up in mind.
 
 **Verify:** findings fixed, or recorded here with a reason.
 
-### `[ ]` L18 — The spot cache crosses users
+### `[~]` L18 — The spot cache crosses users
 
 Found 2 Oct while drafting L1. `SpotPriceService` fetches over the **caller's own**
 session, but its 5 s cache is keyed by underlying alone, deliberately shared ("one quote
@@ -422,6 +422,17 @@ Phases:
 3. **Builder chain fallback** to the admin's Alice Blue.
 4. `spot_snapshot.kind` and `.source` (V10), plus the usage counters.
 5. The Kite paid-data probe and manual spot entry.
+
+**Phase 1 in review, 3 Oct 2026:** MoneyPlant #34 + MoneyPlantFrontend #28 (deploy
+together).
+- The cache is keyed by `(userId, underlying)`.
+- The Alice Blue chain is a spot source.
+- The live payoff carries `spotSource`, shown as "Current spot · Paytm Money".
+- `defaultSpotFor` is deleted; `/simulate` without a spot answers 422.
+- Two-user tests pass, and fail if the shared key is restored. 511 backend tests and 78
+  frontend tests pass.
+
+The cross-user leak closes when this is deployed.
 
 **Verify (whole item):**
 - Two users, the first with Paytm. With the feed off, the second gets none; with it on,
