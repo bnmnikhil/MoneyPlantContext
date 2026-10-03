@@ -86,21 +86,30 @@ serve:
 The VM today: 1 OCPU, 7 GB RAM, aarch64. The always-free allowance is 4 OCPU / 24 GB
 (L13), which leaves room for staging.
 
-## Decisions for the owner
+## Decisions (owner, 3 Oct 2026)
 
-- **D-1 Hosting.** Recommended: **a second always-free Ampere VM** (for example 1 OCPU /
-  6 GB, with production resized to 3 / 18 under L13). That gives full isolation: a staging
-  mistake cannot reach production's database, env file or `GB_CREDENTIAL_KEY`, and a
-  rollback rehearsal on staging is a real rehearsal. The alternative is the **same VM**
-  with a second service, database and Caddy site. It is quicker, but staging shares
-  production's CPU and memory and sits one config mistake away from it.
-- **D-2 Access.** Recommended: `staging.goldenbook.in` behind Caddy **basic auth** plus
-  `noindex`, with real Google sign-in in **allowlist** mode for testers. Dev auth is
-  deliberately impossible off loopback, so it is not an option.
-- **D-3 Where the simulator lives.** Recommended: a separate Maven module
-  `broker-sim/` in the `MoneyPlant` repo, built and run separately. It is **never** inside
-  the app jar, and a check on the app jar enforces that.
-- **D-4 Kite.** See ST-2. Recommended: replace the SDK with our own Kite REST client.
+- **D-1 Hosting: the same VM, for now.** A second always-free VM was recommended, for
+  full isolation, but the owner chose speed. Staging runs beside production, separated
+  by everything except the machine:
+  - its own Linux user `gbstaging`, which cannot read `/etc/goldenbook/`;
+  - its own env file `/etc/goldenbook-staging/goldenbook.env`, with its own
+    `GB_CREDENTIAL_KEY`;
+  - **its own Postgres container** (`goldenbook-staging-postgres`, own volume and
+    password, loopback `:5442`) rather than a second database in production's
+    container, so no production role or password is involved;
+  - loopback ports `:8180` (backend) and `:8190` (simulator);
+  - capped heaps (staging `-Xmx512m`, simulator `-Xmx256m`), so staging cannot starve
+    production on a 1 OCPU / 7 GB box.
+
+  L13's free resize to 4 OCPU / 24 GB becomes more urgent. Revisit a separate VM if
+  staging ever affects production.
+- **D-2 Access:** `staging.goldenbook.in` behind Caddy **basic auth** plus `noindex`,
+  with real Google sign-in in **allowlist** mode for testers. Dev auth is deliberately
+  impossible off loopback.
+- **D-3 Simulator location:** a separate Maven module, `broker-sim/`, in the `MoneyPlant`
+  repo, built and run separately. It is **never** inside the app jar, and a check on the
+  app jar enforces that.
+- **D-4 Kite:** replace the SDK with our own Kite REST client (ST-2, option 1).
 
 ## Items
 
@@ -280,7 +289,7 @@ no real credentials.
 
 | Step | Items | Size | Can start |
 |---|---|---|---|
-| 1 | D-1 to D-4 answered | owner | now |
+| 1 | D-1 to D-4 answered | owner | **done, 3 Oct** |
 | 2 | ST-1 endpoints and guard | small | now |
 | 3 | ST-2 Kite client (if option 1) | medium | after D-4 |
 | 4 | ST-3 + ST-4 simulator, happy paths for all three brokers | large | after ST-1 |
