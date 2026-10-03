@@ -153,6 +153,10 @@ risk but does not replace a real setup observation.
 
 ## Phase 2 — build the broker simulator and test entry point
 
+**3 Oct 2026: SIM-01 to SIM-05 are now tracked in `STAGING.md`** (ST-3 to ST-6), which
+builds the simulator together with the staging environment it runs in. The entries below
+remain the requirement; status lives there.
+
 - [ ] **SIM-01 — Create one development-only simulator service.** Use isolated
   profiles per broker and documented paths, status codes, headers and JSON shapes.
   It may run as one process locally but each profile must be independently
