@@ -23,15 +23,16 @@ data. Prioritise correct live figures, useful analysis and everyday onboarding.
   step. Keep the drafts; do not send them during this deferral.
 - The owner confirms **open sign-up with no user cap or invitation restriction**.
   A small initial cohort is an expectation, not an enforced admission limit.
-  L3 implements the explicit open mode on `launch/l3-open-signup`; the production
-  allowlist configuration remains unchanged until a separately requested deployment.
+  **The owner opened sign-up in production on 3 Oct 2026 at 14:47 IST**, six days ahead
+  of the 9 Oct target and before the go/no-go gates below were met.
 - Broker permission remains unconfirmed. This changes the owner's work order,
   not the research findings or the recorded approval status.
 
 This revision supersedes the earlier L1 launch gate and D1's immediate schedule
 below. Other launch requirements, the read-only scope and the hidden Screener
-remain unchanged. **9 Oct remains a target; L3's explicit open mode and the
-remaining applicable gates must be verified before changing sign-up configuration.**
+remain unchanged. **Sign-up opened on 3 Oct, before the go/no-go checklist. The Tier 1
+items are therefore no longer gates in front of a launch: they are open work on a live
+public site, and the checklist below is what remains to be made true.**
 
 ## Decisions taken 2 Oct 2026 (owner)
 
@@ -75,7 +76,7 @@ week after.
 | L5 | Google OAuth consent screen → Production + brand verification | 1 · external | `[ ]` |
 | L6 | Self-serve broker setup guide (exact redirect URLs per broker) | 1 · onboarding | `[ ]` |
 | L7 | Landing + login copy rewritten for strangers | 1 · onboarding | `[~]` |
-| L8 | Screener kept out of the launch build | 1 · scope | `[~]` |
+| L8 | Screener kept out of the launch build | 1 · scope | `[x]` |
 | L9 | Builder is honest without an Alice Blue quote source | 1 · numbers | `[ ]` |
 | L10 | Release integration: merge, deploy `main`, verify Flyway V5–V8 in prod | 1 · release | `[~]` |
 | L11 | Cross-user data isolation test on production | 1 · security | `[ ]` |
@@ -240,8 +241,12 @@ clear disabled or terms state. The `/api/me` response is unchanged. L4's terms
 acceptance is still separate, and the columns remain unset by L3.
 
 The runbook is [`tradestack/docs/google-signup.md`](tradestack/docs/google-signup.md).
-Production enablement and a fresh real Google account on `goldenbook.in` remain
-unverified; no production environment or Google Console setting was changed.
+**Deployed 3 Oct 2026, 14:41 IST, and `GB_SIGNUP_MODE=open` from 14:47.** V9 applied
+(`success`) and seeded 2 legacy subjects. The boot log reads `signup mode=open`. A new
+Google account registered on production at 14:51 IST. **Before `[x]`:** the kill-switch test
+on production (`closed` refuses a new subject while existing users still sign in) and a
+disabled-account check there. The Google consent screen's publishing status (L5) is
+unchanged and unverified.
 
 ### `[ ]` L4 — Terms acceptance recorded at first sign-in
 
@@ -286,7 +291,12 @@ Open Graph tags.
 
 **Verify:** read it signed out on a phone.
 
-### `[~]` L8 — Screener out of the launch build
+### `[x]` L8 — Screener out of the launch build
+
+**Verified 3 Oct 2026 against the deployed commits** (`tradestack fcc5100`, `frontend
+40f0bcc`). Neither contains any screener code, so production has no `/api/screener`
+controller and no `/app/screener` route. That is stronger than the HTTP check below,
+which needs a signed-in session, because anonymous calls get 401 on every `/api` path.
 
 **2 Oct 2026: split and merged** (frontend #22 settings; the screener stays on its own
 unpushed branch). Was: split, committed locally, not pushed. Settings redesign is
@@ -322,10 +332,17 @@ account sees live premiums; `GET /api/payoff/metadata` returns 65 for NIFTY.
 
 ### `[~]` L10 — Release integration and the dark deploy
 
-**3 Oct 2026:** current `main` is deployed (`tradestack 36d5f58`, `frontend 03e1091`) by
-the R6 migration, with sign-up still allowlisted. V1–V8 are confirmed `success` on the
-host. V9 now exists on the local L3 branch and still needs a separately requested
-production deployment. The runbook's nine production checks have not all been run.
+**3 Oct 2026, 14:41 IST:** `main` deployed (`tradestack fcc5100`, `frontend 40f0bcc`) with
+`deploy-from-local.ps1`. 505 tests passed on the VM. **V1–V9 all `success`.** The runbook's
+checks so far:
+- Run and passed: 1 (site and certificate), 2 (hard-refresh `/app/positions`), 3 (a new
+  account registered under `open`), 4 (`/api/me` 401), 8 (`:8080`, `:5432` and `:8081` time
+  out from outside) and 9 (the restart logged `restored 2 broker session(s)`).
+- C6's boot auth line read once: `Google OIDC; signup mode=open`.
+- **Not yet run:** 5–7, which need a broker connected in the browser.
+
+Sign-up was then opened rather than kept dark (see L3). The pre-deploy jar and a database
+dump are in `/root/pre-l3-20261003T1439`.
 
 The last **recorded** production deploy is 6 Sep (`tradestack 0b95e40`, `frontend
 c8ab2ae`). Every later status note says "no production change", so assume backend PRs
