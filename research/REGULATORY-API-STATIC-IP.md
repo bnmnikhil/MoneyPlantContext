@@ -142,9 +142,9 @@ Three things already line up with the framework, by accident or by earlier reaso
 
 - **A.8, daily API session logout.** Broker tokens die daily under SEBI rules anyway, which is why sessions are in-memory. `SessionStore.isFresh` restores only sessions created on the same IST calendar day (`SessionStore.java:47-49`), so `GB_SESSION_STORE` cannot carry a session across a trading day even when enabled. That is A.8-shaped behaviour without having aimed at it.
 - **OAuth-only plus 2FA.** All three broker integrations are redirect flows, and GoldenBook's own sign-in is Google OIDC.
-- **Unique per-client API keys.** Step 3d gave every user their own broker app and their own key. SEBI I(d) asks for exactly that. The decision was taken on redistribution grounds — see `CREDENTIALS-STEP3D.md` — and it happens to satisfy the clause too.
+- **Unique per-client API keys.** Step 3d gave every user their own broker app and their own key. SEBI I(d) asks for exactly that. The decision was taken on redistribution grounds — see `memory/credentials-per-user-per-registration.md` — and it happens to satisfy the clause too.
 
-One correction to carry back: **`DEPLOY-STEP3.md` and `CLAUDE.md` both call the static IP a SEBI requirement.** It is a requirement of the deployment (DNS, TLS, three redirect URIs), and it would become a SEBI requirement the day orders are added. It is not one now.
+One correction to carry back: **`DEPLOY-STEP3.md` (since retired) and `CLAUDE.md` both called the static IP a SEBI requirement.** It is a requirement of the deployment (DNS, TLS, three redirect URIs), and it would become a SEBI requirement the day orders are added. It is not one now.
 
 ## What changes if orders are ever added
 

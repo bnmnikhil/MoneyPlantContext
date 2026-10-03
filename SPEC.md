@@ -2,7 +2,7 @@
 
 **Written 7 Aug 2026 from an interview with the owner.** This is a *decision* document: it records what was chosen, what was rejected and why, and what it commits the codebase to. It supersedes nothing in `CLAUDE.md` except where it says so explicitly.
 
-Companion docs: `DEPLOY-STEP3.md` (auth/deploy), `CREDENTIALS-STEP3D.md` (per-user credentials), `tradestack/docs/symbol-model.md` (InstrumentKey).
+Companion docs: `tradestack/deploy/README.md` (deploy runbook), `memory/credentials-per-user-per-registration.md` (per-user credentials), `tradestack/docs/symbol-model.md` (InstrumentKey). The original Step 3 design docs, `DEPLOY-STEP3.md` and `CREDENTIALS-STEP3D.md`, are retired and remain in git history.
 
 ---
 
@@ -106,9 +106,9 @@ The initial backfill set, with the sources already written:
 | 0005 | `BrokerAggregate` — partial success is 200 | `CLAUDE.md` "API contract" |
 | 0006 | P&L semantics: `pnl` is lifetime, `dayChange` is today | `CLAUDE.md` "P&L semantics" |
 | 0007 | The application owns its symbols | `CLAUDE.md` "Decided 3 Aug" + `symbol-model.md` |
-| 0008 | Per-user broker credentials, AES-256-GCM, key out of the DB | `CREDENTIALS-STEP3D.md` |
+| 0008 | Per-user broker credentials, AES-256-GCM, key out of the DB | `memory/credentials-per-user-per-registration.md` |
 | 0009 | Do not use Paytm's official Java SDK | `docs/paytm-api.md` |
-| 0010 | Google OAuth + env-var allowlist | `DEPLOY-STEP3.md` |
+| 0010 | Google OAuth + env-var allowlist | `DEPLOY-STEP3.md`, retired in `84bd89b` (git history only) |
 
 New ADRs from *this* document start at 0011 and are listed in §10.
 

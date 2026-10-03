@@ -3,9 +3,9 @@
 Decision: 11 September 2026.
 
 The owner selected the four PNGs in `UX mockup/` as the visual target and asked
-for an exact match implemented one checkpoint at a time. `UX-REDESIGN.md` owns
-checkpoint status, verification results, and resume instructions. This is the
-current visual direction where it differs from the older `UX-STEP2.md` proposal.
+for an exact match implemented one checkpoint at a time. The
+checkpoint log that tracked it was retired on 3 Oct 2026 (git history); remaining
+work is tracked in `P0-LAUNCH.md`. This supersedes the earlier Step 2 UX proposal.
 
 The first checkpoint moves authenticated pages to a full-width frame with top
 navigation: Overview, Positions, Holdings, Payoff, Risk. Broker settings and
@@ -18,7 +18,7 @@ not certify quote or risk-data freshness; those remain page-level facts. The
 broker count counts distinct broker providers, with accounts inside the dropdown.
 Known implementation gap: the backend currently marks every stored session as
 connected, so an expired token can still produce a Live header. Per-account
-session-validity handling is the next checkpoint, tracked in `UX-REDESIGN.md`.
+session-validity handling is the next checkpoint, tracked in `P0-LAUNCH.md`.
 
 Visual changes must preserve real calculation results and existing unavailable,
 partial, mixed-expiry, holdings, and hypothetical-strategy semantics. The images'
@@ -86,7 +86,7 @@ mounted builder cannot widen a phone viewport to their intrinsic content width.
 On phones the curve controls take a separate flex row; wide financial tables
 retain scrolling inside their panels. Verified with populated data on 14 September
 2026 after browser access became available; remaining visual checks are tracked
-in `UX-REDESIGN.md`.
+in `P0-LAUNCH.md`.
 
 Live and builder chart annotations use the measured plot width to place nearby
 spot/breakeven labels on separate rows and keep edge labels inside the plot.

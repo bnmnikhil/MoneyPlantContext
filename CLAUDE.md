@@ -4,7 +4,7 @@
 
 **`memory/` — read `memory/MEMORY.md` at the start of any non-trivial task.** It is the project memory: one file per durable decision or piece of project state, carrying the *reasoning* this file deliberately cuts. This file answers "what is true of the code now?"; `memory/` answers "why did we choose this, and when?". Keep the two from overlapping, and add a memory whenever a decision is made that a future reader would otherwise have to reverse-engineer from a diff.
 
-**Companion docs.** `PUBLIC-LAUNCH.md` — the open-sign-up launch plan (target 9 Oct 2026): the schedule, the L-items, and which P0 items gate it; **the authority for what is being worked on now**. `OBSERVABILITY.md` — logs, metrics and alerting plan (O-items; expands P0's D2). `REBRAND-GOLDENBOOK.md` — the rename to GoldenBook and the move to `goldenbook.in` (R-items; carries out L2). `P0-LAUNCH.md` — the production-launch tracker; it owns status for items A1–F2, this file owns code-truth, and the two must not overlap. `NEXT-STEPS.md` — the broad backlog for broker expansion, simulators, the landing page and testing. `BROKER-EXPANSION-PLAN.md` — the executable sequence for adding read-only brokers that require no static IP. `SPEC.md` — the Step 4 plan, and the authority for it. `CREDENTIALS-STEP3D.md` — per-user broker credentials. `UX-STEP2.md` — UI rework. `tradestack/docs/symbol-model.md`, `aliceblue-api.md`, `paytm-api.md`. `tradestack/deploy/README.md` — deploy runbook. `research/` — regulatory and IP findings. **`DEPLOY-STEP3.md` was deleted in `84bd89b`;** `SPEC.md`, `CREDENTIALS-STEP3D.md` and `research/REGULATORY-API-STATIC-IP.md` still cite it and those references now dangle.
+**Companion docs.** `PUBLIC-LAUNCH.md` — the open-sign-up launch plan (target 9 Oct 2026): the schedule, the L-items, and which P0 items gate it; **the authority for what is being worked on now**. `OBSERVABILITY.md` — logs, metrics and alerting plan (O-items; expands P0's D2). `REBRAND-GOLDENBOOK.md` — the rename to GoldenBook and the move to `goldenbook.in` (R-items; carries out L2). `P0-LAUNCH.md` — the production-launch tracker; it owns status for items A1–F2, this file owns code-truth, and the two must not overlap. `NEXT-STEPS.md` — the open testing and landing-page backlog not tracked anywhere else. `BROKER-EXPANSION-PLAN.md` — the executable sequence for adding read-only brokers that require no static IP. `SPEC.md` — the Step 4 plan, and the authority for it. `tradestack/docs/symbol-model.md`, `aliceblue-api.md`, `paytm-api.md`. `tradestack/deploy/README.md` — deploy runbook. `research/` — regulatory and IP findings. The retired design docs (`DEPLOY-STEP3.md`, deleted in `84bd89b`; `CREDENTIALS-STEP3D.md`; `UX-STEP2.md`; `UX-REDESIGN.md`; `STRATEGY-BUILDER-IMPLEMENTATION.md`) live only in git history; their decisions are in `memory/`.
 
 ---
 
@@ -89,7 +89,7 @@ Its three commits — Step 6 `c451a86`/`ddfe9fc`, the `broker/` package split `e
 still individually on `main`.
 
 
-**Still uncommitted and never to be committed:** `hs_err_pid*.log` / `replay_pid*.log` JVM crash dumps in `tradestack/` (candidates for `.gitignore`), and `.mcp.json`. **Also left uncommitted deliberately: `tradestack/docs/architecture/backend-architecture.md`** — a 322-line generated report dated 15 Aug that documents the *pre-split* `broker/` package, so ADR 0027 falsified it before it was ever committed. Regenerate it or drop it; do not commit it as it stands.
+**Still uncommitted and never to be committed:** `hs_err_pid*.log` / `replay_pid*.log` JVM crash dumps in `tradestack/` (candidates for `.gitignore`), and `.mcp.json`.
 
 Branch tracking is unreliable as a "is it pushed?" signal — several branches have no upstream config, so `%(upstream:track)` prints blank for pushed and unpushed alike. Use `git for-each-ref --format='%(refname:short) %(upstream:track)' refs/heads/`, then confirm with `git ls-remote`.
 
@@ -431,7 +431,8 @@ bottom tabs. The header's Live indicator reads session status, not data freshnes
 Known limitation: the backend reports stored sessions as connected even after a
 broker rejects a token, so Live can contradict an expired-session banner.
 The four `UX mockup/` PNGs are the selected visual reference;
-`UX-REDESIGN.md` records resumable checkpoints and visual-verification status.
+`memory/ux-mockup-redesign.md` records the semantics, and `P0-LAUNCH.md` the
+remaining consistency work (session-status agreement, keyboard/empty/error states).
 
 **Overview layout:** `/app` follows `dashboard.png` with
 a horizontal summary strip, paired P&L/capital tables and collapsible per-account
@@ -463,8 +464,7 @@ older results during recalculation. Target prices have slider and manual control
 Session drafts survive New strategy and tab switches. The compact chart shares
 the adaptive reference-label layout. Risk cards also use zero-minimum grid tracks,
 so financial tables scroll inside their cards at phone widths.
-Browser access is available; `UX-REDESIGN.md` records completed checks and the
-remaining consistency work.
+Browser access is available.
 
 Routing: `/` landing, `/login`, then `AuthGuard` → `AppShell` → `/app`, `/app/positions`, `/app/holdings`, `/app/payoff`, `/app/risk`, `/app/settings`.
 
@@ -474,7 +474,7 @@ Routing: `/` landing, `/login`, then `AuthGuard` → `AppShell` → `/app`, `/ap
 
   **Three rules live in that join, each from a real trap.** (1) **Key on `connectionId`, never `brokerId`** — `/api/margins` returns one row per connection despite its javadoc, so two Kite accounts are two rows both labelled `kite`, and folding on the broker id sums them into one. (2) **Outer join, and `margin: null` rather than `0`** — a dead margin call must leave the P&L row intact and show a dash, not a zero that reads as an empty account. (3) **Day P&L is positions-only and says so** — `HoldingDto` has no `dayChange` field at all (the snapshot repository writes a hardcoded `0.0`). The old "P&L today" tile was mislabelled from the day it was written: it summed lifetime `Position.pnl`.
 
-  **Frontend verification:** `npm test` (`node --experimental-strip-types --test tests/*.test.mjs`) uses Node's test runner for pure logic and server-rendered component checks, importing `.ts` modules directly, so pure logic goes in a module under `src/` with a `tests/*.test.mjs` beside it; **61 passing on `main`, 2 Oct 2026**. `npm run build` runs TypeScript and Vite. Browser checks supplement these for actual layout and interaction. Current results are recorded in `UX-REDESIGN.md`.
+  **Frontend verification:** `npm test` (`node --experimental-strip-types --test tests/*.test.mjs`) uses Node's test runner for pure logic and server-rendered component checks, importing `.ts` modules directly, so pure logic goes in a module under `src/` with a `tests/*.test.mjs` beside it; **61 passing on `main`, 2 Oct 2026**. `npm run build` runs TypeScript and Vite. Browser checks supplement these for actual layout and interaction.
 
   **The Chrome extension *can* screenshot `localhost` now** — it could not before ("Frame with ID 0 is showing error page"), and that outdated note is why later UI shipped unseen. `/app/positions` was verified live on 15 Aug 2026 against all three brokers. Two things only a rendered page caught: a sticky `<th>` clipping the first broker band (shadcn's `Table` wraps in `overflow-auto`, which becomes the sticky containing block), and a freshness caption that named the reassuring date instead of the load-bearing one.
 - **`/app/settings` is where broker credentials are entered.** The secret field is **write-only**: it renders empty with "Stored — enter it again to replace" as its placeholder rather than dots, because a masked value would imply the real one is retrievable and it deliberately is not. That also settles what a blank secret means on update — nothing, since both values are always required.
