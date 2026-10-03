@@ -188,11 +188,11 @@ moment there is a second user. → **B1**
 | B7 | Kite builds a new HTTP client per call | B · resilience | `[ ]` |
 | C1 | Zero security headers | C · security | `[ ]` |
 | C2 | Caddy logs callback query strings | C · security | `[~]` |
-| C3 | Debug endpoints live in production | C · security | `[ ]` |
+| C3 | Debug endpoints live in production | C · security | `[x]` |
 | C4 | No rate limit, body cap, or validation | C · security | `[ ]` |
 | C5 | No disconnect / revoke path | C · security | `[ ]` |
 | C6 | Prove `GB_DEV_AUTH` is off in prod | C · security | `[ ]` |
-| C7 | Stale "MUST NOT SHIP AS-IS" comment | C · security | `[ ]` |
+| C7 | Stale "MUST NOT SHIP AS-IS" comment | C · security | `[x]` |
 | D1 | **No backups** | D · operability | `[~]` |
 | D2 | No health endpoint, no monitoring | D · operability | `[ ]` |
 | D3 | Deploy readiness check is decorative | D · operability | `[ ]` |
@@ -493,7 +493,15 @@ single-use and short-lived, but the file claims a protection it does not provide
 
 **Verify:** complete a broker connect, then grep the Caddy log for the request token.
 
-### `[ ]` C3 — Debug endpoints live in production
+### `[x]` C3 — Debug endpoints live in production
+
+**Done 3 Oct 2026, `launch/c3-c7-debug-endpoints`.** `AliceBlueDebugController` was
+already deleted. `InstrumentController` now carries `@ConditionalOnProperty` on
+`goldenbook.dev-auth.enabled`, the same flag as `DevAuthConfig`, rather than a flag of its
+own: dev auth refuses to start off loopback, so production cannot have one without the
+other. Verified in the prod-shaped test context (`AuthSecurityTest.debugEndpointsAreAbsent`):
+the bean is absent and both paths 404 for a signed-in user. That test fails if the
+condition is removed. Production stops serving them at the next deploy.
 
 `/api/debug/instrument`, `/api/debug/symbols` (`instrument/InstrumentController.java:28,44`)
 and `/api/debug/aliceblue/option-chain`
@@ -564,7 +572,11 @@ returned 200 with a user. That is a real negative signal but it is not the posit
 this item asks for, and the direct checks (`grep GB_DEV_AUTH /etc/goldenbook/goldenbook.env`,
 the boot log) have **not** been run. Item stays open.
 
-### `[ ]` C7 — Stale "MUST NOT SHIP AS-IS" comment
+### `[x]` C7 — Stale "MUST NOT SHIP AS-IS" comment
+
+**Done 3 Oct 2026, with C3.** The comment now describes `PendingConnect`'s nonce: minted
+at `login-url`, a ten-minute TTL, single use, carried by Kite and Paytm, and Alice Blue's
+refuse-when-ambiguous fallback.
 
 `auth/SecurityConfig.java:118-119` reads *"MUST NOT SHIP AS-IS. On a reachable host an
 unauthenticated caller can drive this endpoint."* It describes the pre-3b state. Nonce
