@@ -4,6 +4,11 @@
 appear as the grievance contact (E6), then record the sent date below. Paste each reply
 **verbatim** into `BROKER-API-TERMS-MULTI-USER.md` under the broker's section.
 
+**Owner priority revision, 3 Oct 2026:** outreach is deferred two to three weeks.
+Keep these drafts unsent; review sign-ups and active usage on 17–24 Oct before
+resuming. This supersedes the immediate send instruction above. Permission
+remains unconfirmed; `PUBLIC-LAUNCH.md` owns the current schedule.
+
 | Broker | To | Sent | Reply |
 |---|---|---|---|
 | Zerodha | `kiteconnect@zerodha.com` | — | — |

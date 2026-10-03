@@ -55,7 +55,7 @@ shares and hide unsupported holdings margin estimates. See `memory/payoff-holdin
 Read on the host: `flyway_schema_history` shows **V1–V8 all `success`**, validated again at
 startup. **Off-VM backups are still not set up** (no `backup.env`; the backup timer is installed
 but disabled), so the only copies are the migration's local dump and the old volume. That is
-P0 **D1**, and it is next.
+P0 **D1**; its priority follows the owner's 3 Oct revision in `PUBLIC-LAUNCH.md`.
 
 **Historical baseline, 6 Sep 2026 (before the current payoff work).** Four PRs landed that day
 as merge commits, not squashes, so every commit keeps its identity on `main`:
@@ -214,6 +214,19 @@ an explicit skip until the browser smoke pack exists.
 
 ## Local development
 
+**Google admission modes (local code, 3 Oct 2026).** `GB_SIGNUP_MODE` maps to
+`goldenbook.signup=allowlist|open|closed`, default `allowlist`. Empty allowlists
+fail startup only in allowlist mode; open admits any verified Google address
+without a user cap; closed admits existing Google subjects only. V9 adds
+`app_user` keyed by subject and seeds legacy identities from persisted broker and
+history data, filling their nullable email at the next verified Google login.
+Disabled rows are refused at the next sign-in; an already open web session lasts
+until midnight IST (no per-request check, by owner decision). Login upserts preserve creation time,
+disabled state and the terms fields reserved for L4. Dev auth continues to bypass
+Google/admission on loopback. Production still uses its existing allowlist; no
+enablement or fresh public-account verification has been performed. See
+`tradestack/docs/google-signup.md` and `memory/google-signup-modes.md`.
+
 - **Google sign-in is off locally: `GB_DEV_AUTH=true`.** `auth/DevAuthConfig` replaces `SecurityConfig` (both `@ConditionalOnProperty` on that flag, opposite values), signs every request in as a fixed `DefaultOidcUser` inside a real `OAuth2AuthenticationToken`, and permits every path — so no `GOOGLE_CLIENT_ID`, redirect URI, network or allowlist entry is needed to run. The principal shape is identical to Google's, so `CurrentUser`, `AuthController` and CSRF are untouched. **`GB_DEV_USER_ID` is the Google `sub` and is load-bearing** — `broker_credential`, connection ids and session ownership all key off it; it is set to `110150585954237860845` in the user environment, the sub already in the local database, so the broker credentials there keep working. **It refuses to start unless `app.frontend-url` is loopback**, and `AllowedEmails` skips its empty-list startup failure while it is on. Both set with `setx`, so only new processes see them. Why, in `memory/dev-auth-bypasses-google-locally.md`.
 - **This laptop moved to the new names on 2 Oct 2026** (REBRAND R13). `GB_*` user variables replace `MP_*`. The local database and role are `goldenbook`, and the role's password is `goldenbook`, the app's default; this laptop never sets `GB_DB_PASSWORD`. The backend refuses to start while any `MP_*` variable is set (`LegacyEnvironmentGuard`), so a shell or editor opened before the switch must be restarted, and pre-rename branches no longer run here.
 - **PostgreSQL 16 on port 5433** (`winget install PostgreSQL.PostgreSQL.16 --force`; the plain install 403s partway through EDB's CDN). Installed unattended, so the superuser password is winget's default `postgres`. Role/database `goldenbook`/`goldenbook`, owner `goldenbook`.
@@ -254,7 +267,7 @@ Package-by-module under `com.goldenbook.tradestack`:
 | `snapshot/` | `CaptureService`, `CaptureRepository`, `EodCaptureJob`, `OnFetchCapture`, `SnapshotService`, `TypedSnapshotRepository`, `SnapshotConfig` |
 | `risk/` | `RiskService`, `RiskController`, `ExposureCalculator`, `ExpiryBucketer` + four report records. Reads `SnapshotService`, never `broker/` — but see the transitive leak above |
 | `credential/` | `BrokerCredentials`, `CredentialCipher`, repository, service, controller, two exceptions |
-| `auth/` | `SecurityConfig`, `AllowedEmails`, `AuthController`, `CurrentUser` |
+| `auth/` | Google OIDC admission (`SignupMode`, `SignupOidcUserService`, `AllowedEmails`), `AppUserRepository`, active-account/midnight session filters, `AuthController`, `CurrentUser`; loopback-only `DevAuthConfig` |
 | `common/` | `ApiExceptionHandler`, `RequiredConfig`, `BrokerJson` |
 | `arch/` *(test)* | ArchUnit A1–A5: `SdkContainmentTest`, `DependencyDirectionTest`, `ControllerBoundaryTest`, `FanOutScopingTest`, `StatelessGatewayTest`. All in the normal build |
 
@@ -297,7 +310,7 @@ session-status poll's 60-second interval. Manual logout remains immediate. See
 - Unreadable rows fail closed to "no sessions" — a re-login, never a failed startup.
 - The token map is sealed with the same key as credentials, so **`GB_CREDENTIAL_KEY` now protects live logins**, not just the ability to start one. A Paytm access token can place orders.
 
-**Credentials are per user, per broker, per registration.** `broker_credential` keyed `(user_id, broker_id, label)` — not by connectionId, because one Kite Connect app can authorise two different Zerodha logins. Still **no `users` table**: `GB_ALLOWED_EMAILS` governs sign-in and rows key off the Google `sub`. `JdbcClient` + Flyway, not jOOQ — codegen is not worth a build step for two tables.
+**Credentials are per user, per broker, per registration.** `broker_credential` keyed `(user_id, broker_id, label)` — not by connectionId, because one Kite Connect app can authorise two different Zerodha logins. V9 adds `app_user` keyed by the same Google `sub`; `GB_SIGNUP_MODE` governs admission, and `GB_ALLOWED_EMAILS` applies only in allowlist mode. Persistence uses `JdbcClient` + Flyway.
 
 The two halves are split by sensitivity: `apiKey`/`appCode` is an identifier that already travels in login URLs, so it is resolved at connect time and rides in `BrokerSession.tokens`; `apiSecret` is read from the encrypted store **only at session creation** — never in a session, never in a response, never logged. `BrokerCredentials.toString()` is overridden so a stray `log.info("{}", creds)` cannot leak it.
 

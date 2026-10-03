@@ -1,6 +1,6 @@
 ---
 name: public-launch-is-open-signup
-description: The October 2026 public launch means open Google sign-up, not open source; the builder ships, the screener does not, and broker consent gates the date.
+description: Public launch has open sign-up without a user cap; the 3 Oct owner revision expects low initial usage and defers broker outreach and backups.
 metadata:
   type: decision
 ---
@@ -8,7 +8,11 @@ metadata:
 **Decided 2 Oct 2026 (owner).** "Taking GoldenBook public" means **open sign-up**: any
 Google account may sign in. It supersedes the P0 framing of 20 Aug ("a small invited group,
 not family", see [[real-product-not-personal-tool]]). Open-sourcing the repos was offered
-and not chosen.
+and not chosen. **Confirmed 3 Oct 2026:** open sign-up has no user cap or
+invitation restriction. The owner expects a small initial cohort; this is an
+expectation, not an admission control. L3 owns the explicit open-mode
+implementation; local code is on `launch/l3-open-signup`, and live authentication
+is still unchanged. See [[google-signup-modes]] for the admission decision.
 
 **Scope at launch.** The Strategy Builder ships, so P0 item A6 is dropped. It now has live
 chain premiums, and its two wrong inputs are fixed or being fixed
@@ -18,17 +22,19 @@ the product most exposed to SEBI's Research Analyst rules. A payoff calculator o
 the user picked is the defensible end. Comparable Indian platforms (Sensibull, the LTP
 Calculator) are themselves registered RAs.
 
-**Why broker consent gates the date, not the code.** Kite Connect's terms (§4(b)) say a
-user's API key and secret "are intended to be used only by you", and Zerodha staff say
-multi-user access needs compliance approval. Alice Blue's terms are near-identical. Per-user
-developer apps ([[credentials-per-user-per-registration]]) avoid *sublicensing*, but not the
-credential-use clause. For an invite beta this was grey. For open sign-up it is the case
-the clause addresses. Rejected: launching anyway, because the downside (a revoked API app)
-lands on users who cannot see the risk. Fallbacks, in order: stay allowlisted; open with
-Kite limited to the owner; compute Kite's checksum in the browser so the secret never
-reaches the server.
+**Current work order, owner revision 3 Oct 2026.** Correct live figures, useful
+analysis and everyday onboarding take priority. With only the owner's account
+and little irreplaceable retained data, backup automation and restore rehearsal
+(D1) move down the queue; revisit as users or retained history grow.
+
+**Broker outreach (L1) is deferred two to three weeks.** Review on 17–24 Oct
+2026 using actual sign-ups and active usage, then decide the next outreach step.
+Keep the existing email drafts unsent during this interval. This supersedes the
+2 Oct decision that written consent gated the launch date. Permission remains
+unconfirmed; the research in `research/BROKER-API-TERMS-MULTI-USER.md` is not
+changed, and small user numbers are not recorded as evidence of broker approval.
 
 **How to apply.** The schedule and the L-items are in `PUBLIC-LAUNCH.md`. Sources are in
 `research/BROKER-API-TERMS-MULTI-USER.md`. Open sign-up must be an **explicit mode**, never
-an empty allowlist: `AllowedEmails`' refusal to start on an empty list is a property to
-keep.
+an empty allowlist: `AllowedEmails`' refusal to start on an empty list in **allowlist
+mode** is a property to keep. Explicit open and closed modes need no list.

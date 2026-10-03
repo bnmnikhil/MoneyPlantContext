@@ -11,6 +11,28 @@ Status markers are `P0-LAUNCH.md`'s (`[ ]` `[~]` `[x]` `[-]`), with the same rul
 only after the verification line has actually been run.** Branch names carry the id
 (`launch/l3-open-signup`).
 
+## Current priority revision — 3 Oct 2026 (owner)
+
+Current usage is the owner's single account, with little irreplaceable retained
+data. Prioritise correct live figures, useful analysis and everyday onboarding.
+
+- **D1 backups and restore verification move down the queue.** The existing work
+  remains unfinished; revisit its priority as users or retained history grow.
+- **L1 broker outreach is deferred for two to three weeks.** Review on
+  **17–24 Oct 2026**, using actual sign-ups and active usage to decide the next
+  step. Keep the drafts; do not send them during this deferral.
+- The owner confirms **open sign-up with no user cap or invitation restriction**.
+  A small initial cohort is an expectation, not an enforced admission limit.
+  L3 implements the explicit open mode on `launch/l3-open-signup`; the production
+  allowlist configuration remains unchanged until a separately requested deployment.
+- Broker permission remains unconfirmed. This changes the owner's work order,
+  not the research findings or the recorded approval status.
+
+This revision supersedes the earlier L1 launch gate and D1's immediate schedule
+below. Other launch requirements, the read-only scope and the hidden Screener
+remain unchanged. **9 Oct remains a target; L3's explicit open mode and the
+remaining applicable gates must be verified before changing sign-up configuration.**
+
 ## Decisions taken 2 Oct 2026 (owner)
 
 1. **"Public" means open sign-up**: anyone with a Google account can sign in. It does
@@ -20,21 +42,20 @@ only after the verification line has actually been run.** Branch names carry the
    become launch blockers instead.
 3. **Read-only stays a product constraint.** Nothing here adds order placement.
 
-## The honest read on the timeline
+## External follow-ups
 
-The code work is large but parallelisable, and most items are hours, not days. **The
-critical path is external**, and none of it can be made faster by working harder:
+Broker outreach follows the 3 Oct priority revision. Google brand verification
+still depends on the privacy page being live.
 
 | External dependency | Lead time | Starts |
 |---|---|---|
-| **Zerodha compliance answer on multi-user Kite Connect use** (L1) | unknown, days to weeks | **today** |
-| Alice Blue and Paytm Money answers (L1) | unknown | today |
+| Zerodha compliance answer on multi-user Kite Connect use (L1) | unknown, days to weeks | review 17–24 Oct |
+| Alice Blue and Paytm Money answers (L1) | unknown | review 17–24 Oct |
 | Google OAuth brand verification, so the consent screen shows the name and logo (L5) | a few business days; needs the privacy page **live** first | Sat 3 Oct |
 
-**If L1 has no Zerodha answer by go/no-go (Thu 8 Oct), do not open sign-up.** Deploy
-everything else and run as a wider allowlisted beta until it arrives. See the fallback
-ladder in the research doc. Launching anyway puts the risk of a revoked API app on users
-who cannot see it.
+**L1 is deferred, not completed.** The owner has removed it from the immediate
+open-sign-up gate. Its written-answer verification remains the completion
+criterion when outreach resumes.
 
 ---
 
@@ -47,9 +68,9 @@ week after.
 
 | ID | Item | Tier | Status |
 |---|---|---|---|
-| L1 | Written broker answers on multi-user API use | 1 · external | `[~]` |
+| L1 | Written broker answers on multi-user API use | deferred · review 17–24 Oct | `[~]` |
 | L2 | Final domain decision: it is baked into every user's broker app | 1 · decision | `[~]` |
-| L3 | Open sign-up mode, `app_user` table, kill switch | 1 · auth | `[ ]` |
+| L3 | Open sign-up mode, `app_user` table, kill switch | 1 · auth | `[~]` |
 | L4 | Terms acceptance recorded at first sign-in | 1 · legal | `[ ]` |
 | L5 | Google OAuth consent screen → Production + brand verification | 1 · external | `[ ]` |
 | L6 | Self-serve broker setup guide (exact redirect URLs per broker) | 1 · onboarding | `[ ]` |
@@ -70,9 +91,10 @@ week after.
 
 | Tier | Items | Why this tier |
 |---|---|---|
-| **1** | **A1** risk page frozen in prod · **A2** NIFTY lot size (verify: `origin/main` no longer has the literal) · **A4** `₹NaN` + builder input noise · **B2** error boundary · **B3** fetch timeout · **B4** confident `₹0` · **B5** failed simulation · **B6** generic exception handler · **C1** security headers · **C3** debug endpoints · **C4** validation / rate limit / body cap · **C5** disconnect · **C6** prove dev auth off · **D1** backups (PAR + restore-verify) · **D2** → **O1–O8 + O13** in `OBSERVABILITY.md` (health, uptime + Telegram, heartbeats, 30-day log retention, request ids, structured logs, JVM flags, audit events) · **D3** deploy check · **D4** rollback · **E1 E2 E4 E6** legal pages, disclosure, contact · **E3** erasure (manual, tested procedure is enough) | Strangers, their money, a public URL, and hotfix deploys during launch week |
+| **1** | **A1** risk page frozen in prod · **A2** NIFTY lot size (verify: `origin/main` no longer has the literal) · **A4** `₹NaN` + builder input noise · **B2** error boundary · **B3** fetch timeout · **B4** confident `₹0` · **B5** failed simulation · **B6** generic exception handler · **C1** security headers · **C3** debug endpoints · **C4** validation / rate limit / body cap · **C5** disconnect · **C6** prove dev auth off · **D2** → **O1–O8 + O13** in `OBSERVABILITY.md` (health, uptime + Telegram, heartbeats, 30-day log retention, request ids, structured logs, JVM flags, audit events) · **D3** deploy check · **D4** rollback · **E1 E2 E4 E6** legal pages, disclosure, contact · **E3** erasure (manual, tested procedure is enough) | Strangers, their money, a public URL, and hotfix deploys during launch week |
 | 2 | **C2** Caddy query-string logging · **C7** stale comment (5 min, do with C3) · **A7** estimate labels · **A3** Paytm master silent failure · **D5** runbook step | Cheap; do in launch week if time allows |
 | 3 | **B7** Kite client per call · **A5** payoff engine edge cases · **D6** snapshot backfill (owner-deferred) · **F2** → absorbed by L6 | Real, but not public-exposure risks |
+| Deferred | **D1** backups (PAR + restore-verify) | Owner lowered priority on 3 Oct; revisit as users or retained history grow |
 | — | **A6** `[-]` dropped (builder ships) · **E5** → absorbed by L1 · **F1** → absorbed by L3 | Superseded |
 
 ---
@@ -83,13 +105,13 @@ Each day ends with the gate green on what was merged: `mvnw clean test`, `npm te
 `npm run build`. **Market hours are 09:15–15:30 IST. Deploy only outside them.**
 
 **Fri 2 – Sun 4 Oct: start the slow clocks** (Fri 2 Oct is a market holiday)
-- L1: send the three emails. They are on the critical path; nothing else today matters as much.
+- Focus current work on live-data correctness, useful analysis and onboarding.
+  L1 outreach is deferred to the 17–24 Oct review.
 - L2: settle the domain.
 - E1/E2/E4/E6: write the privacy, terms and disclosure text, then deploy it as static
   pages (Caddy can serve them before the SPA routes exist) so that L5 can start.
 - L5: switch the consent screen to Production, add the privacy/terms URLs, submit brand verification.
-- D1: mint the PAR, enable the timer, **restore-verify from Object Storage**. VM work, so
-  the weekend suits it.
+- D1 backup setup and restore verification are deferred under the 3 Oct revision.
 - L13: resize the VM (stop, change shape, start). Do it now, not on launch day.
 
 **Mon 5 Oct: backend blockers**
@@ -111,9 +133,10 @@ Each day ends with the gate green on what was merged: `mvnw clean test`, `npm te
   L12, L11 with a second Google account.
 - **Go/no-go 20:00 IST**, against the checklist below.
 
-**Fri 9 Oct: open**
-- No code deploy. After 15:30, flip sign-up to open (L3's switch is config only), sign
-  up as a fresh account end to end, then post L16's announcement.
+**Fri 9 Oct: open-sign-up target**
+- No user cap or invitation restriction. After 15:30, enable L3's verified
+  explicit open mode, verify a fresh account end to end, then post L16's
+  announcement once the applicable gates are verified.
 
 **Mon 12 – Fri 16 Oct: watch**
 - Read the logs and the uptime monitor daily, and answer the support inbox the same day.
@@ -128,35 +151,44 @@ All must be true. Anything false means **stay allowlisted**, not "launch and fix
 - [ ] `frontend/src/features/legal/details.ts` has no `[placeholder]` left (the legal pages show no draft notice).
 - [ ] **Every claim in the privacy policy is true on production**, in particular:
   - server logs kept ≤ 30 days (the logrotate under D2, plus journald limits);
-  - backups expire at 30 days (D1's lifecycle rule; already applied);
+  - backup text matches the actual setup; when D1 is enabled, verify 30-day expiry;
   - erasure from the live DB within 7 days of a request (E3's procedure exists and has been run);
   - email address stored (L3);
   - exactly two cookies (session + `XSRF-TOKEN`) and no analytics;
   - Google Fonts disclosed, **or** self-hosted, with that line deleted (also simplifies C1's CSP).
 - [ ] The landing page makes no claim the terms contradict (L7). The copy is fixed on `launch/e1-legal-pages`; this box is ticked once that branch is what is deployed. Today it advertises "Telegram alerts", "Risk-guarded execution … before it reaches the exchange" and "Live Greeks & IV", and none of the three exists.
-- [ ] L1: Zerodha has answered and does not object (or the owner has consciously chosen a fallback from the research doc).
+- [ ] L3's explicit open-sign-up mode is tested with a fresh Google account;
+  there is no invitation requirement or user cap.
 - [ ] Every Tier 1 item is `[x]` in its tracker.
-- [ ] D1: a backup **downloaded from Object Storage** restored and decrypted a credential, this week.
 - [ ] D4: a rollback was rehearsed on the VM.
 - [ ] D2: stopping the service paged the owner's phone.
 - [ ] L11: a second account saw none of the first account's data on production.
 - [ ] Sign-up kill switch tested: off → a new Google account is refused, existing users unaffected.
-- [ ] `GB_CREDENTIAL_KEY` and `GB_BACKUP_PASSPHRASE` are both in the password manager and current.
+- [ ] `GB_CREDENTIAL_KEY` is in the password manager and current.
+
+**Deferred follow-ups:** L1 written broker answers are reviewed 17–24 Oct.
+D1's downloaded-backup restore and current off-VM `GB_BACKUP_PASSPHRASE` remain
+required to close D1 when that work is resumed.
 
 ---
 
-## Tier 1: new items
+## New-item details
 
 ### `[~]` L1 — Written broker answers on multi-user API use
 
 **2 Oct 2026: drafted, not sent.** The drafts and a send log are in `research/BROKER-CONSENT-EMAILS.md`.
+
+**3 Oct 2026, owner: deferred for two to three weeks.** Review actual sign-ups and
+active usage on 17–24 Oct before resuming outreach. This supersedes the former
+immediate send instruction and launch-blocker tier. No broker approval has been
+received or implied by this change.
 
 Kite Connect §4(b): credentials "are intended to be used only by you". Staff: "personal use
 only … speak to compliance for multi-user access". Alice Blue's terms have the same clause
 and a separate admin-reviewed vendor route. Paytm publishes no terms. Full quotes are in
 `research/BROKER-API-TERMS-MULTI-USER.md`.
 
-**Do:** email `kiteconnect@zerodha.com`, Alice Blue API support and
+**When resumed:** email `kiteconnect@zerodha.com`, Alice Blue API support and
 `openapi.care@paytmmoney.com` with the same factual description: read-only, no orders;
 each user's own developer app; the secret encrypted with AES-256-GCM under a key held
 outside the database; each user sees only their own data; nothing shown publicly. Ask the
@@ -181,7 +213,7 @@ every user's connect flow until each of them edits their broker app. Today's dom
 **Verify:** the Google OAuth redirect URI, Caddy, `app.frontend-url` and L6's guide all
 name the same host.
 
-### `[ ]` L3 — Open sign-up mode, `app_user` table, kill switch
+### `[~]` L3 — Open sign-up mode, `app_user` table, kill switch
 
 `AllowedEmails` refuses to start on an empty list, by design ("never 'allow everyone'").
 Open sign-up must be **an explicit mode, never an empty list**. Keep that property.
@@ -196,6 +228,20 @@ erasure a row to start from.
 
 **Verify:** in each of the three modes, test a new address, an existing address and a
 disabled address, with no restart required to disable a user.
+
+**Implemented locally, 3 Oct 2026, `launch/l3-open-signup`.** Explicit
+`GB_SIGNUP_MODE=allowlist|open|closed` defaults safely to `allowlist`; only that
+mode requires a nonempty `GB_ALLOWED_EMAILS`. Open registration has no user cap
+or Gmail-only restriction. V9 creates `app_user` and seeds legacy subjects from
+all persisted user tables, with email populated at their next verified Google
+login. Admission happens during OIDC loading; a disabled account is refused at its
+next sign-in with no restart, and an open session lasts until midnight IST. Login/last-seen writes never
+clear disabled or terms state. The `/api/me` response is unchanged. L4's terms
+acceptance is still separate, and the columns remain unset by L3.
+
+The runbook is [`tradestack/docs/google-signup.md`](tradestack/docs/google-signup.md).
+Production enablement and a fresh real Google account on `goldenbook.in` remain
+unverified; no production environment or Google Console setting was changed.
 
 ### `[ ]` L4 — Terms acceptance recorded at first sign-in
 
@@ -278,8 +324,8 @@ account sees live premiums; `GET /api/payoff/metadata` returns 65 for NIFTY.
 
 **3 Oct 2026:** current `main` is deployed (`tradestack 36d5f58`, `frontend 03e1091`) by
 the R6 migration, with sign-up still allowlisted. V1–V8 are confirmed `success` on the
-host. Still open: V9 does not exist until L3 lands, and the runbook's nine checks have
-not all been run.
+host. V9 now exists on the local L3 branch and still needs a separately requested
+production deployment. The runbook's nine production checks have not all been run.
 
 The last **recorded** production deploy is 6 Sep (`tradestack 0b95e40`, `frontend
 c8ab2ae`). Every later status note says "no production change", so assume backend PRs
