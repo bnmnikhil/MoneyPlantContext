@@ -59,7 +59,7 @@ Re-check each free tier's limits when signing up; they change.
 | O1 | Health endpoint: actuator, liveness + readiness, a public minimal `/api/health` | 1 | `[ ]` |
 | O2 | External uptime + Telegram alert channel | 1 | `[ ]` |
 | O3 | Heartbeats: backup and EOD capture → Healthchecks.io | 1 | `[ ]` |
-| O4 | Log retention ≤ 30 days everywhere (journald, Caddy, Docker) | 1 | `[ ]` |
+| O4 | Log retention ≤ 30 days everywhere (journald, Caddy, Docker) | 1 | `[~]` |
 | O5 | Request id end to end: Caddy → MDC → B6 error body → UI "reference" | 1 | `[ ]` |
 | O6 | Structured JSON logs + log hygiene rules (no secrets, tokens, emails or rupee amounts) | 1 | `[ ]` |
 | O7 | JVM flags: heap, exit on OOM, crash dumps out of the app dir; restart is alerted | 1 | `[ ]` |
@@ -114,7 +114,27 @@ runs `curl -fsS -m 10 --retry 3 https://hc-ping.com/<uuid>`, and the commented
 
 **Verify:** disable the timer, and the miss is reported once the grace period runs out.
 
-### `[ ]` O4 — Retention: make the privacy policy true
+### `[~]` O4 — Retention: make the privacy policy true
+
+**Implemented 3 Oct 2026 on `launch/o4-c2-log-retention`; not yet applied on the VM.**
+The plan below was changed in one respect: **every limit is an age, not a size.** Caddy
+rolls files by size only and Docker's `json-file` options cap bytes, so at this traffic
+either could keep months of lines. Instead, everything that can hold user data goes to
+the journal, and one age limit covers it:
+- journald `MaxRetentionSec=28day` + `MaxFileSec=1day` (an entry outlives the limit by at
+  most one file's span), `SystemMaxUse=2G` as a disk ceiling only.
+- Caddy `output stderr` → journal. Postgres → Docker's `journald` driver, tag
+  `goldenbook-postgres`.
+- New finding: Ubuntu's rsyslog copies the journal into `/var/log/syslog`, kept about five
+  weeks. `rsyslog-goldenbook.conf` stops that copy for goldenbook*/caddy only.
+- C2 strips **every** query string (`/path?redacted`) rather than named parameters, and
+  drops the Referer: Google's callback carries an auth code, and API calls carry
+  `connectionId` (the Google sub). Proven on Caddy 2.11.6 locally with planted tokens.
+
+Apply and verification commands are in `tradestack/deploy/README.md` under "Logs". Flip
+to `[x]` once that verification has run on the VM.
+
+**Original plan:**
 
 **Do:**
 - journald: `/etc/systemd/journald.conf.d/goldenbook.conf` with `MaxRetentionSec=30day`
