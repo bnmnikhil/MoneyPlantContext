@@ -23,7 +23,9 @@ second depend on the first prevents brokers without a chain API from using the
 builder even when the user has a valid data connection elsewhere.
 
 Both connection IDs are still resolved through `BrokerService`, so one user
-cannot name another user's session. Quote caches remain separated by user,
+cannot name another user's session. **3 Oct 2026:** when the user owns no chain
+source, the admin's designated feed may supply quotes instead; see
+[[shared-market-data-fallback]]. It is never another user's session. Quote caches remain separated by user,
 source connection and session generation. Draft legs are simulations only; this
 decision does not authorise cross-broker order routing or reverse the
 no-cross-broker position-merging rule.
