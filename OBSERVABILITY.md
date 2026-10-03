@@ -131,8 +131,25 @@ the journal, and one age limit covers it:
   drops the Referer: Google's callback carries an auth code, and API calls carry
   `connectionId` (the Google sub). Proven on Caddy 2.11.6 locally with planted tokens.
 
-Apply and verification commands are in `tradestack/deploy/README.md` under "Logs". Flip
-to `[x]` once that verification has run on the VM.
+Apply and verification commands are in `tradestack/deploy/README.md` under "Logs".
+
+**Applied to production 3 Oct 2026, 14:18–14:25 IST, and verified there.** Journald now
+has the 28-day limit. The vacuum took the journal from 926 MB, going back to 6 Jul, down
+to 316 MB, oldest entry 6 Sep. Caddy logs to the journal, and a probe callback carrying
+a token was logged as `/kite/callback?redacted`. Postgres uses the journald driver; it
+was recreated in place, with the same volume and the same row counts. Probe lines
+confirmed the rsyslog filter: a goldenbook-tagged line reached the journal and not
+syslog, and a control line still reached syslog. The old Caddy files were deleted:
+`goldenbook.log` held 5 token-bearing callback lines and `moneyplant.log` held 168, back
+to Aug. The VM runs Caddy 2.6.2, which needed the older `fields { }` filter syntax
+(MoneyPlant PR #32).
+
+**Still `[~]`, for one reason: rotated `/var/log/syslog.*` files.** They hold
+goldenbook/caddy lines from before the filter. The oldest file, `syslog.4.gz`, starts on
+30 Aug. Nothing new enters syslog now, so Ubuntu's weekly rotation clears them by about
+8 Nov. Until then, a line near a rotation boundary can live up to five weeks. Owner's
+choice: delete or strip those lines now, or accept the lag. Flip to `[x]` when one of
+those is done.
 
 **Original plan:**
 

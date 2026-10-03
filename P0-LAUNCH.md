@@ -187,7 +187,7 @@ moment there is a second user. → **B1**
 | B6 | No generic exception handler | B · resilience | `[ ]` |
 | B7 | Kite builds a new HTTP client per call | B · resilience | `[ ]` |
 | C1 | Zero security headers | C · security | `[ ]` |
-| C2 | Caddy logs callback query strings | C · security | `[~]` |
+| C2 | Caddy logs callback query strings | C · security | `[x]` |
 | C3 | Debug endpoints live in production | C · security | `[x]` |
 | C4 | No rate limit, body cap, or validation | C · security | `[ ]` |
 | C5 | No disconnect / revoke path | C · security | `[ ]` |
@@ -478,11 +478,14 @@ self-contained, so a tight policy is achievable); `X-Content-Type-Options: nosni
 **Verify:** `curl -I https://goldenbook.in` and check each header, then run
 the site through an external headers scanner.
 
-### `[~]` C2 — Caddy logs callback query strings
+### `[x]` C2 — Caddy logs callback query strings
 
 **Made true, 3 Oct 2026, with O4 on `launch/o4-c2-log-retention`:** Caddy logs every URI
-as `/path?redacted` and drops the Referer. Not yet applied on the VM; the verify step is
-in the runbook's "Logs" section.
+as `/path?redacted` and drops the Referer. **Verified on production, 14:20 IST.** A
+callback probe carrying a token was logged as `/kite/callback?redacted`, and the token
+appears nowhere in the Caddy or app journal. The old file logs were deleted, and Caddy
+was restarted so it no longer held them open; those files had 173 token-bearing
+callback lines between them.
 
 The comment at `deploy/Caddyfile:44-47` says query strings on the callback routes are not
 written to disk. `format json` does not do that — it logs `request.uri` including the
