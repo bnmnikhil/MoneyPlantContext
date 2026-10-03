@@ -70,7 +70,6 @@ below.
 
 ## State
 
-- [Broker expansion foundation handoff](broker-expansion-foundation-handoff.md) — uncommitted capability-driven catalogue work is green on `feat/read-only-broker-foundation`; resume with the reusable dummy-broker simulator and Upstox fixtures.
 - [Analysis is the product](analysis-step-is-the-product.md) — Step 8 is the core, blocked on market data; unblocking the feed outranks its roadmap position.
 - [Step 4 landed as one commit](step-4-landed-as-one-commit.md) — 4b/4c/4d shipped together against the plan; four acceptance shortfalls remain open.
 - [Brokers become user-configured](brokers-become-user-configured.md) — the three-broker assumption is temporary; directional only, priority "very far".
@@ -79,7 +78,6 @@ below.
 
 ## Reference
 
-- [Strategy builder implementation plan](../STRATEGY-BUILDER-IMPLEMENTATION.md) — proposed Sensibull-style workflow with catalogue-backed stock search, real option-chain leg selection, and comparison against existing positions; documented 10 Sep 2026; phases A-F implemented the same day (tradestack 20b79e2, frontend c52fb37), phase G documentation still open.
 
 - [Free market data options, researched](free-market-data-options-researched.md) — Upstox gives per-strike IV and greeks for ₹0; NSE direct is blocked from the VM and its terms do not cover a product.
 - [NSE SPAN margin parameters](nse-span-margin-parameters.md) — the published scan ranges, exposure rates and sixteen scenarios, with the two σ inputs this stack cannot compute.

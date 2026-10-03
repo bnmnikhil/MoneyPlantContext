@@ -85,7 +85,7 @@ exists because every wrong claim this project has carried was a claim nobody re-
 - Checkpoints 6a–6d are implemented and verified: payoff phone containment,
   chart label placement, Overview spacing and Risk table containment. Frontend
   has 56 passing tests and a passing TypeScript/Vite build; the >500 kB bundle
-  warning remains. Detailed coverage and recovery notes: `UX-REDESIGN.md`.
+  warning remains. Per-checkpoint notes were in `UX-REDESIGN.md`, retired 3 Oct 2026 (git history).
 - Checkpoint 6 remains in progress: correct expired-session/header consistency
   and finish keyboard/empty/error-state checks. No P0 item is marked complete
   merely by this UX handoff. Existing snapshot-risk limitations remain deferred.
