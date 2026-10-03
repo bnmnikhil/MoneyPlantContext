@@ -113,7 +113,16 @@ The VM today: 1 OCPU, 7 GB RAM, aarch64. The always-free allowance is 4 OCPU / 2
 
 ## Items
 
-### `[ ]` ST-1: Configurable broker endpoints, and a guard against confusing them
+### `[~]` ST-1: Configurable broker endpoints, and a guard against confusing them
+
+**In review, 3 Oct 2026: MoneyPlant #35.**
+- Paytm and Alice Blue URLs are properties (`GB_PAYTM_*`, `GB_ALICEBLUE_*`), defaulting to the real vendors.
+- `VendorEndpoints` declarations, and `BrokerEndpointGuard` on `GB_ENVIRONMENT` (default `production`).
+- A broker with no declaration fails startup.
+- One hosts-only log line per boot.
+- 10 guard tests; 521 passing.
+
+Still open: the runbook step that reads the line on each deploy.
 
 **Do:**
 - Every broker URL becomes a property whose default is today's production value:
@@ -132,7 +141,16 @@ The VM today: 1 OCPU, 7 GB RAM, aarch64. The always-free allowance is 4 OCPU / 2
 - Production's boot log shows only vendor hosts.
 - A staging boot with one vendor URL fails, and names that URL.
 
-### `[ ]` ST-2: Kite against a simulator
+### `[~]` ST-2: Kite against a simulator
+
+**Option 1 in review, 3 Oct 2026: MoneyPlant #36** (stacked on #35).
+- `KiteHttp` replaces the SDK, with the base URL from `GB_KITE_*`.
+- One mapper serves live reads and the archive. It reads wire names, falling back to the SDK names in older `raw_capture` rows.
+- `raw()` now stores Kite's bytes.
+- The SDK and `org.json` are gone, and `com.zerodhatech` is forbidden anywhere.
+- 531 passing.
+
+**Still to verify:** one live Kite login plus positions, holdings and margins on production after deploy.
 
 The SDK cannot be repointed. Three ways out:
 
