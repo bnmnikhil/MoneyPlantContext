@@ -6,6 +6,12 @@ here; `memory/` owns the reasoning. Do not duplicate status into either of them.
 
 **Superseded framing, 2 Oct 2026.** The launch is now **open sign-up**, not a small invited group, and the Strategy Builder ships. The schedule, the new L-items and the tier of each item below now live in `PUBLIC-LAUNCH.md`. This file still owns the detail and status of A1–F2.
 
+**Priority revision, 3 Oct 2026 (owner).** Current usage is one account. D1
+backups and restore verification move to lower priority; L1 broker outreach is
+deferred for two to three weeks. `PUBLIC-LAUNCH.md` owns the revised ordering and
+the confirmed open sign-up with no user cap or invitation restriction. Neither
+deferred item is completed.
+
 **Item IDs (A1 … F2) are the unit of work.** Take one, do it, run its verification, flip
 its marker. One item per branch where the change is non-trivial; the branch name carries
 the id (`p0/a2-nifty-lot-size`).
@@ -205,9 +211,10 @@ moment there is a second user. → **B1**
 **Order, revised 6 Sep 2026 after the deploy.** B1 is merged; D1 is merged but unverified.
 **A1 is now first** — the deploy seeded `position_snapshot` in production, so from 7 Sep the
 risk page is permanently frozen on 6 September positions, and the fix is one condition.
-Then finish **D1** on the VM (its scripts are deployed; only the PAR and the restore-verify
-remain), then **C1**. Then the rest of Gate A, the rest of Gate B, Gate C, Gate E in
-parallel with any of them, then D2–D6 and Gate F before the first invite.
+The former next step was D1 on the VM, then C1. **The owner's 3 Oct revision
+lowers D1's priority:** follow the ordering in `PUBLIC-LAUNCH.md`, with current
+work led by correctness, useful analysis and onboarding. D1's PAR and
+restore-verify remain unfinished.
 
 ---
 
@@ -569,6 +576,10 @@ will stop a future reader, or an auditor, cold.
 
 ### `[~]` D1 — Backups
 
+**3 Oct 2026, owner: lower priority at the current single-user stage.** Revisit
+as users or retained history grow. The implementation and verification below
+remain the criteria for completion when the work is resumed.
+
 The first of the two headline findings. Nothing existed.
 
 **Do:** nightly `pg_dump`, encrypted with `gpg`, pushed to OCI Object Storage (20 GB on the
@@ -740,13 +751,14 @@ that broker secrets are encrypted at rest with a key held outside the database.
 
 ### `[ ]` E3 — No data erasure path
 
-DPDP gives users the right to have their data deleted. There is no `users` table and no
-cascade.
+DPDP gives users the right to have their data deleted. L3 adds `app_user` locally,
+but there is still no implemented erasure flow or cascade.
 
 **Do (minimum for P0):** a documented, tested manual procedure deleting a user's rows from
-`broker_credential`, `broker_session`, `raw_capture`, `capture_run` and the four snapshot
-tables by `user_id`, plus removing them from the allowlist. Automate after F1 gives it
-somewhere to hang.
+`broker_credential`, `broker_session`, `raw_capture`, `capture_run`, the four snapshot
+tables and `app_user` by `user_id`, plus removing the email from the allowlist when
+that mode is used. First disable the account and verify session revocation; automate
+the erasure procedure after its manual test is complete.
 
 **Verify:** run it against a test user and confirm no row anywhere carries that `user_id`.
 
@@ -783,6 +795,12 @@ the DPDP grievance contact.
 ## Gate F — Onboarding an invited user
 
 ### `[ ]` F1 — The allowlist is an env var and needs a restart
+
+**Superseded by PUBLIC-LAUNCH L3's explicit Google sign-up modes.** Local L3 code
+implements open registration without a user cap, an `app_user` row, closed-mode
+admission and account disabling that applies at the user's next sign-in. The default remains a nonempty allowlist; production
+enablement remains unverified. The earlier `invited_email` proposal below is not
+the selected implementation. See `tradestack/docs/google-signup.md`.
 
 Adding a user today means SSH to the VM, editing `GB_ALLOWED_EMAILS` in
 `/etc/goldenbook/goldenbook.env`, and `systemctl restart goldenbook` — which drops every

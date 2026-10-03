@@ -28,11 +28,13 @@ below.
 
 ## Decisions
 
+- [Explicit Google signup modes](google-signup-modes.md) — Oct 2026: allowlist/open/closed admission is keyed by Google subject; V9 preserves legacy users, and disabling applies at the next sign-in, not per request.
+
 - [Renamed to GoldenBook](renamed-to-goldenbook.md) — Oct 2026: `goldenbook.in` replaces the old host and everything is renamed, internals included; the VM moves by copy-then-rename with a full rollback.
 
 - [Observability stays on the VM](observability-stays-on-the-vm.md) — only pings and counts leave the server; Prometheus/Grafana self-hosted, Telegram alerts, self-built crash reports.
 
-- [Public launch is open sign-up](public-launch-is-open-signup.md) — Oct 2026: any Google account may sign in; builder ships, screener stays hidden; written broker consent gates the date.
+- [Public launch and initial priorities](public-launch-is-open-signup.md) — Oct 2026: open sign-up without a user cap; builder ships, screener stays hidden; the 3 Oct owner revision lowers backup priority and defers broker outreach to a 17–24 Oct usage review.
 
 - [Strategy Builder preserves signed imported position bases](builder-signed-position-basis.md) — effective existing-position costs may be signed; new trade premiums remain nonnegative, regardless of instrument.
 
