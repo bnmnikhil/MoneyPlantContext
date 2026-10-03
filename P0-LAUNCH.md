@@ -173,7 +173,7 @@ moment there is a second user. → **B1**
 | ID | Item | Gate | Status |
 |---|---|---|---|
 | A1 | Risk page computes on nine-day-old positions | A · numbers | `[ ]` |
-| A2 | NIFTY lot size hardcoded 75, should be 65 | A · numbers | `[ ]` |
+| A2 | NIFTY lot size hardcoded 75, should be 65 | A · numbers | `[x]` |
 | A3 | Paytm contract master fails silently for a day | A · numbers | `[ ]` |
 | A4 | `₹NaN` can reach the screen | A · numbers | `[ ]` |
 | A5 | Payoff engine: duplicate breakeven, window floor | A · numbers | `[ ]` |
@@ -188,16 +188,16 @@ moment there is a second user. → **B1**
 | B7 | Kite builds a new HTTP client per call | B · resilience | `[ ]` |
 | C1 | Zero security headers | C · security | `[ ]` |
 | C2 | Caddy logs callback query strings | C · security | `[x]` |
-| C3 | Debug endpoints live in production | C · security | `[ ]` |
+| C3 | Debug endpoints live in production | C · security | `[x]` |
 | C4 | No rate limit, body cap, or validation | C · security | `[ ]` |
 | C5 | No disconnect / revoke path | C · security | `[ ]` |
-| C6 | Prove `GB_DEV_AUTH` is off in prod | C · security | `[ ]` |
-| C7 | Stale "MUST NOT SHIP AS-IS" comment | C · security | `[ ]` |
+| C6 | Prove `GB_DEV_AUTH` is off in prod | C · security | `[x]` |
+| C7 | Stale "MUST NOT SHIP AS-IS" comment | C · security | `[x]` |
 | D1 | **No backups** | D · operability | `[~]` |
 | D2 | No health endpoint, no monitoring | D · operability | `[ ]` |
 | D3 | Deploy readiness check is decorative | D · operability | `[ ]` |
 | D4 | No rollback path | D · operability | `[ ]` |
-| D5 | Stale runbook step on `GB_SESSION_STORE` | D · operability | `[ ]` |
+| D5 | Stale runbook step on `GB_SESSION_STORE` | D · operability | `[~]` |
 | D6 | `position_snapshot` / `holding_snapshot` backfill | D · operability | `[ ]` |
 | E1 | No privacy/terms pages, no app footer | E · legal | `[~]` |
 | E2 | Privacy notice, DPDP-shaped | E · legal | `[~]` |
@@ -251,7 +251,13 @@ page is now frozen on 6 September positions, permanently, until this item is fix
 local symptom (frozen at 11 Aug) and the production one now have the same cause and the
 same one-condition fix. This moves A1 from "worst of Gate A" to the first thing to do.
 
-### `[ ]` A2 — NIFTY lot size is wrong by 15%
+### `[x]` A2 — NIFTY lot size is wrong by 15%
+
+**Closed 3 Oct 2026, superseded by the catalogue-backed builder.** The literal `75` is gone
+from `origin/main`. `getStrategyMetadata` no longer returns any underlyings or lot sizes,
+so the original verify line below has nothing to read. The builder takes lot size from
+the option-chain rows instead. The frontend test *"recipe uses actual chain rows and lot
+size"* pins that, and it passes.
 
 `PayoffService.getStrategyMetadata` hardcodes `75`; the contract master and the option
 chain both say `65`. Every NIFTY leg is sized 15% too large, and margin, max profit, max
@@ -496,7 +502,15 @@ single-use and short-lived, but the file claims a protection it does not provide
 
 **Verify:** complete a broker connect, then grep the Caddy log for the request token.
 
-### `[ ]` C3 — Debug endpoints live in production
+### `[x]` C3 — Debug endpoints live in production
+
+**Done 3 Oct 2026, `launch/c3-c7-debug-endpoints`.** `AliceBlueDebugController` was
+already deleted. `InstrumentController` now carries `@ConditionalOnProperty` on
+`goldenbook.dev-auth.enabled`, the same flag as `DevAuthConfig`, rather than a flag of its
+own: dev auth refuses to start off loopback, so production cannot have one without the
+other. Verified in the prod-shaped test context (`AuthSecurityTest.debugEndpointsAreAbsent`):
+the bean is absent and both paths 404 for a signed-in user. That test fails if the
+condition is removed. Production stops serving them at the next deploy.
 
 `/api/debug/instrument`, `/api/debug/symbols` (`instrument/InstrumentController.java:28,44`)
 and `/api/debug/aliceblue/option-chain`
@@ -550,7 +564,13 @@ row was laid out to leave room for a per-account control there; nothing else nee
 **Verify:** connect a broker, disconnect it, confirm it is gone from `/api/session/status`
 **and** from the `broker_session` table, and that no warning recurs.
 
-### `[ ]` C6 — Prove `GB_DEV_AUTH` is off in production
+### `[x]` C6 — Prove `GB_DEV_AUTH` is off in production
+
+**Verified 3 Oct 2026 on production.** Since L3, `SecurityConfig` logs the auth mode on
+every boot. The current service start logged exactly one line, `Application auth: Google
+OIDC; signup mode=open`, and no `Dev auth` line. `GB_DEV_AUTH` is absent from
+`/etc/goldenbook/goldenbook.env`. Reading the line is runbook verification step 10
+(MoneyPlant #33).
 
 The loopback guard in `auth/DevAuthConfig` (it refuses to start unless `app.frontend-url`
 is loopback) is good defence. What is missing is a positive signal.
@@ -567,7 +587,11 @@ returned 200 with a user. That is a real negative signal but it is not the posit
 this item asks for, and the direct checks (`grep GB_DEV_AUTH /etc/goldenbook/goldenbook.env`,
 the boot log) have **not** been run. Item stays open.
 
-### `[ ]` C7 — Stale "MUST NOT SHIP AS-IS" comment
+### `[x]` C7 — Stale "MUST NOT SHIP AS-IS" comment
+
+**Done 3 Oct 2026, with C3.** The comment now describes `PendingConnect`'s nonce: minted
+at `login-url`, a ten-minute TTL, single use, carried by Kite and Paytm, and Alice Blue's
+refuse-when-ambiguous fallback.
 
 `auth/SecurityConfig.java:118-119` reads *"MUST NOT SHIP AS-IS. On a reachable host an
 unauthenticated caller can drive this endpoint."* It describes the pre-3b state. Nonce
@@ -703,7 +727,12 @@ the D1 restore. All four pending migrations are additive (`create table`, `creat
 
 **Verify:** roll back a deliberately broken deploy and confirm service returns.
 
-### `[ ]` D5 — Stale runbook step
+### `[~]` D5 — Stale runbook step
+
+**Fixed in MoneyPlant #33, 3 Oct 2026; flips to `[x]` when it merges.** Step 9 and three
+other places were stale: `goldenbook.service`, `goldenbook.env.example` and the
+`SessionStore` javadoc. Step 9 now expects today's sessions to survive a restart.
+Production logged `restored 2 broker session(s)` at the 14:47 restart.
 
 `tradestack/deploy/README.md` verification step 9 tells you to confirm `GB_SESSION_STORE`
 is **off**. It now defaults **on** in `application.properties`. As written the step has you

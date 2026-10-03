@@ -11,6 +11,58 @@ Status markers are `P0-LAUNCH.md`'s (`[ ]` `[~]` `[x]` `[-]`), with the same rul
 only after the verification line has actually been run.** Branch names carry the id
 (`launch/l3-open-signup`).
 
+## Session handoff: status at the end of 3 Oct 2026
+
+Start the next session here. Replace this block rather than appending to it.
+
+**Live on goldenbook.in** (deployed 3 Oct, 23:12 IST): `tradestack 32b255e`,
+`frontend 69d7f68`, Flyway V1–V9 all `success`.
+- **Sign-up is `open`**, since 14:47 IST.
+- **L3:** open sign-up modes and `app_user`.
+- **C3/C7:** debug endpoints exist only under dev auth.
+- **O4/C2:** logs kept at most about 29 days, all in journald, and Caddy logs
+  `?redacted` instead of query strings.
+- **L18 phase 1:** spot is per user, with the Alice Blue chain as a source, no
+  invented spot, and a source label. This closes the cross-user spot leak.
+
+Rollback copies on the VM: `/root/pre-l3-20261003T1439`, `/root/pre-l18-20261003T2310`,
+`/root/goldenbook.env.pre-open-*`, and the older `moneyplant-pgdata` and
+`/root/pre-goldenbook-*`. Remove them after about 10 Oct if production runs normally.
+
+**Open PRs, to merge in this order:**
+1. Context **#15** (C3/C7 statuses).
+2. Context **#17** (this handoff; sign-up open; deploy recorded; it includes #15).
+3. Context **#18** (L18 design and the admin-feed decision).
+4. Context **#19** (`STAGING.md`, decisions D-1 to D-4, ST-1/2 status).
+5. MoneyPlant **#33** (C6/D5 runbook text).
+6. MoneyPlant **#35** (ST-1, configurable broker URLs and the environment guard).
+7. MoneyPlant **#36** (ST-2, Kite SDK replaced by REST; stacked on #35).
+
+**#36 needs a live check after its deploy**, outside market hours:
+1. Log in to Kite once.
+2. Compare positions, holdings and margins with Kite's own app.
+3. Check that the next Kite `raw_capture` row uses wire names (`tradingsymbol`).
+
+**Waiting on the owner:**
+- Old goldenbook/caddy lines in rotated `/var/log/syslog.*`: delete or strip them
+  now, or let them age out by about 8 Nov. O4 stays `[~]` until one of those.
+- The leftover exited `nginx` container: remove it or keep it.
+- L18 phase 2: which broker account runs the admin feed (a separate, unfunded one
+  is recommended) and its Google sub, for `GB_MARKET_DATA_USER_ID`.
+- L5: whether the Google consent screen is in Testing (it may block strangers).
+- E1/E2/E4/E6: the `/privacy` and `/terms` placeholders.
+- R4: the support mailbox.
+- L13: the free VM resize, which is more urgent now that staging will share the VM.
+- O2/O3: the Telegram, UptimeRobot and Healthchecks.io accounts.
+
+**Next work, in order:**
+1. `STAGING.md` ST-3/ST-4: the `broker-sim` dummy server, Paytm and Alice Blue
+   first, then Kite.
+2. ST-7 to ST-9: staging on the same VM. These are production-host changes, so
+   confirm with the owner before running them.
+3. Then the Tier 1 list with sign-up open: L11 cross-user test, C4 limits, L4
+   terms, A1 risk page, L6 broker guide, and the O-items.
+
 ## Current priority revision — 3 Oct 2026 (owner)
 
 Current usage is the owner's single account, with little irreplaceable retained
@@ -23,15 +75,16 @@ data. Prioritise correct live figures, useful analysis and everyday onboarding.
   step. Keep the drafts; do not send them during this deferral.
 - The owner confirms **open sign-up with no user cap or invitation restriction**.
   A small initial cohort is an expectation, not an enforced admission limit.
-  L3 implements the explicit open mode on `launch/l3-open-signup`; the production
-  allowlist configuration remains unchanged until a separately requested deployment.
+  **The owner opened sign-up in production on 3 Oct 2026 at 14:47 IST**, six days ahead
+  of the 9 Oct target and before the go/no-go gates below were met.
 - Broker permission remains unconfirmed. This changes the owner's work order,
   not the research findings or the recorded approval status.
 
 This revision supersedes the earlier L1 launch gate and D1's immediate schedule
 below. Other launch requirements, the read-only scope and the hidden Screener
-remain unchanged. **9 Oct remains a target; L3's explicit open mode and the
-remaining applicable gates must be verified before changing sign-up configuration.**
+remain unchanged. **Sign-up opened on 3 Oct, before the go/no-go checklist. The Tier 1
+items are therefore no longer gates in front of a launch: they are open work on a live
+public site, and the checklist below is what remains to be made true.**
 
 ## Decisions taken 2 Oct 2026 (owner)
 
@@ -75,7 +128,7 @@ week after.
 | L5 | Google OAuth consent screen → Production + brand verification | 1 · external | `[ ]` |
 | L6 | Self-serve broker setup guide (exact redirect URLs per broker) | 1 · onboarding | `[ ]` |
 | L7 | Landing + login copy rewritten for strangers | 1 · onboarding | `[~]` |
-| L8 | Screener kept out of the launch build | 1 · scope | `[~]` |
+| L8 | Screener kept out of the launch build | 1 · scope | `[x]` |
 | L9 | Builder is honest without an Alice Blue quote source | 1 · numbers | `[ ]` |
 | L10 | Release integration: merge, deploy `main`, verify Flyway V5–V8 in prod | 1 · release | `[~]` |
 | L11 | Cross-user data isolation test on production | 1 · security | `[ ]` |
@@ -240,8 +293,12 @@ clear disabled or terms state. The `/api/me` response is unchanged. L4's terms
 acceptance is still separate, and the columns remain unset by L3.
 
 The runbook is [`tradestack/docs/google-signup.md`](tradestack/docs/google-signup.md).
-Production enablement and a fresh real Google account on `goldenbook.in` remain
-unverified; no production environment or Google Console setting was changed.
+**Deployed 3 Oct 2026, 14:41 IST, and `GB_SIGNUP_MODE=open` from 14:47.** V9 applied
+(`success`) and seeded 2 legacy subjects. The boot log reads `signup mode=open`. A new
+Google account registered on production at 14:51 IST. **Before `[x]`:** the kill-switch test
+on production (`closed` refuses a new subject while existing users still sign in) and a
+disabled-account check there. The Google consent screen's publishing status (L5) is
+unchanged and unverified.
 
 ### `[ ]` L4 — Terms acceptance recorded at first sign-in
 
@@ -286,7 +343,12 @@ Open Graph tags.
 
 **Verify:** read it signed out on a phone.
 
-### `[~]` L8 — Screener out of the launch build
+### `[x]` L8 — Screener out of the launch build
+
+**Verified 3 Oct 2026 against the deployed commits** (`tradestack fcc5100`, `frontend
+40f0bcc`). Neither contains any screener code, so production has no `/api/screener`
+controller and no `/app/screener` route. That is stronger than the HTTP check below,
+which needs a signed-in session, because anonymous calls get 401 on every `/api` path.
 
 **2 Oct 2026: split and merged** (frontend #22 settings; the screener stays on its own
 unpushed branch). Was: split, committed locally, not pushed. Settings redesign is
@@ -322,10 +384,17 @@ account sees live premiums; `GET /api/payoff/metadata` returns 65 for NIFTY.
 
 ### `[~]` L10 — Release integration and the dark deploy
 
-**3 Oct 2026:** current `main` is deployed (`tradestack 36d5f58`, `frontend 03e1091`) by
-the R6 migration, with sign-up still allowlisted. V1–V8 are confirmed `success` on the
-host. V9 now exists on the local L3 branch and still needs a separately requested
-production deployment. The runbook's nine production checks have not all been run.
+**3 Oct 2026, 14:41 IST:** `main` deployed (`tradestack fcc5100`, `frontend 40f0bcc`) with
+`deploy-from-local.ps1`. 505 tests passed on the VM. **V1–V9 all `success`.** The runbook's
+checks so far:
+- Run and passed: 1 (site and certificate), 2 (hard-refresh `/app/positions`), 3 (a new
+  account registered under `open`), 4 (`/api/me` 401), 8 (`:8080`, `:5432` and `:8081` time
+  out from outside) and 9 (the restart logged `restored 2 broker session(s)`).
+- C6's boot auth line read once: `Google OIDC; signup mode=open`.
+- **Not yet run:** 5–7, which need a broker connected in the browser.
+
+Sign-up was then opened rather than kept dark (see L3). The pre-deploy jar and a database
+dump are in `/root/pre-l3-20261003T1439`.
 
 The last **recorded** production deploy is 6 Sep (`tradestack 0b95e40`, `frontend
 c8ab2ae`). Every later status note says "no production change", so assume backend PRs

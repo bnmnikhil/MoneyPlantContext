@@ -10,9 +10,10 @@ Google account may sign in. It supersedes the P0 framing of 20 Aug ("a small inv
 not family", see [[real-product-not-personal-tool]]). Open-sourcing the repos was offered
 and not chosen. **Confirmed 3 Oct 2026:** open sign-up has no user cap or
 invitation restriction. The owner expects a small initial cohort; this is an
-expectation, not an admission control. L3 owns the explicit open-mode
-implementation; local code is on `launch/l3-open-signup`, and live authentication
-is still unchanged. See [[google-signup-modes]] for the admission decision.
+expectation, not an admission control. **Production has run `open` since 3 Oct 2026, 14:47 IST.** The
+owner opened it six days ahead of the 9 Oct target, before the go/no-go checklist,
+accepting that the remaining Tier 1 items become work on a live site rather than
+gates. See [[google-signup-modes]] for the admission decision.
 
 **Scope at launch.** The Strategy Builder ships, so P0 item A6 is dropped. It now has live
 chain premiums, and its two wrong inputs are fixed or being fixed
