@@ -11,6 +11,58 @@ Status markers are `P0-LAUNCH.md`'s (`[ ]` `[~]` `[x]` `[-]`), with the same rul
 only after the verification line has actually been run.** Branch names carry the id
 (`launch/l3-open-signup`).
 
+## Session handoff: status at the end of 3 Oct 2026
+
+Start the next session here. Replace this block rather than appending to it.
+
+**Live on goldenbook.in** (deployed 3 Oct, 23:12 IST): `tradestack 32b255e`,
+`frontend 69d7f68`, Flyway V1–V9 all `success`.
+- **Sign-up is `open`**, since 14:47 IST.
+- **L3:** open sign-up modes and `app_user`.
+- **C3/C7:** debug endpoints exist only under dev auth.
+- **O4/C2:** logs kept at most about 29 days, all in journald, and Caddy logs
+  `?redacted` instead of query strings.
+- **L18 phase 1:** spot is per user, with the Alice Blue chain as a source, no
+  invented spot, and a source label. This closes the cross-user spot leak.
+
+Rollback copies on the VM: `/root/pre-l3-20261003T1439`, `/root/pre-l18-20261003T2310`,
+`/root/goldenbook.env.pre-open-*`, and the older `moneyplant-pgdata` and
+`/root/pre-goldenbook-*`. Remove them after about 10 Oct if production runs normally.
+
+**Open PRs, to merge in this order:**
+1. Context **#15** (C3/C7 statuses).
+2. Context **#17** (this handoff; sign-up open; deploy recorded; it includes #15).
+3. Context **#18** (L18 design and the admin-feed decision).
+4. Context **#19** (`STAGING.md`, decisions D-1 to D-4, ST-1/2 status).
+5. MoneyPlant **#33** (C6/D5 runbook text).
+6. MoneyPlant **#35** (ST-1, configurable broker URLs and the environment guard).
+7. MoneyPlant **#36** (ST-2, Kite SDK replaced by REST; stacked on #35).
+
+**#36 needs a live check after its deploy**, outside market hours:
+1. Log in to Kite once.
+2. Compare positions, holdings and margins with Kite's own app.
+3. Check that the next Kite `raw_capture` row uses wire names (`tradingsymbol`).
+
+**Waiting on the owner:**
+- Old goldenbook/caddy lines in rotated `/var/log/syslog.*`: delete or strip them
+  now, or let them age out by about 8 Nov. O4 stays `[~]` until one of those.
+- The leftover exited `nginx` container: remove it or keep it.
+- L18 phase 2: which broker account runs the admin feed (a separate, unfunded one
+  is recommended) and its Google sub, for `GB_MARKET_DATA_USER_ID`.
+- L5: whether the Google consent screen is in Testing (it may block strangers).
+- E1/E2/E4/E6: the `/privacy` and `/terms` placeholders.
+- R4: the support mailbox.
+- L13: the free VM resize, which is more urgent now that staging will share the VM.
+- O2/O3: the Telegram, UptimeRobot and Healthchecks.io accounts.
+
+**Next work, in order:**
+1. `STAGING.md` ST-3/ST-4: the `broker-sim` dummy server, Paytm and Alice Blue
+   first, then Kite.
+2. ST-7 to ST-9: staging on the same VM. These are production-host changes, so
+   confirm with the owner before running them.
+3. Then the Tier 1 list with sign-up open: L11 cross-user test, C4 limits, L4
+   terms, A1 risk page, L6 broker guide, and the O-items.
+
 ## Current priority revision — 3 Oct 2026 (owner)
 
 Current usage is the owner's single account, with little irreplaceable retained
