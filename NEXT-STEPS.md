@@ -58,6 +58,8 @@ TEST-02. Still open:
 
 ## Simulator packaging
 
+**3 Oct 2026: SIM-07 and SIM-08 moved to `STAGING.md`** (ST-11 and ST-7 to ST-9).
+
 `BROKER-EXPANSION-PLAN.md` SIM-01 to SIM-05 build the simulator. Not covered
 there:
 
