@@ -106,8 +106,8 @@ The VM today: 1 OCPU, 7 GB RAM, aarch64. The always-free allowance is 4 OCPU / 2
 - **D-2 Access:** `staging.goldenbook.in` behind Caddy **basic auth** plus `noindex`,
   with real Google sign-in in **allowlist** mode for testers. Dev auth is deliberately
   impossible off loopback.
-- **D-3 Simulator location:** a separate Maven module, `broker-sim/`, in the `MoneyPlant`
-  repo, built and run separately. It is **never** inside the app jar, and a check on the
+- **D-3 Simulator location:** its own repository, `broker-sim` (changed from a module in the `MoneyPlant` repo,
+  4 Oct 2026), built and run separately. It is **never** inside the app jar, and a check on the
   app jar enforces that.
 - **D-4 Kite:** replace the SDK with our own Kite REST client (ST-2, option 1).
 
@@ -174,7 +174,29 @@ The SDK cannot be repointed. Three ways out:
 **Verify:** the gateway's tests pass against simulator responses, and production's
 Kite connect still works after the deploy (one real login).
 
-### `[ ]` ST-3: Simulator core (absorbs SIM-01, SIM-03)
+### `[~]` ST-3: Simulator core (absorbs SIM-01, SIM-03)
+
+**Built 4 Oct 2026, in its own repo, `broker-sim` (local at `C:\Projects\Moneyplant\broker-sim`; no remote yet):** a
+Maven project (`./mvnw test`). One process on `:8190`, one path prefix per broker
+(`/kite`, `/aliceblue`, `/paytm`).
+- Fake login pages per broker; the redirect carries each broker's own parameters (Kite `request_token` plus the
+  `redirect_params` state; Alice Blue `authCode` + `userId`, no state; Paytm `requestToken` + `state`).
+- Signed tokens that expire at the first 06:00 IST after issue, by the simulated clock, so they survive a
+  restart. Login codes are single use and live ten minutes.
+- `sim_` keys only. Anything else gets that broker's own refusal. The secret convention is `sim_secret_NAME` for
+  key `sim_NAME`, checked as the broker checks it (checksum for Kite and Alice Blue, plain for Paytm).
+- Pointing the app at it needs only the `GB_*` variables from ST-1, and `SIM_REDIRECT_BASE` on the simulator
+  (the app origin the fake login returns to; default `http://localhost:5173`).
+
+**Upstox** (4 Oct 2026) is on `broker-sim` branch `feature/upstox-profile` (PR #1, 41 tests): standard OAuth, tokens to 03:30 IST,
+funds down 00:00-05:30 IST. Dossier: `research/UPSTOX-DOSSIER.md`.
+
+**Verified:** 31 simulator tests on `main` (41 with Upstox), including each broker's connect flow over HTTP. Also run end to end on the
+laptop: the real app (dev auth, `GB_ENVIRONMENT=local`) connected all three simulated brokers through its own
+`login-url` and callbacks, then served positions, holdings, margins, payoff (spot 26,061.5 agreed between the
+simulated Paytm quote and the Alice Blue chain), option expiries and chain. The app skips a down simulator with
+warnings rather than failing. **Not yet done:** a Chrome pass over the UI; ST-5's control endpoint (the clock
+offset exists, nothing exposes it); deployment.
 
 **Do:**
 - A small Spring Boot service, `broker-sim`, with one profile per broker. Each serves the
@@ -193,7 +215,17 @@ Kite connect still works after the deploy (one real login).
 - Tokens expire at the simulated day boundary.
 - A non-`sim_` key is refused.
 
-### `[ ]` ST-4: Synthetic market and portfolios
+### `[~]` ST-4: Synthetic market and portfolios
+
+**Built 4 Oct 2026 with ST-3.** Seeded random walk for 4 indices and 7 stocks (Brownian-bridge sessions, a
+deterministic function of seed, underlying, day and minute, so all three brokers quote the same number); Tuesday
+expiries (NIFTY weekly, the rest monthly); Black-Scholes on a smile surface; futures at spot plus carry. Five
+portfolios: empty, equity, NIFTY credit spread, BANKNIFTY iron condor, mixed (futures, options, one intraday leg,
+T1 and pledged holdings). Margin is a simple hedge-aware model, not SPAN. Contract and security masters are
+generated in each vendor's format (about 13,700 contracts).
+**Still to do:** the Paytm leg with no quote (`priceKnown=false`); the Alice Blue option chain only for the
+eleven simulated underlyings, not 181; a check that the risk page's margin estimate equals the engine's own number
+for the same legs.
 
 **Do:**
 - **A market engine.** Indices (NIFTY, BANKNIFTY, FINNIFTY, MIDCPNIFTY, SENSEX) and a
@@ -241,7 +273,15 @@ logs the user out of GoldenBook.
 
 **Verify:** the scan runs in `verify.ps1` and fails on a planted real-looking value.
 
-### `[ ]` ST-7: Staging infrastructure
+### `[~]` ST-7: Staging infrastructure
+
+**Built and running 4 Oct 2026** (MoneyPlant #37): the VM, `gbstaging` user, own env file, own Postgres container
+(`:5442`), `goldenbook-staging` (`:8180`) and `goldenbook-staging-sim` (`:8190`) units, Caddy site with basic auth and
+noindex, certificate issued. Verified: 401 without credentials, 200 with; ports 8180, 8190, 5442 unreachable from
+outside; production unaffected. The Google client is production's, with the staging redirect URI added.
+**Still to verify:** a refused (non-allowlisted) Google sign-in. An allowlisted owner sign-in and the simulated broker connects were done
+4 Oct. Alice Blue's connect needs exactly one pending flow (a repeated click fails until it expires, or the staging backend restarts).
+**Not yet installed on the VM:** the Upstox login path in the Caddy block (in #37).
 
 **Do** (per D-1 and D-2):
 - Create the VM, or a second service on the existing one.
@@ -260,7 +300,10 @@ logs the user out of GoldenBook.
 - `:8180`, `:8190` and staging's Postgres are unreachable from outside (the runbook's
   step 8).
 
-### `[ ]` ST-8: A visible STAGING marker
+### `[~]` ST-8: A visible STAGING marker
+
+**Built 4 Oct 2026** (frontend #29), deployed on staging. The production bundle contains none of the banner text.
+**Still to verify:** a screenshot of the banner.
 
 **Do:**
 - A `VITE_ENVIRONMENT=staging` build shows a fixed banner, "STAGING: simulated brokers,
@@ -270,7 +313,11 @@ logs the user out of GoldenBook.
 **Verify:** a staging screenshot shows the banner, and production's build has no banner
 code path enabled.
 
-### `[ ]` ST-9: Deploy path
+### `[~]` ST-9: Deploy path
+
+**Built and used 4 Oct 2026** (MoneyPlant #37): `deploy/staging/deploy-staging.sh` takes any branch; `deploy-from-local.ps1`
+has `-Target staging`; production's `deploy.sh` refuses any branch but `main` once #37 is merged (`GB_ALLOW_BRANCH=1`
+overrides). The first staging deploy ran from a feature branch.
 
 **Do:**
 - `deploy.sh` takes a target (`production` | `staging`), or there is a sibling
@@ -302,6 +349,17 @@ page.
 
 **Verify:** a fresh shell gets a working app with three connected simulated brokers and
 no real credentials.
+
+## Scope decisions (owner, 4 Oct 2026)
+
+- **Brokers beyond the three: browser-redirect brokers only.** Upstox, Dhan and Groww join the simulator and then
+  the app, one at a time, in that order, each through the template in `BROKER-EXPANSION-PLAN.md`. Server-login
+  brokers (Kotak Neo with its TOTP and MPIN, Motilal Oswal with its trading password) are **held back**: the
+  user's secrets would pass through GoldenBook. Angel One waits on a portal check of whether its static-IP field
+  can be skipped.
+- **Testing real accounts:** friends' accounts, arranged later. The simulator and adapters do not depend on it;
+  only each broker's live check does.
+- **Model:** the simulator work moved to Sonnet on 4 Oct 2026.
 
 ## Order and rough size
 

@@ -11,57 +11,69 @@ Status markers are `P0-LAUNCH.md`'s (`[ ]` `[~]` `[x]` `[-]`), with the same rul
 only after the verification line has actually been run.** Branch names carry the id
 (`launch/l3-open-signup`).
 
-## Session handoff: status at the end of 3 Oct 2026
+## Session handoff: status at the end of 4 Oct 2026
 
 Start the next session here. Replace this block rather than appending to it.
 
-**Live on goldenbook.in** (deployed 3 Oct, 23:12 IST): `tradestack 32b255e`,
-`frontend 69d7f68`, Flyway V1–V9 all `success`.
-- **Sign-up is `open`**, since 14:47 IST.
-- **L3:** open sign-up modes and `app_user`.
-- **C3/C7:** debug endpoints exist only under dev auth.
-- **O4/C2:** logs kept at most about 29 days, all in journald, and Caddy logs
-  `?redacted` instead of query strings.
-- **L18 phase 1:** spot is per user, with the Alice Blue chain as a source, no
-  invented spot, and a source label. This closes the cross-user spot leak.
+**Production** (unchanged since 3 Oct): `tradestack 02e33eb` (includes ST-1 endpoint guard and ST-2, the Kite REST
+client, deployed and connected on 4 Oct, 09:25 IST), `frontend 69d7f68`, Flyway V1-V9, sign-up `open`. The Kite
+check after the ST-2 deploy: archived rows use Kite's own field names and nothing logged an error; the owner was
+asked to compare the figures with Kite and to check the reconnect banner after the token expires. **Not yet
+confirmed by the owner.**
 
-Rollback copies on the VM: `/root/pre-l3-20261003T1439`, `/root/pre-l18-20261003T2310`,
-`/root/goldenbook.env.pre-open-*`, and the older `moneyplant-pgdata` and
-`/root/pre-goldenbook-*`. Remove them after about 10 Oct if production runs normally.
+**Staging is live** at `https://staging.goldenbook.in` (4 Oct), on the production VM: basic auth (credentials in
+`/root/staging-basic-auth.txt` on the VM), the app against the broker simulator, own Postgres on `:5442`,
+`goldenbook-staging` `:8180`, `goldenbook-staging-sim` `:8190`, Caddy 2.6.2 with the staging block. It runs from
+branch `staging/st7-9-staging-deploy` (backend and frontend carry the same branch name; `deploy-staging.sh` needs
+that). Verified: certificate, 401/200 on basic auth, ports closed from outside, simulator data API unpublished.
+The owner connected brokers through the fake login pages; **Alice Blue needs exactly one pending connect**, so
+repeated clicks fail until the 10-minute flow expires or the staging backend restarts.
+**Not yet verified:** a refused (non-allowlisted) Google sign-in, a Chrome pass over every screen, the banner
+screenshot. **Staging does not yet have the Upstox login path in its Caddy block** (added to #37, not installed).
 
-**Open PRs, to merge in this order:**
-1. Context **#15** (C3/C7 statuses).
-2. Context **#17** (this handoff; sign-up open; deploy recorded; it includes #15).
-3. Context **#18** (L18 design and the admin-feed decision).
-4. Context **#19** (`STAGING.md`, decisions D-1 to D-4, ST-1/2 status).
-5. MoneyPlant **#33** (C6/D5 runbook text).
-6. MoneyPlant **#35** (ST-1, configurable broker URLs and the environment guard).
-7. MoneyPlant **#36** (ST-2, Kite SDK replaced by REST; stacked on #35).
+**New repo `bnmnikhil/broker-sim`** (private; local `C:\Projects\Moneyplant\broker-sim`): the simulator, ST-3 and
+ST-4. Kite, Alice Blue, Paytm on `main` (31 tests); Upstox on `feature/upstox-profile` (41 tests, PR #1).
 
-**#36 needs a live check after its deploy**, outside market hours:
-1. Log in to Kite once.
-2. Compare positions, holdings and margins with Kite's own app.
-3. Check that the next Kite `raw_capture` row uses wire names (`tradingsymbol`).
+**Open PRs, in this order:**
+1. Context **#20** (this status; STAGING.md; the Upstox dossier; decisions of 4 Oct).
+2. broker-sim **#1** (the Upstox profile). Staging deploys any branch, so it can run first.
+3. frontend **#29** (ST-8, the staging banner).
+4. MoneyPlant **#37** (ST-7/ST-9: staging deploy files, the Caddy block, and `deploy.sh` refusing any branch but
+   `main`). **Merge it before the next production deploy**, or production still accepts any branch.
+All earlier PRs (#33, #35, #36 and context #15, #17, #18, #19) are merged.
 
-**Waiting on the owner:**
-- Old goldenbook/caddy lines in rotated `/var/log/syslog.*`: delete or strip them
-  now, or let them age out by about 8 Nov. O4 stays `[~]` until one of those.
-- The leftover exited `nginx` container: remove it or keep it.
-- L18 phase 2: which broker account runs the admin feed (a separate, unfunded one
-  is recommended) and its Google sub, for `GB_MARKET_DATA_USER_ID`.
-- L5: whether the Google consent screen is in Testing (it may block strangers).
-- E1/E2/E4/E6: the `/privacy` and `/terms` placeholders.
-- R4: the support mailbox.
-- L13: the free VM resize, which is more urgent now that staging will share the VM.
-- O2/O3: the Telegram, UptimeRobot and Healthchecks.io accounts.
+**Decisions of 4 Oct (owner):**
+- Add brokers beyond the three, **browser-redirect brokers only: Upstox, then Dhan, then Groww.** Server-login
+  brokers (Kotak Neo: TOTP and MPIN; Motilal Oswal: trading password) are held back. Angel One waits on a portal
+  check of whether its static-IP field can be skipped.
+- Live checks use **friends' accounts**, arranged later. The simulator and adapters do not depend on them.
+- The simulator has its own repo (D-3 amended). The simulator work moved to Sonnet.
+
+**Waiting on the owner (carried over):**
+- Compare Kite's figures with GoldenBook's and check the expired-token reconnect banner (ST-2).
+- Old goldenbook/caddy lines in rotated `/var/log/syslog.*`: delete or strip now, or let them age out by ~8 Nov.
+- The leftover exited `nginx` container: remove or keep.
+- L18 phase 2: which broker account runs the admin feed, and its Google sub (`GB_MARKET_DATA_USER_ID`).
+- L5: is the Google consent screen in Testing (it may block strangers)?
+- E1/E2/E4/E6 legal page placeholders; R4 support mailbox; L13 free VM resize (more urgent: staging shares the
+  VM); O2/O3 Telegram, UptimeRobot, Healthchecks.io accounts.
+- Rotate the staging basic-auth password if wanted (it was shown in the 4 Oct session).
+- Remove rollback copies on the VM after ~10 Oct: `/root/pre-l3-*`, `/root/pre-l18-*`, `/root/goldenbook.env.pre-open-*`,
+  `moneyplant-pgdata`, `/root/pre-goldenbook-*`.
 
 **Next work, in order:**
-1. `STAGING.md` ST-3/ST-4: the `broker-sim` dummy server, Paytm and Alice Blue
-   first, then Kite.
-2. ST-7 to ST-9: staging on the same VM. These are production-host changes, so
-   confirm with the owner before running them.
-3. Then the Tier 1 list with sign-up open: L11 cross-user test, C4 limits, L4
-   terms, A1 risk page, L6 broker guide, and the O-items.
+1. **FOUND-06** (rollout states `hidden|internal|staging|available`, so an unfinished adapter cannot reach
+   production), then **FOUND-03** (credential fields set per broker), FOUND-05, TEST-02. All in
+   `BROKER-EXPANSION-PLAN.md`.
+2. **Upstox adapter** against the simulator, merged `hidden`, soaked on staging. UPSTOX-01 is `[~]`: the dossier
+   (`research/UPSTOX-DOSSIER.md`) is written, but CERT-02/03/04 need a real account and Upstox's answer on hosted
+   use. Open facts to settle live: does the app form ask for a static IP; is `average_price` on a carried position
+   the real entry; do `quantity`, `t1_quantity`, `collateral_quantity` overlap.
+3. Finish staging: ST-5 (fault scenarios and the `/_sim` control API; the clock offset exists, nothing exposes it),
+   ST-6 (fixture provenance scan), ST-10 (browser smoke pack), ST-11 (simulator on the laptop), the Paytm leg
+   with no quote, the Alice Blue chain for all 181 underlyings.
+4. Then Dhan and Groww profiles, and the Tier 1 items: L11 cross-user test, C4 limits, L4 terms, A1 risk page,
+   L6 broker guide, the O-items. A1 matters: the local risk page still reads 11 Aug snapshots.
 
 ## Current priority revision — 3 Oct 2026 (owner)
 

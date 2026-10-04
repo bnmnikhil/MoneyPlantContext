@@ -132,7 +132,7 @@ risk but does not replace a real setup observation.
 - [ ] **FOUND-05 — Standardise session outcomes.** Use common errors for expired
   login, permission denied, throttling, vendor outage and malformed data while
   preserving the broker's safe diagnostic code.
-- [ ] **FOUND-06 — Add broker rollout states.** Support `hidden`, `internal`,
+- [x] **FOUND-06 — Add broker rollout states.** *(5 Oct 2026, MoneyPlant + frontend `launch/found-06-rollout-states`: the ladder is hidden < internal < staging < available, usable in local < staging < production; `GB_ROLLOUT_<BROKER>` overrides a template default; enforced in the catalogue, `BrokerAuthRegistry` (credentials and connect) and `ConnectionService` (every read of a stored session). 11 tests, 542 passing.)* Support `hidden`, `internal`,
   `staging` and `available` so an unfinished adapter cannot appear in production
   merely because its Spring bean exists.
 - [ ] **FOUND-07 — Pin canonical mapping rules.** Document quantity, average
@@ -181,11 +181,12 @@ remain the requirement; status lives there.
 
 ## Phase 3 — Upstox pilot
 
-- [ ] **UPSTOX-01 — Accept the completed eligibility dossier.** Use standard OAuth;
+- [~] **UPSTOX-01 — Accept the completed eligibility dossier.** *(Dossier written 4 Oct 2026; CERT-02 to CERT-04 still need a real account and Upstox's answer on hosted use.)* Use standard OAuth;
   do not use the one-year Analytics Token because its portfolio access has a
   different static-IP rule.
-- [ ] **UPSTOX-02 — Add synthetic simulator fixtures** for authentication,
-  positions and holdings before writing the production HTTP adapter.
+- [x] **UPSTOX-02 — Add synthetic simulator fixtures** for authentication,
+  positions and holdings before writing the production HTTP adapter. *(4 Oct 2026: `broker-sim` `UpstoxSim`, 41
+  tests. Dossier: `research/UPSTOX-DOSSIER.md`; documented shapes, not yet live-verified.)*
 - [ ] **UPSTOX-03 — Implement auth and session handling** through
   `BrokerAuthProvider`, including state validation and expiry.
 - [ ] **UPSTOX-04 — Implement the portfolio adapter** and map vendor responses into

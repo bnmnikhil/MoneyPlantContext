@@ -2,6 +2,7 @@
 # This repo tracks only the shared working context.
 /tradestack/
 /frontend/
+/broker-sim/
 /frontend-*/
 /tradestack-*/
 
