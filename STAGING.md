@@ -270,7 +270,13 @@ logs the user out of GoldenBook.
 
 **Verify:** the scan runs in `verify.ps1` and fails on a planted real-looking value.
 
-### `[ ]` ST-7: Staging infrastructure
+### `[~]` ST-7: Staging infrastructure
+
+**Built and running 4 Oct 2026** (MoneyPlant #37): the VM, `gbstaging` user, own env file, own Postgres container
+(`:5442`), `goldenbook-staging` (`:8180`) and `goldenbook-staging-sim` (`:8190`) units, Caddy site with basic auth and
+noindex, certificate issued. Verified: 401 without credentials, 200 with; ports 8180, 8190, 5442 unreachable from
+outside; production unaffected. The Google client is production's, with the staging redirect URI added.
+**Still to verify:** a Google sign-in as an allowlisted tester, and a refused one.
 
 **Do** (per D-1 and D-2):
 - Create the VM, or a second service on the existing one.
@@ -289,7 +295,10 @@ logs the user out of GoldenBook.
 - `:8180`, `:8190` and staging's Postgres are unreachable from outside (the runbook's
   step 8).
 
-### `[ ]` ST-8: A visible STAGING marker
+### `[~]` ST-8: A visible STAGING marker
+
+**Built 4 Oct 2026** (frontend #29), deployed on staging. The production bundle contains none of the banner text.
+**Still to verify:** a screenshot of the banner.
 
 **Do:**
 - A `VITE_ENVIRONMENT=staging` build shows a fixed banner, "STAGING: simulated brokers,
@@ -299,7 +308,11 @@ logs the user out of GoldenBook.
 **Verify:** a staging screenshot shows the banner, and production's build has no banner
 code path enabled.
 
-### `[ ]` ST-9: Deploy path
+### `[~]` ST-9: Deploy path
+
+**Built and used 4 Oct 2026** (MoneyPlant #37): `deploy/staging/deploy-staging.sh` takes any branch; `deploy-from-local.ps1`
+has `-Target staging`; production's `deploy.sh` refuses any branch but `main` once #37 is merged (`GB_ALLOW_BRANCH=1`
+overrides). The first staging deploy ran from a feature branch.
 
 **Do:**
 - `deploy.sh` takes a target (`production` | `staging`), or there is a sibling
