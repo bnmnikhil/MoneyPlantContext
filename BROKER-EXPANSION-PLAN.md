@@ -132,7 +132,7 @@ risk but does not replace a real setup observation.
 - [ ] **FOUND-05 — Standardise session outcomes.** Use common errors for expired
   login, permission denied, throttling, vendor outage and malformed data while
   preserving the broker's safe diagnostic code.
-- [ ] **FOUND-06 — Add broker rollout states.** Support `hidden`, `internal`,
+- [x] **FOUND-06 — Add broker rollout states.** *(5 Oct 2026, MoneyPlant + frontend `launch/found-06-rollout-states`: the ladder is hidden < internal < staging < available, usable in local < staging < production; `GB_ROLLOUT_<BROKER>` overrides a template default; enforced in the catalogue, `BrokerAuthRegistry` (credentials and connect) and `ConnectionService` (every read of a stored session). 11 tests, 542 passing.)* Support `hidden`, `internal`,
   `staging` and `available` so an unfinished adapter cannot appear in production
   merely because its Spring bean exists.
 - [ ] **FOUND-07 — Pin canonical mapping rules.** Document quantity, average
