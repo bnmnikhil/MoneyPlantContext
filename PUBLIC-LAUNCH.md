@@ -11,69 +11,66 @@ Status markers are `P0-LAUNCH.md`'s (`[ ]` `[~]` `[x]` `[-]`), with the same rul
 only after the verification line has actually been run.** Branch names carry the id
 (`launch/l3-open-signup`).
 
-## Session handoff: status at the end of 4 Oct 2026
+## Session handoff: status on 5 Oct 2026
 
 Start the next session here. Replace this block rather than appending to it.
 
-**Production** (unchanged since 3 Oct): `tradestack 02e33eb` (includes ST-1 endpoint guard and ST-2, the Kite REST
-client, deployed and connected on 4 Oct, 09:25 IST), `frontend 69d7f68`, Flyway V1-V9, sign-up `open`. The Kite
-check after the ST-2 deploy: archived rows use Kite's own field names and nothing logged an error; the owner was
-asked to compare the figures with Kite and to check the reconnect banner after the token expires. **Not yet
-confirmed by the owner.**
+**Production** (unchanged): `tradestack 02e33eb`, `frontend 69d7f68`, Flyway V1-V9, sign-up `open`. The Kite REST client
+(ST-2) has been live since 4 Oct, 09:25 IST; **the owner has not yet confirmed Kite's figures against GoldenBook's,
+nor the expired-token reconnect banner.** All of 4 Oct's PRs and FOUND-06 are **merged to `main` but not deployed to
+production** (nothing in them changes production's behaviour: FOUND-06 keeps the three brokers `available`).
 
-**Staging is live** at `https://staging.goldenbook.in` (4 Oct), on the production VM: basic auth (credentials in
-`/root/staging-basic-auth.txt` on the VM), the app against the broker simulator, own Postgres on `:5442`,
-`goldenbook-staging` `:8180`, `goldenbook-staging-sim` `:8190`, Caddy 2.6.2 with the staging block. It runs from
-branch `staging/st7-9-staging-deploy` (backend and frontend carry the same branch name; `deploy-staging.sh` needs
-that). Verified: certificate, 401/200 on basic auth, ports closed from outside, simulator data API unpublished.
-The owner connected brokers through the fake login pages; **Alice Blue needs exactly one pending connect**, so
-repeated clicks fail until the 10-minute flow expires or the staging backend restarts.
-**Not yet verified:** a refused (non-allowlisted) Google sign-in, a Chrome pass over every screen, the banner
-screenshot. **Staging does not yet have the Upstox login path in its Caddy block** (added to #37, not installed).
+**Merged to `main` on 5 Oct:** context #20, broker-sim #1 (the Upstox profile), frontend #29 (staging banner) and
+#30, MoneyPlant #37 (staging deploy files; production's `deploy.sh` now refuses any branch but `main`) and #38
+(**FOUND-06**: rollout states `hidden < internal < staging < available`, enforced in the catalogue, the credential and
+connect paths, and `ConnectionService`; `GB_ROLLOUT_<BROKER>` overrides a template default). Gates on the merged
+`main`: backend 542, frontend 82, broker-sim 41.
 
-**New repo `bnmnikhil/broker-sim`** (private; local `C:\Projects\Moneyplant\broker-sim`): the simulator, ST-3 and
-ST-4. Kite, Alice Blue, Paytm on `main` (31 tests); Upstox on `feature/upstox-profile` (41 tests, PR #1).
+**Staging** (`https://staging.goldenbook.in`, on the production VM, basic auth) still runs the 4 Oct branches. It has
+**not** been redeployed since, and the VM's Caddy still has the older staging block (no `/upstox` proxy, no Upstox login
+path). To soak Upstox on staging: deploy the adapter branch, add the `GB_UPSTOX_*` lines to
+`/etc/goldenbook-staging/goldenbook.env`, install the updated `deploy/Caddyfile` (validate on the VM's Caddy 2.6.2
+first), and add the Upstox redirect URI. See `deploy/staging/README.md`.
 
-**Open PRs, in this order:**
-1. Context **#20** (this status; STAGING.md; the Upstox dossier; decisions of 4 Oct).
-2. broker-sim **#1** (the Upstox profile). Staging deploys any branch, so it can run first.
-3. frontend **#29** (ST-8, the staging banner).
-4. MoneyPlant **#37** (ST-7/ST-9: staging deploy files, the Caddy block, and `deploy.sh` refusing any branch but
-   `main`). **Merge it before the next production deploy**, or production still accepts any branch.
-All earlier PRs (#33, #35, #36 and context #15, #17, #18, #19) are merged.
+**Open PRs, in this order:** broker-sim has none. frontend **`launch/upstox-adapter`** (the `/upstox` dev proxy) and
+MoneyPlant **`launch/upstox-adapter`** (the adapter), a pair, plus context **`docs/upstox-adapter-status`** (this).
 
-**Decisions of 4 Oct (owner):**
-- Add brokers beyond the three, **browser-redirect brokers only: Upstox, then Dhan, then Groww.** Server-login
-  brokers (Kotak Neo: TOTP and MPIN; Motilal Oswal: trading password) are held back. Angel One waits on a portal
-  check of whether its static-IP field can be skipped.
-- Live checks use **friends' accounts**, arranged later. The simulator and adapters do not depend on them.
-- The simulator has its own repo (D-3 amended). The simulator work moved to Sonnet.
+**The Upstox adapter** (`broker/upstox`, branch `launch/upstox-adapter`): standard OAuth with the nonce in `state`, a
+strict `redirect_uri` (`<frontend-url>/upstox/callback`), positions, holdings, equity margins, the F&O instrument
+file. Ships **`staging`-only**: production cannot see it until `GB_ROLLOUT_UPSTOX=available`. 571 tests. **Verified end
+to end against broker-sim on the laptop**: connect, positions, margins, 13,665 instruments, and a payoff identical to
+Alice Blue's for the same book. **It is not certified against Upstox.** Three facts the docs do not settle are mapped
+with a stated assumption and a test that names it (`UpstoxRawMapperTest`): `average_price` is the real entry (Alice
+Blue's is not); `quantity`, `t1_quantity`, `collateral_quantity` are disjoint (and summed); the margin block has no
+collateral figure. The static-IP gate, hosted multi-user terms (CERT-04), the error body shape and the token-exchange
+error code are also open. All in `research/UPSTOX-DOSSIER.md`.
+
+**Decisions (owner, 4-5 Oct):** browser-redirect brokers only (Upstox, then Dhan, then Groww); server-login brokers held
+back; live checks use friends' accounts, later. **FOUND-03 (generalised credential fields) is deferred**: all three
+target brokers use a key plus a secret.
 
 **Waiting on the owner (carried over):**
-- Compare Kite's figures with GoldenBook's and check the expired-token reconnect banner (ST-2).
-- Old goldenbook/caddy lines in rotated `/var/log/syslog.*`: delete or strip now, or let them age out by ~8 Nov.
+- Compare Kite's figures with GoldenBook's; check the reconnect banner after the token expires.
+- Old goldenbook/caddy lines in rotated `/var/log/syslog.*`: delete or strip, or let them age out by ~8 Nov.
 - The leftover exited `nginx` container: remove or keep.
-- L18 phase 2: which broker account runs the admin feed, and its Google sub (`GB_MARKET_DATA_USER_ID`).
-- L5: is the Google consent screen in Testing (it may block strangers)?
-- E1/E2/E4/E6 legal page placeholders; R4 support mailbox; L13 free VM resize (more urgent: staging shares the
-  VM); O2/O3 Telegram, UptimeRobot, Healthchecks.io accounts.
-- Rotate the staging basic-auth password if wanted (it was shown in the 4 Oct session).
-- Remove rollback copies on the VM after ~10 Oct: `/root/pre-l3-*`, `/root/pre-l18-*`, `/root/goldenbook.env.pre-open-*`,
-  `moneyplant-pgdata`, `/root/pre-goldenbook-*`.
+- L18 phase 2: which account runs the admin feed, and its Google sub (`GB_MARKET_DATA_USER_ID`).
+- L5: is the Google consent screen in Testing? E1/E2/E4/E6 legal placeholders; R4 mailbox; L13 free VM resize (staging
+  shares the VM); O2/O3 Telegram, UptimeRobot, Healthchecks.io accounts.
+- Staging's basic-auth password was shown in the 4 Oct session; rotate if wanted.
+- Rollback copies on the VM, removable after ~10 Oct: `/root/pre-l3-*`, `/root/pre-l18-*`,
+  `/root/goldenbook.env.pre-open-*`, `moneyplant-pgdata`, `/root/pre-goldenbook-*`.
 
 **Next work, in order:**
-1. **FOUND-06** (rollout states `hidden|internal|staging|available`, so an unfinished adapter cannot reach
-   production), then **FOUND-03** (credential fields set per broker), FOUND-05, TEST-02. All in
-   `BROKER-EXPANSION-PLAN.md`.
-2. **Upstox adapter** against the simulator, merged `hidden`, soaked on staging. UPSTOX-01 is `[~]`: the dossier
-   (`research/UPSTOX-DOSSIER.md`) is written, but CERT-02/03/04 need a real account and Upstox's answer on hosted
-   use. Open facts to settle live: does the app form ask for a static IP; is `average_price` on a carried position
-   the real entry; do `quantity`, `t1_quantity`, `collateral_quantity` overlap.
-3. Finish staging: ST-5 (fault scenarios and the `/_sim` control API; the clock offset exists, nothing exposes it),
-   ST-6 (fixture provenance scan), ST-10 (browser smoke pack), ST-11 (simulator on the laptop), the Paytm leg
-   with no quote, the Alice Blue chain for all 181 underlyings.
-4. Then Dhan and Groww profiles, and the Tier 1 items: L11 cross-user test, C4 limits, L4 terms, A1 risk page,
-   L6 broker guide, the O-items. A1 matters: the local risk page still reads 11 Aug snapshots.
+1. Merge the Upstox PRs, deploy the branch to staging (above), and soak it: connect, reconnect, expiry at 03:30, the
+   funds window 00:00-05:30, empty portfolio. Nothing here needs a real account.
+2. **FOUND-05** (common session outcomes) and **TEST-02** (one contract suite run against every adapter and its
+   simulator profile). Upstox is the first adapter to add to it.
+3. **Dhan** profile in broker-sim, then adapter; then **Groww**. Each starts with a refreshed dossier. Dhan's hosted
+   multi-user question must be answered by Dhan before production.
+4. Remaining staging items: ST-5 (fault scenarios, `/_sim` control API), ST-6, ST-10, ST-11, the Paytm leg with no quote.
+5. With a friend's account: CERT-02 and CERT-03 for Upstox (does the app form ask for a static IP; the three open
+   facts). Then the production flag.
+6. Tier 1 items: L11, C4, L4, A1, L6, the O-items. A1 matters: the local risk page reads 11 Aug snapshots.
 
 ## Current priority revision — 3 Oct 2026 (owner)
 

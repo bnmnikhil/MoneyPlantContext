@@ -281,7 +281,7 @@ noindex, certificate issued. Verified: 401 without credentials, 200 with; ports 
 outside; production unaffected. The Google client is production's, with the staging redirect URI added.
 **Still to verify:** a refused (non-allowlisted) Google sign-in. An allowlisted owner sign-in and the simulated broker connects were done
 4 Oct. Alice Blue's connect needs exactly one pending flow (a repeated click fails until it expires, or the staging backend restarts).
-**Not yet installed on the VM:** the Upstox login path in the Caddy block (in #37).
+**Not yet installed on the VM:** the Upstox login path and `/upstox/*` backend path in the Caddy block, and the `GB_UPSTOX_*` env lines (both in the Upstox adapter branch); staging has not been redeployed since 4 Oct.
 
 **Do** (per D-1 and D-2):
 - Create the VM, or a second service on the existing one.

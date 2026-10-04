@@ -122,7 +122,7 @@ risk but does not replace a real setup observation.
   holdings the required portfolio contract. Model margins, instruments, quotes,
   option chains and basket margins as independent optional providers. Unsupported
   must be explicit; it must never become an empty list or zero by accident.
-- [ ] **FOUND-03 — Generalise credential fields safely.** Replace the fixed
+- [-] **FOUND-03 — Generalise credential fields safely.** *(Deferred 5 Oct 2026: Upstox, Dhan and Groww all use a plain API key plus secret, which the catalogue-driven form and the `{apiKey, apiSecret}` wire body already carry. Only the held-back server-login brokers need arbitrary fields. Revisit with them.)* Replace the fixed
   key/secret UI assumption with definition-driven fields. Keep identifiers in
   cleartext only when required for login; encrypt every secret value; keep all
   secrets write-only in API responses and logs.
@@ -187,14 +187,14 @@ remain the requirement; status lives there.
 - [x] **UPSTOX-02 — Add synthetic simulator fixtures** for authentication,
   positions and holdings before writing the production HTTP adapter. *(4 Oct 2026: `broker-sim` `UpstoxSim`, 41
   tests. Dossier: `research/UPSTOX-DOSSIER.md`; documented shapes, not yet live-verified.)*
-- [ ] **UPSTOX-03 — Implement auth and session handling** through
+- [x] **UPSTOX-03 — Implement auth and session handling** *(5 Oct 2026, `UpstoxSessionService`/`Controller`)* through
   `BrokerAuthProvider`, including state validation and expiry.
-- [ ] **UPSTOX-04 — Implement the portfolio adapter** and map vendor responses into
+- [x] **UPSTOX-04 — Implement the portfolio adapter** *(5 Oct 2026, `broker/upstox`; positions, holdings, equity margins, F&O instrument file)* and map vendor responses into
   canonical DTOs without leaking vendor types outside `broker/upstox`.
-- [ ] **UPSTOX-05 — Add catalogue and Settings UI metadata** with honest capability
+- [x] **UPSTOX-05 — Add catalogue and Settings UI metadata** *(5 Oct 2026; template defaults to `staging`; the Settings UI is catalogue-driven, no frontend change)* with honest capability
   labels and setup instructions.
-- [ ] **UPSTOX-06 — Run unit, shared contract, Postgres integration and browser
-  smoke tests** entirely against synthetic data.
+- [~] **UPSTOX-06 — Run unit, shared contract, Postgres integration and browser
+  smoke tests** *(unit: 29 tests; end to end against broker-sim by hand on 5 Oct. Still missing: the shared contract suite (TEST-02) and the browser smoke pack.)* entirely against synthetic data.
 - [ ] **UPSTOX-07 — Perform a controlled live certification** from a non-whitelisted
   IP, compare response shape with fixtures, then discard credentials and personal
   response data.
