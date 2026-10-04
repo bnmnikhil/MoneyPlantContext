@@ -176,7 +176,7 @@ Kite connect still works after the deploy (one real login).
 
 ### `[~]` ST-3: Simulator core (absorbs SIM-01, SIM-03)
 
-**Built 4 Oct 2026, in its own repo, `broker-sim` (local at `C:\Projects\Moneyplantroker-sim`; no remote yet):** a
+**Built 4 Oct 2026, in its own repo, `broker-sim` (local at `C:\Projects\Moneyplant\broker-sim`; no remote yet):** a
 Maven project (`./mvnw test`). One process on `:8190`, one path prefix per broker
 (`/kite`, `/aliceblue`, `/paytm`).
 - Fake login pages per broker; the redirect carries each broker's own parameters (Kite `request_token` plus the
