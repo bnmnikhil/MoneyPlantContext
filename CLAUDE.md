@@ -10,6 +10,15 @@
 
 ## Where things stand
 
+**Staging and the broker simulator (4 Oct 2026).** `https://staging.goldenbook.in` runs the app on the production
+VM against `broker-sim` (its own repo, `bnmnikhil/broker-sim`: simulated Kite, Alice Blue, Paytm, and Upstox on a
+branch), behind basic auth, with its own Postgres, key and units. `GB_ENVIRONMENT=production|staging|local`
+(default production) is enforced at boot by `BrokerEndpointGuard`: production refuses simulator hosts, staging
+refuses vendor hosts. Kite is plain REST (`KiteHttp`), the SDK is gone. Staging deploys any branch
+(`deploy/staging/deploy-staging.sh`); production deploys `main` only once MoneyPlant #37 is merged. Status and
+next steps: `STAGING.md` and the handoff block in `PUBLIC-LAUNCH.md`. New brokers: `BROKER-EXPANSION-PLAN.md`,
+browser-redirect brokers only (Upstox, Dhan, Groww), `research/UPSTOX-DOSSIER.md`.
+
 **Broker credentials redesigned (30 Sep 2026).** `/app/settings` is now broker
 groups → registration rows → account badges, with one `AddRegistrationPanel`
 replacing both former add paths. It closed three defects, described under

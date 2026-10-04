@@ -84,3 +84,4 @@ below.
 
 - [Free market data options, researched](free-market-data-options-researched.md) — Upstox gives per-strike IV and greeks for ₹0; NSE direct is blocked from the VM and its terms do not cover a product.
 - [NSE SPAN margin parameters](nse-span-margin-parameters.md) — the published scan ranges, exposure rates and sixteen scenarios, with the two σ inputs this stack cannot compute.
+- [Browser-redirect brokers first](browser-redirect-brokers-first.md) — Upstox, Dhan, Groww; server-login brokers held back; friends' accounts for live checks

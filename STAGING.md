@@ -188,7 +188,10 @@ Maven project (`./mvnw test`). One process on `:8190`, one path prefix per broke
 - Pointing the app at it needs only the `GB_*` variables from ST-1, and `SIM_REDIRECT_BASE` on the simulator
   (the app origin the fake login returns to; default `http://localhost:5173`).
 
-**Verified:** 30 simulator tests, including each broker's connect flow over HTTP. Also run end to end on the
+**Upstox** (4 Oct 2026) is on `broker-sim` branch `feature/upstox-profile` (PR #1, 41 tests): standard OAuth, tokens to 03:30 IST,
+funds down 00:00-05:30 IST. Dossier: `research/UPSTOX-DOSSIER.md`.
+
+**Verified:** 31 simulator tests on `main` (41 with Upstox), including each broker's connect flow over HTTP. Also run end to end on the
 laptop: the real app (dev auth, `GB_ENVIRONMENT=local`) connected all three simulated brokers through its own
 `login-url` and callbacks, then served positions, holdings, margins, payoff (spot 26,061.5 agreed between the
 simulated Paytm quote and the Alice Blue chain), option expiries and chain. The app skips a down simulator with
@@ -276,7 +279,9 @@ logs the user out of GoldenBook.
 (`:5442`), `goldenbook-staging` (`:8180`) and `goldenbook-staging-sim` (`:8190`) units, Caddy site with basic auth and
 noindex, certificate issued. Verified: 401 without credentials, 200 with; ports 8180, 8190, 5442 unreachable from
 outside; production unaffected. The Google client is production's, with the staging redirect URI added.
-**Still to verify:** a Google sign-in as an allowlisted tester, and a refused one.
+**Still to verify:** a refused (non-allowlisted) Google sign-in. An allowlisted owner sign-in and the simulated broker connects were done
+4 Oct. Alice Blue's connect needs exactly one pending flow (a repeated click fails until it expires, or the staging backend restarts).
+**Not yet installed on the VM:** the Upstox login path in the Caddy block (in #37).
 
 **Do** (per D-1 and D-2):
 - Create the VM, or a second service on the existing one.
