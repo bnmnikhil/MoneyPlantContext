@@ -347,7 +347,7 @@ The two halves are split by sensitivity: `apiKey`/`appCode` is an identifier tha
 | PUT/DELETE | `/api/broker-credentials/{brokerId}[/{label}]` | Upsert / delete → 204. Both values always required, both trimmed. Omitted label means `default` |
 | GET | `/api/payoff` | `CurveRef[]` — `{connectionId, brokerId, underlying}` per plottable curve |
 | GET | `/api/payoff/{underlying}?connectionId=` | `PayoffResponse` incl. `brokerId`, `connectionId`, `spot` |
-| GET | `/api/debug/instrument?symbol=`, `/api/debug/symbols` | `OptionInstrument`, symbol-model debug |
+| GET | `/api/debug/instrument?symbol=`, `/api/debug/symbols` | `OptionInstrument`, symbol-model debug. **Dev auth only** (C3): the controller is not created without `GB_DEV_AUTH=true`, so production 404s |
 | GET | `/{kite|aliceblue|paytm}/callback` | public by necessity; attributed by nonce. Redirects to `${app.frontend-url}/app`, or `/app?error=…` |
 
 **Frontend mirrors these exactly in `src/types/api.ts`. The TS types are the contract — keep the two in sync.**
