@@ -51,9 +51,11 @@ shares and hide unsupported holdings margin estimates. See `memory/payoff-holdin
 
 **Live at `https://goldenbook.in`** since 3 Oct 2026, 00:05 IST (renamed from MoneyPlant; `REBRAND-GOLDENBOOK.md`). DNS for `goldenbook.in` is at **Hostinger** (A record, no proxy) → OCI static IP `140.245.250.217` → Caddy → `/var/www/goldenbook` for the SPA, `:8080` for the API. `www` 301s to the apex; the old host `moneyplant.bonamnikhilbabu.in` (Cloudflare, grey cloud) **308s** to the new one, so broker apps still registered with the old callback keep working until R11. The VM runs entirely under the new names: `goldenbook` user, `/opt/goldenbook`, `/etc/goldenbook/goldenbook.env` (`GB_*` keys), `goldenbook-postgres` on the `goldenbook-pgdata` volume. **The old `moneyplant-pgdata` volume and `/root/pre-goldenbook-20261002T182814Z` are the rollback copy; remove them after a week of normal running.** Google sign-in and a Kite connect were verified end to end on the new host (access log, 00:10 IST, 3 Oct). Steps 1, 2, 3 (a–d) and 5 are done and deployed.
 
-**`main` deployed 3 Oct 2026** by the R6 migration: `tradestack 36d5f58`, `frontend 03e1091`.
-Read on the host: `flyway_schema_history` shows **V1–V8 all `success`**, validated again at
-startup. **Off-VM backups are still not set up** (no `backup.env`; the backup timer is installed
+**`main` deployed 3 Oct 2026, 14:41 IST:** `tradestack fcc5100`, `frontend 40f0bcc` (L3, C3/C7,
+O4/C2). Read on the host: `flyway_schema_history` shows **V1–V9 all `success`**. **Sign-up has
+been `open` in production since 14:47 IST that day**, by owner decision, ahead of the 9 Oct plan
+and its go/no-go gates (`PUBLIC-LAUNCH.md`). The pre-deploy jar and a database dump are in
+`/root/pre-l3-20261003T1439`. **Off-VM backups are still not set up** (no `backup.env`; the backup timer is installed
 but disabled), so the only copies are the migration's local dump and the old volume. That is
 P0 **D1**; its priority follows the owner's 3 Oct revision in `PUBLIC-LAUNCH.md`.
 
@@ -223,8 +225,8 @@ history data, filling their nullable email at the next verified Google login.
 Disabled rows are refused at the next sign-in; an already open web session lasts
 until midnight IST (no per-request check, by owner decision). Login upserts preserve creation time,
 disabled state and the terms fields reserved for L4. Dev auth continues to bypass
-Google/admission on loopback. Production still uses its existing allowlist; no
-enablement or fresh public-account verification has been performed. See
+Google/admission on loopback. Production runs `open` since 3 Oct 2026, 14:47 IST; a new
+Google account registered there at 14:51. See
 `tradestack/docs/google-signup.md` and `memory/google-signup-modes.md`.
 
 - **Google sign-in is off locally: `GB_DEV_AUTH=true`.** `auth/DevAuthConfig` replaces `SecurityConfig` (both `@ConditionalOnProperty` on that flag, opposite values), signs every request in as a fixed `DefaultOidcUser` inside a real `OAuth2AuthenticationToken`, and permits every path — so no `GOOGLE_CLIENT_ID`, redirect URI, network or allowlist entry is needed to run. The principal shape is identical to Google's, so `CurrentUser`, `AuthController` and CSRF are untouched. **`GB_DEV_USER_ID` is the Google `sub` and is load-bearing** — `broker_credential`, connection ids and session ownership all key off it; it is set to `110150585954237860845` in the user environment, the sub already in the local database, so the broker credentials there keep working. **It refuses to start unless `app.frontend-url` is loopback**, and `AllowedEmails` skips its empty-list startup failure while it is on. Both set with `setx`, so only new processes see them. Why, in `memory/dev-auth-bypasses-google-locally.md`.

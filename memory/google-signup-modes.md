@@ -42,8 +42,9 @@ The local loopback dev-auth bypass stays outside Google admission and requires n
 app-user row. CSRF/logout, session fixation protection, midnight expiry, broker
 ownership and `/api/me`'s existing shape stay intact.
 
-**Local code is not production enablement.** No deployment or production/Google
-Console setting is changed. Before claiming public signup, verify the External
+**Enabled in production 3 Oct 2026, 14:47 IST**, by the owner, six days ahead of the
+9 Oct plan; a new account registered at 14:51. The Google Console setting was not
+changed by this work. Before claiming that any Google account can sign up, verify the External
 audience and public redirect with fresh personal and Workspace accounts, and
 complete L5's Production/branding work. Google's current docs describe a
 basic-identity exception for `openid,email,profile` in Testing; do not infer a
