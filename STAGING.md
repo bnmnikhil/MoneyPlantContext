@@ -106,8 +106,8 @@ The VM today: 1 OCPU, 7 GB RAM, aarch64. The always-free allowance is 4 OCPU / 2
 - **D-2 Access:** `staging.goldenbook.in` behind Caddy **basic auth** plus `noindex`,
   with real Google sign-in in **allowlist** mode for testers. Dev auth is deliberately
   impossible off loopback.
-- **D-3 Simulator location:** a separate Maven module, `broker-sim/`, in the `MoneyPlant`
-  repo, built and run separately. It is **never** inside the app jar, and a check on the
+- **D-3 Simulator location:** its own repository, `broker-sim` (changed from a module in the `MoneyPlant` repo,
+  4 Oct 2026), built and run separately. It is **never** inside the app jar, and a check on the
   app jar enforces that.
 - **D-4 Kite:** replace the SDK with our own Kite REST client (ST-2, option 1).
 
@@ -176,8 +176,8 @@ Kite connect still works after the deploy (one real login).
 
 ### `[~]` ST-3: Simulator core (absorbs SIM-01, SIM-03)
 
-**Built 4 Oct 2026, branch `staging/st3-broker-sim` (tradestack), not yet reviewed:** `broker-sim/`, a separate
-Maven project (`./mvnw -f broker-sim/pom.xml test`). One process on `:8190`, one path prefix per broker
+**Built 4 Oct 2026, in its own repo, `broker-sim` (local at `C:\Projects\Moneyplantroker-sim`; no remote yet):** a
+Maven project (`./mvnw test`). One process on `:8190`, one path prefix per broker
 (`/kite`, `/aliceblue`, `/paytm`).
 - Fake login pages per broker; the redirect carries each broker's own parameters (Kite `request_token` plus the
   `redirect_params` state; Alice Blue `authCode` + `userId`, no state; Paytm `requestToken` + `state`).
