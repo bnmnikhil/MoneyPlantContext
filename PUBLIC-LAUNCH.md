@@ -133,7 +133,7 @@ week after.
 | L10 | Release integration: merge, deploy `main`, verify Flyway V5–V8 in prod | 1 · release | `[~]` |
 | L11 | Cross-user data isolation test on production | 1 · security | `[ ]` |
 | L12 | Security review of the launch diff + dependency audit | 1 · security | `[ ]` |
-| L18 | Spot cache shared across users: one user's broker quote served to another | 1 · terms | `[ ]` |
+| L18 | Spot and chain: own brokers first, then a flagged admin feed; never another user's | 1 · terms | `[~]` |
 | L13 | Capacity: resize the VM to the free 4 OCPU / 24 GB, set JVM heap, smoke-load | 2 · ops | `[ ]` |
 | L14 | `raw_capture` growth: measure per user/day, add retention | 2 · ops | `[ ]` |
 | L15 | Incident runbook: breach, key rotation, disabling sign-up | 2 · ops | `[ ]` |
@@ -425,7 +425,7 @@ settings with open sign-up in mind.
 
 **Verify:** findings fixed, or recorded here with a reason.
 
-### `[ ]` L18 — The spot cache crosses users
+### `[~]` L18 — The spot cache crosses users
 
 Found 2 Oct while drafting L1. `SpotPriceService` fetches over the **caller's own**
 session, but its 5 s cache is keyed by underlying alone, deliberately shared ("one quote
@@ -440,6 +440,75 @@ user per 5 s burst, which is negligible.
 
 **Verify:** a unit test with two users, where only the first has a Paytm session: the
 second gets 0 (no spot), never the first user's cached price.
+
+**Redesigned 3 Oct 2026 (owner): own data first, then an admin feed.** The decision and
+its accepted risk are in `memory/shared-market-data-fallback.md`. Kite's free Personal
+tier gives no quotes, so most users have no spot of their own, and for up to about 50
+users the owner chooses an admin-account fallback over showing nothing. A paid data
+subscription replaces it later.
+
+Resolution, per request:
+
+- **Spot:** the user's own Paytm live price, then the user's own Alice Blue chain
+  `spotLTP`, then the user's own Kite LTP (only if their app has paid market data). Then
+  the **admin feed** (the admin's Paytm, then the admin's Alice Blue). Otherwise **none**:
+  the screen says so, and the builder asks for a level.
+- **Option chain:** the user's own Alice Blue, then the admin's Alice Blue.
+- **Never invented.** `PayoffService.defaultSpotFor` (BANKNIFTY 52000, RELIANCE 3000, …)
+  is deleted. Today it silently prices every builder simulation for a user without
+  Paytm.
+
+Guard rails on the admin feed:
+
+1. `GB_ADMIN_MARKET_DATA=on|off`, **default off**: one restart cuts it.
+2. A narrow `MarketDataAccount`, keyed by `GB_MARKET_DATA_USER_ID` (the admin's Google
+   sub), that offers spot and chain only. It never goes through `BrokerService`'s
+   per-user resolution and can never read positions, holdings, margins or credentials.
+   An ArchUnit rule keeps it inside `marketdata/`.
+3. The admin's connection id, which contains their Google sub, never reaches a response
+   or a warning; the source is labelled `shared`.
+4. One shared cache **for admin-sourced data only** (spot 5 s, chain 30 s), so the admin
+   account costs about one call per underlying per window rather than one per user.
+   Data from a user's own connections stays cached per user.
+5. Per-user limits on admin-sourced chain requests (with C4).
+6. Every spot carries its source in the UI: "your Paytm" vs "GoldenBook shared feed".
+7. Daily counts of admin-sourced vs own-sourced lookups, with no user ids, for the
+   17–24 Oct L1 review and for sizing a subscription.
+8. Recommended: the feed runs on a **separate, unfunded** Alice Blue or Paytm account,
+   not the owner's trading account.
+
+Operations: the admin logs in each trading morning before 09:15 (Paytm takes a
+password and an OTP). A dead admin session degrades to "no spot", never to a borrowed
+user's price. Exit to a paid vendor at about 50 users, on a broker objection, or once
+there is revenue.
+
+Phases:
+
+1. **Core:** per-user cache, `defaultSpotFor` deleted, the Alice Blue chain as a spot
+   source, a source on every spot, and the two-user test above.
+2. **Admin feed:** `MarketDataAccount`, the flag, the shared admin-only cache, the
+   `shared` label and the ArchUnit rule.
+3. **Builder chain fallback** to the admin's Alice Blue.
+4. `spot_snapshot.kind` and `.source` (V10), plus the usage counters.
+5. The Kite paid-data probe and manual spot entry.
+
+**Phase 1 in review, 3 Oct 2026:** MoneyPlant #34 + MoneyPlantFrontend #28 (deploy
+together).
+- The cache is keyed by `(userId, underlying)`.
+- The Alice Blue chain is a spot source.
+- The live payoff carries `spotSource`, shown as "Current spot · Paytm Money".
+- `defaultSpotFor` is deleted; `/simulate` without a spot answers 422.
+- Two-user tests pass, and fail if the shared key is restored. 511 backend tests and 78
+  frontend tests pass.
+
+The cross-user leak closes when this is deployed.
+
+**Verify (whole item):**
+- Two users, the first with Paytm. With the feed off, the second gets none; with it on,
+  the second gets the admin's price labelled `shared`. Never the first user's price.
+- No response carries the admin's connection id.
+- The admin session cannot serve positions.
+- With no source at all, the builder refuses to estimate rather than inventing a level.
 
 ## Tier 2: new items
 
