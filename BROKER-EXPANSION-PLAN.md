@@ -122,7 +122,7 @@ risk but does not replace a real setup observation.
   holdings the required portfolio contract. Model margins, instruments, quotes,
   option chains and basket margins as independent optional providers. Unsupported
   must be explicit; it must never become an empty list or zero by accident.
-- [-] **FOUND-03 — Generalise credential fields safely.** *(Deferred 5 Oct 2026: Upstox, Dhan and Groww all use a plain API key plus secret, which the catalogue-driven form and the `{apiKey, apiSecret}` wire body already carry. Only the held-back server-login brokers need arbitrary fields. Revisit with them.)* Replace the fixed
+- [x] **FOUND-03 — Generalise credential fields safely.** *(6 Oct 2026, MoneyPlant #40 + frontend #33. Deferred on 5 Oct on the reading that all three target brokers take a key plus a secret; Dhan's login needs the user's own client id, so it landed as the narrow form: an optional `clientId` identifier (V10, nullable, stored and shown in the clear), declared per broker in the catalogue and enforced by the credential controller. Fully arbitrary fields remain a job for the held-back server-login brokers.)* Replace the fixed
   key/secret UI assumption with definition-driven fields. Keep identifiers in
   cleartext only when required for login; encrypt every secret value; keep all
   secrets write-only in API responses and logs.
@@ -139,6 +139,8 @@ risk but does not replace a real setup observation.
   price, realised/unrealised P&L, product, exchange, instrument type, settled/T1
   and pledged-quantity behavior. Missing vendor facts remain missing rather than
   becoming zero.
+
+- [ ] **HOLD-PRICE — Let a holding say its price is unknown.** *(Raised 6 Oct 2026 by Dhan, which sends no price on holdings and quotes only on a paid Data API plan.)* Add `priceKnown` to `HoldingDto` (the eight-argument constructor defaults it true), set it false where a gateway had no mark, and carry it through the holdings table, the per-account totals and the overview (a dash, and a partial-total marker, as premium already does). Until it lands an unpriced Dhan holding reports zeros, never a loss computed from a missing mark. **Gates `GB_ROLLOUT_DHAN=available`.**
 
 ### Foundation acceptance criteria
 
@@ -212,7 +214,7 @@ soak → production flag.
 
 1. **Kotak Neo** — highest-confidence second adapter and a check that the pilot
    did not accidentally encode Upstox OAuth details.
-2. **Dhan** — only after the partner/use-model gate passes.
+2. **Dhan** — only after the partner/use-model gate passes. *(6 Oct 2026: dossier `research/DHAN-DOSSIER.md`; broker-sim profile #2; adapter MoneyPlant #41, staging-only, verified end to end against the simulator. Production waits on the gate, on HOLD-PRICE, and on a live account settling the open facts.)*
 3. **FYERS** — exercise its explicit data-only app mode and daily authentication.
 4. **Groww** — only after no-IP activation and portfolio calls are observed.
 5. **Motilal Oswal** — only after portal and hosted-use confirmation.
