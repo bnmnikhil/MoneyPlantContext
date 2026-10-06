@@ -13,6 +13,39 @@ SIM and pilot phases) and `research/BROKER-LAUNCH-SHORTLIST.md`; the original
 draft is in git history. When an item below is picked up, move it into the
 tracker that will own it and delete it here.
 
+## Owner ideas, to triage
+
+Captured as the owner states them, dated. Each is moved into the tracker that will own it
+(and deleted here) when it is picked up. Notes under an item are the assistant's mapping to
+existing work, not the owner's words.
+
+### 1. An application dashboard (6 Oct 2026)
+
+> "we have to add dashboard where i can check our application status, stats, health,
+> resource utilisation and several other parameters."
+
+**Mostly planned already, none of it started.** `OBSERVABILITY.md` has the stack decided
+(2 Oct): O1 the health endpoint, O9 the metrics catalogue (Actuator and Micrometer),
+O10 Prometheus, Grafana and `node_exporter` on the VM (loopback only, reached through an
+SSH tunnel), O11 the dashboards as provisioned JSON (Overview, Brokers, Host: up/down,
+request rate, p95 latency, 5xx and ERROR rate, sign-ins, live sessions, CPU, memory,
+disk and its forecast, JVM heap, Hikari pool, DB size), O12 alert rules to Telegram.
+
+**To settle when this is picked up** (the owner said "several other parameters" without
+listing them):
+- Which parameters beyond O11's list. Candidates the assistant would raise, since the
+  product has changed since 2 Oct: **per-broker connect success and failure counts**
+  (there are now five brokers, two uncertified, and a failed connect is what to watch
+  first), live sessions per broker, how many users and sign-ups, token-expiry and
+  reconnect rates, the Alice Blue and Dhan "more than one pending connect" refusals, and
+  how stale the contract masters are.
+- **Staging shares the VM**, so the Host dashboard must show production and staging
+  separately (memory, CPU), or a staging build will look like a production incident.
+- Who can see it: the existing design is loopback plus an SSH tunnel. A public or
+  team-visible dashboard would need an authenticated route and is a different decision.
+- Sequence: O1 and O2 (health endpoint, external uptime and Telegram) are the cheap start
+  and the launch floor; the dashboard proper is O9 to O11.
+
 ## Testing for agents
 
 `TESTING.md` and `scripts/verify.ps1` are the entry point (old TEST-01 to
