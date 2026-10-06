@@ -90,7 +90,7 @@ context repo; publish with `scripts/publish-docs.ps1`, manual for now). Its Cadd
 - L18 phase 2: which account runs the admin feed, and its Google sub (`GB_MARKET_DATA_USER_ID`).
 - L5: is the Google consent screen in Testing? E1/E2/E4/E6 legal placeholders; R4 mailbox; L13 free VM resize (staging
   shares the VM, and a staging build briefly timed out SSH); O2/O3 Telegram, UptimeRobot, Healthchecks.io accounts.
-- Staging's basic-auth password was shown in the 4 and 6 Oct sessions; rotate if wanted.
+- Staging's basic-auth login (it also fronts the docs site at `/docs/`) was changed on 6 Oct, at the owner's request, to a deliberately short one; the old password had been shown in chat. It is in `/root/staging-basic-auth.txt` on the VM. **It is weak and Caddy does not rate-limit**, so strengthen it before the docs or staging hold anything sensitive (regenerate with `setup-staging.sh`'s method: write `STAGING_BASIC_USER` and a `caddy hash-password` hash to `/etc/caddy/staging.env`, then restart Caddy).
 
 **Next work, in order:**
 1. **Live certification of Upstox, then Dhan**, now the top priority because real users can connect. Method: the laptop
