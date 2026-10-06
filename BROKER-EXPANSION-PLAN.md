@@ -197,10 +197,10 @@ remain the requirement; status lives there.
   labels and setup instructions.
 - [~] **UPSTOX-06 — Run unit, shared contract, Postgres integration and browser
   smoke tests** *(unit: 29 tests; end to end against broker-sim by hand on 5 Oct. Still missing: the shared contract suite (TEST-02) and the browser smoke pack.)* entirely against synthetic data.
-- [ ] **UPSTOX-07 — Perform a controlled live certification** from a non-whitelisted
+- [ ] **UPSTOX-07 — Perform a controlled live certification** *(Now the top open item: Upstox went live to all users on 6 Oct 2026 before this. Do it on the laptop in `GB_ENVIRONMENT=local` with a `localhost` redirect.)* from a non-whitelisted
   IP, compare response shape with fixtures, then discard credentials and personal
   response data.
-- [ ] **UPSTOX-08 — Soak in staging** through token expiry, reconnect, empty
+- [x] **UPSTOX-08 — Soak in staging** *(6 Oct 2026: the owner connected it on staging and confirmed it works; token expiry and the funds window were verified in the simulator's tests, not yet over a real day on staging.)* through token expiry, reconnect, empty
   portfolio and vendor-error scenarios before enabling production availability.
 
 Review the pilot before copying it. Amend the common contracts, simulator and

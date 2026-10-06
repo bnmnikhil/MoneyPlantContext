@@ -10,14 +10,18 @@
 
 ## Where things stand
 
-**Staging and the broker simulator (4 Oct 2026).** `https://staging.goldenbook.in` runs the app on the production
-VM against `broker-sim` (its own repo, `bnmnikhil/broker-sim`: simulated Kite, Alice Blue, Paytm, and Upstox on a
-branch), behind basic auth, with its own Postgres, key and units. `GB_ENVIRONMENT=production|staging|local`
-(default production) is enforced at boot by `BrokerEndpointGuard`: production refuses simulator hosts, staging
-refuses vendor hosts. Kite is plain REST (`KiteHttp`), the SDK is gone. Staging deploys any branch
-(`deploy/staging/deploy-staging.sh`); production deploys `main` only once MoneyPlant #37 is merged. Status and
-next steps: `STAGING.md` and the handoff block in `PUBLIC-LAUNCH.md`. New brokers: `BROKER-EXPANSION-PLAN.md`,
-browser-redirect brokers only (Upstox, Dhan, Groww), `research/UPSTOX-DOSSIER.md`.
+**Staging and the broker simulator (4-6 Oct 2026).** `https://staging.goldenbook.in` runs the app on the production
+VM against `broker-sim` (its own repo, `bnmnikhil/broker-sim`: simulated Kite, Alice Blue, Paytm, Upstox and Dhan),
+behind basic auth, with its own Postgres, key and units. `GB_ENVIRONMENT=production|staging|local` (default production)
+is enforced at boot by `BrokerEndpointGuard`: production refuses simulator hosts, staging refuses vendor hosts. Kite is
+plain REST (`KiteHttp`), the SDK is gone. Staging deploys any branch (`deploy/staging/deploy-staging.sh`); production
+deploys `main` only. **Rollout state (FOUND-06):** every broker has `hidden < internal < staging < available`, usable in
+`local < staging < production`, set by a template default and overridden by `GB_ROLLOUT_<BROKER>`; it is enforced in the
+catalogue, the credential and connect paths and `ConnectionService`. **Upstox and Dhan are live in production, switched
+on for everyone on 6 Oct 2026 before any live-account certification**, so their mappings are unverified
+(`research/UPSTOX-DOSSIER.md`, `research/DHAN-DOSSIER.md`). A registration can carry an optional `clientId` (FOUND-03,
+V10), which Dhan requires. Status and next steps: `RELEASE-ADAPTERS-PLAN.md`, `BROKER-EXPANSION-PLAN.md`, `STAGING.md`
+and the handoff block in `PUBLIC-LAUNCH.md`.
 
 **Broker credentials redesigned (30 Sep 2026).** `/app/settings` is now broker
 groups → registration rows → account badges, with one `AddRegistrationPanel`

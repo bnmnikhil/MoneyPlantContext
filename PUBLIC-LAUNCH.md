@@ -11,86 +11,100 @@ Status markers are `P0-LAUNCH.md`'s (`[ ]` `[~]` `[x]` `[-]`), with the same rul
 only after the verification line has actually been run.** Branch names carry the id
 (`launch/l3-open-signup`).
 
-## Session handoff: status on 6 Oct 2026
+## Session handoff: status at the end of 6 Oct 2026
 
 Start the next session here. Replace this block rather than appending to it.
 
-**Production** runs `main` as of **6 Oct 2026, 20:43 IST** (backend `5ea7af6`, frontend `3fc1481`; FOUND-06, FOUND-03,
-the Upstox and Dhan adapters, LAND-06), **Flyway V1-V10**, sign-up `open`. **Upstox and Dhan were switched on for
-everyone at 20:58 IST** by the owner, ahead of every gate in `RELEASE-ADAPTERS-PLAN.md` Phase 2: boot line
+**Production** runs `main` as of **6 Oct 2026, 20:43 IST**: backend `5ea7af6`, frontend `3fc1481`, **Flyway V1-V10**,
+sign-up `open`. That build carries FOUND-06 (rollout states), FOUND-03 (an optional client id on a registration), the
+**Upstox and Dhan adapters** and the landing-page change (LAND-06). **At 20:58 IST the owner switched Upstox and Dhan on
+for everyone**, ahead of every Phase 2 gate in `RELEASE-ADAPTERS-PLAN.md`: boot line
 `aliceblue=available, dhan=available, kite=available, paytm=available, upstox=available`
-(`GB_ROLLOUT_UPSTOX` and `GB_ROLLOUT_DHAN` in `/etc/goldenbook/goldenbook.env`; remove a line and restart to switch
-that broker off). **Neither broker has met a live account**, so their figures are unverified (Upstox `average_price`
-and holdings quantities; Dhan `costPrice`, `totalQty`, and unpriced holdings showing zeros for users without Dhan's
-data plan). Production's pre-release copy is `/root/pre-release-20261006T151130Z` on the VM (dump, jar, site, env); the
-dump was **not** copied off the VM. Kite's REST client (ST-2) has been live since 4 Oct; **the owner has not yet
-confirmed Kite's figures against GoldenBook's, nor the reconnect banner.** The landing page and the privacy and terms
-pages still name only the original three brokers.
+(`GB_ROLLOUT_UPSTOX` and `GB_ROLLOUT_DHAN` in `/etc/goldenbook/goldenbook.env`; remove a line and restart to switch that
+broker off; stored sessions survive and return). Health after the flip: no errors since boot, 10.9 s start, 6.5 GB free.
 
-**Merged to `main` and in production:** staging (context #20, broker-sim #1, frontend #29/#30, MoneyPlant #37) and **FOUND-06**
-(MoneyPlant #38: rollout states `hidden < internal < staging < available`, enforced in the catalogue, the credential
-and connect paths, and `ConnectionService`; `GB_ROLLOUT_<BROKER>` overrides a template default).
+**Neither new broker has ever met a live account.** Every shape is from the published reference, and the figures are
+unverified in exactly these places, each pinned by a test that names it:
+- **Upstox** (`UpstoxRawMapperTest`): `average_price` as the real entry (Alice Blue's is not); `quantity`, `t1_quantity`
+  and `collateral_quantity` as disjoint and summed; the margin block has no collateral figure.
+- **Dhan** (`DhanRawMapperTest`): `costPrice` as the real entry; `totalQty` as the whole holding and `collateralQty` as
+  its pledged part; the instrument file's date format. **Holdings carry no price and prices need Dhan's paid Data API
+  (Rs 499 plus tax a month per user), so for a user without it Dhan holdings show zeros** (never a loss); positions
+  show Dhan's own profit but no live mark. **HOLD-PRICE** (a `priceKnown` on `HoldingDto` and the holdings screens)
+  was the production gate for Dhan and was skipped.
+- Both: the static-IP gate (does the app form ask for one), hosted multi-user terms (CERT-04), the real error bodies.
+  Dhan's callback is attributed by "exactly one pending connect" because its redirect carries only a `tokenId`.
+All in `research/UPSTOX-DOSSIER.md` and `research/DHAN-DOSSIER.md`.
 
-**Open PRs, in this order** (the three adapter-side ones are stacked, so merge in order):
-1. MoneyPlant **#39** + frontend **#31**: the **Upstox adapter** (staging-only; verified end to end against broker-sim).
-2. MoneyPlant **#40** + frontend **#33**: **FOUND-03**, an optional client id beside the key and secret (V10, nullable
-   `client_id`; the catalogue says which brokers ask for one; backend 550 tests).
-3. MoneyPlant **#41** + frontend **#34**: the **Dhan adapter** (staging-only). **625 backend tests and 84 frontend on the
-   combined branch.**
-4. broker-sim **#2**: the Dhan profile (57 tests). Context **#21** (the 5 Oct handoff) and **#22** (Dhan dossier), plus
-   this PR, which supersedes the handoff in #21.
+**Watch the first real connects:** `ssh ... "sudo journalctl -u goldenbook --no-pager --since '-1 day' | grep -iE
+'upstox|dhan'"`. A failed connect logs `upstox callback failed` or `dhan callback failed` with the cause.
 
-**Staging** (`https://staging.goldenbook.in`, basic auth, on the production VM) still runs the **Upstox branch of
-5 Oct**, deployed and passing its boot checks. **A first Upstox connect there failed because the saved key and secret
-did not pair** (the simulator needs key `sim_X` with secret `sim_secret_X`; the saved key was `sim_secret_`). That is a
-user entry error, not a bug; the owner was asked to re-enter `sim_up` / `sim_secret_up`. **Not yet confirmed working in
-the browser.** Staging has not been redeployed with Dhan: it needs `GB_DHAN_*` in
-`/etc/goldenbook-staging/goldenbook.env` and the updated `deploy/Caddyfile` (adds `/dhan/*` and `/sim/dhan/auth/login/*`),
-validated on the VM's Caddy 2.6.2 first. The Caddy file on the VM has the Upstox lines already.
+**Merged and in production:** staging (context #20, broker-sim #1, frontend #29/#30/#32, MoneyPlant #37), FOUND-06
+(#38 and #30), and on 6 Oct the whole stack via MoneyPlant #41 and frontend #34: Upstox (#39, #31), FOUND-03 (#40, #33),
+Dhan (#41, #34). Gates on the merged code: backend 626 (the VM ran them before swapping the jar), frontend 84, broker-sim 57.
 
-**The Dhan adapter** (`broker/dhan`). Login is three steps: a server `generate-consent` (needs the user's own Dhan
-**client id**, now a registration field), the browser login, a server `consume`. The redirect carries only a `tokenId`,
-so the callback is attributed by the exactly-one-pending-flow rule (Alice Blue's). `login-url` now cancels the flow it
-minted if building the URL fails. Errors are classified on Dhan's **error code** (DH-901, 807/808/809 mean reconnect),
-not the HTTP status, which Dhan does not document. **Holdings and positions carry no price**; prices need Dhan's paid
-Data API (Rs 499 plus tax a month per user). Without it, positions arrive unpriced and their profit is still Dhan's own
-figure; holdings report zeros. **HOLD-PRICE must land before `GB_ROLLOUT_DHAN=available`:** `HoldingDto` cannot yet say
-"price unknown" (DTO plus the holdings screens). Open facts, each pinned by a test that names it: `costPrice` as the real
-entry; `totalQty`/`collateralQty` as total and pledged; the instrument file's date format; the static-IP gate; hosted
-terms (Dhan's partner programme is the clean route); whether the redirect can carry state. See `research/DHAN-DOSSIER.md`.
+**Open PRs:** broker-sim **#2** (the Dhan profile, 57 tests; staging already runs it from its branch, production does
+not use it) and context **#23**, which carries #21 (the 5 Oct handoff) and #22 (the Dhan dossier), so merging #23 covers
+all three. Both are docs or simulator only.
 
-**Broker count:** 3 live (Kite, Alice Blue, Paytm), 2 built and staging-only (Upstox, Dhan), 2 more planned in the
-approved order (Groww, then FYERS and 5paisa, whose login types are unchecked), 2 on hold (Kotak Neo, Motilal Oswal).
+**Staging** (`https://staging.goldenbook.in`, basic auth, on the production VM) runs the merged `main` of both repos and
+the simulator's `feature/dhan-profile` branch. **The owner connected Upstox and Dhan there and confirmed both work**
+(6 Oct). Dhan needs three registration fields: key `sim_dh`, secret `sim_secret_dh`, and a client id that is one of the
+simulated accounts (`SIM001`-`SIM005`; `SIM004` and `SIM005` have a data plan). Upstox: key `sim_up`, secret
+`sim_secret_up`. Alice Blue and Dhan both need exactly one pending connect: a second click fails until the first
+expires (10 minutes) or the staging backend restarts. The Caddy file on the VM already has every staging and
+production path (`/upstox/*`, `/dhan/*`, the `/sim/...` login pages).
 
-**Decisions (owner, 4-6 Oct):** browser-redirect brokers only (Upstox, Dhan, Groww); server-login brokers held back;
-live checks use friends' accounts, later; FOUND-03 reversed to **done** because Dhan needs a client id; build Dhan
-despite the paid Data API.
+**Small things found, not fixed:**
+- The staging units show `failed` when stopped, because Java exits 143 on SIGTERM. Cosmetic; add
+  `SuccessExitStatus=143` to `goldenbook-staging.service`, the sim unit and probably `goldenbook.service`.
+- On the 6 Oct production deploy, `deploy.sh`'s "backend is up" line did not print although the app was up and
+  answering 401. Probably a timing gap in its wait loop.
+- A merge commit once swept `.mcp.json` and the JVM crash dumps in `tradestack/` into a commit (caught and amended
+  before pushing). **Never `git add -A` in `tradestack/`**; add `src deploy` by name. They are still untracked there.
+- `deploy.sh` and a staging deploy both run the full test suite unthrottled on the single core; do either outside market
+  hours and stop staging for a production build.
 
-**Waiting on the owner (carried over):**
-- Merge the PRs above; re-enter the Upstox registration on staging (`sim_up` / `sim_secret_up`) and retry.
-- Compare Kite's figures with GoldenBook's; check the reconnect banner after the token expires.
+**Production's backups are still disabled** (the timer is off, no `backup.env`): there is no off-VM copy of anything.
+The pre-release copy for this deploy is `/root/pre-release-20261006T151130Z` on the VM (dump, jar, site, env) and was
+**not** copied off. Older rollback copies, removable after ~10 Oct: `/root/pre-l3-*`, `/root/pre-l18-*`,
+`/root/goldenbook.env.pre-open-*`, `moneyplant-pgdata`, `/root/pre-goldenbook-*`.
+
+**Broker count:** 5 live (Kite, Alice Blue, Paytm, Upstox, Dhan; the last two uncertified), 2 more planned in the
+approved order (Groww, then FYERS and 5paisa, whose login types are unchecked), 2 on hold (Kotak Neo, Motilal Oswal:
+their logins pass the user's secrets through GoldenBook). Angel One waits on a portal check.
+
+**Decisions (owner, 4-6 Oct):** browser-redirect brokers only; server-login brokers held back; live checks use friends'
+accounts, later; FOUND-03 as the narrow optional client id; build Dhan despite the paid Data API; **enable both new
+brokers for everyone straight away**, skipping the certification gates.
+
+**Waiting on the owner:**
+- Compare Kite's figures with GoldenBook's (ST-2) and check the reconnect banner after a token expires.
+- Copy the pre-release dump off the VM, or say it can wait.
+- Merge broker-sim #2 and context #23.
 - Old goldenbook/caddy lines in rotated `/var/log/syslog.*`: delete or strip, or let them age out by ~8 Nov.
 - The leftover exited `nginx` container: remove or keep.
 - L18 phase 2: which account runs the admin feed, and its Google sub (`GB_MARKET_DATA_USER_ID`).
 - L5: is the Google consent screen in Testing? E1/E2/E4/E6 legal placeholders; R4 mailbox; L13 free VM resize (staging
-  shares the VM); O2/O3 Telegram, UptimeRobot, Healthchecks.io accounts.
+  shares the VM, and a staging build briefly timed out SSH); O2/O3 Telegram, UptimeRobot, Healthchecks.io accounts.
 - Staging's basic-auth password was shown in the 4 and 6 Oct sessions; rotate if wanted.
-- Rollback copies on the VM, removable after ~10 Oct: `/root/pre-l3-*`, `/root/pre-l18-*`,
-  `/root/goldenbook.env.pre-open-*`, `moneyplant-pgdata`, `/root/pre-goldenbook-*`.
 
 **Next work, in order:**
-1. Follow `RELEASE-ADAPTERS-PLAN.md`: merge the stack, deploy the Dhan branch to staging (above), and soak Upstox and Dhan together: connect, reconnect,
-   expiry (Upstox 03:30, Dhan 24 hours from issue, Dhan renewable), the Upstox funds window 00:00-05:30, an account
-   with and without a data plan. Nothing here needs a real account.
-2. **HOLD-PRICE**: `priceKnown` on `HoldingDto` and the holdings, overview and risk screens (dash, partial-total marker,
-   like premium). Gates Dhan's production flag.
-3. **FOUND-05** (common session outcomes) and **TEST-02** (one contract suite run against every adapter and its
-   simulator profile; Upstox and Dhan are the first two to add).
-4. **Groww** profile in broker-sim, then adapter; start with a refreshed dossier (its API costs Rs 499 a month, and
-   its read-without-IP behaviour is unproven). Then FYERS and 5paisa: check their login types first.
-5. Remaining staging items: ST-5 (fault scenarios, `/_sim` control API), ST-6, ST-10, ST-11, the Paytm leg with no quote.
-6. With a friend's account: CERT-02/03 for Upstox and Dhan (does the app form ask for a static IP; the open facts).
-   Then each production flag.
+1. **Live certification of Upstox, then Dhan**, now the top priority because real users can connect. Method: the laptop
+   in `GB_ENVIRONMENT=local` with dev auth (it accepts vendor hosts and shows every broker), the owner's or a friend's
+   real account, and a `localhost` redirect URL registered at the broker (both accept one). Settle the open facts
+   above, fix any mapper and test that turns out wrong, and ship that fix to production. Also CERT-02 (does the app
+   form ask for a static IP) and CERT-04 (hosted use; Dhan's partner programme is the clean route).
+2. **User-facing copy**: the landing page, the privacy and terms pages and the broker guide (L6) still name only the
+   original three. The Dhan section must say TOTP is required, the API key lasts 12 months, and live prices need the
+   paid Data API. Registered redirect URLs are `https://goldenbook.in/upstox/callback` and `/dhan/callback`.
+3. **HOLD-PRICE**, and decide whether to keep Dhan on for users without a data plan until it lands.
+4. **Backups (D1)**: at least a scheduled dump copied off the VM. Then the Kite comparison.
+5. **FOUND-05** (common session outcomes) and **TEST-02** (one contract suite across every adapter and its simulator
+   profile; Upstox and Dhan are the first two). Then **Groww** (dossier first; its API costs Rs 499 a month and its
+   read-without-IP behaviour is unproven), then FYERS and 5paisa (check login types first).
+6. Remaining staging items: ST-5 (fault scenarios and the `/_sim` control API), ST-6, ST-10, ST-11, the Paytm leg with
+   no quote.
 7. Tier 1 items: L11, C4, L4, A1, L6, the O-items. A1 matters: the local risk page reads 11 Aug snapshots.
 
 ## Current priority revision — 3 Oct 2026 (owner)
