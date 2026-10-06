@@ -68,6 +68,12 @@ signed into, connected to simulated brokers and broken on purpose at any hour.
   `sim_secret_`.
 - A visible **STAGING banner** and an amber favicon mark every page.
 
+## The documentation site
+
+These docs are served on the staging host at `/docs/`, behind its basic auth, from `/var/www/goldenbook-docs`.
+`scripts/publish-docs.ps1` in the context repository builds and publishes them; see
+[Maintaining the docs](../contributing.md).
+
 ## Broker rollout flags
 
 Each broker is `hidden`, `internal`, `staging` or `available` per environment. To switch one on or off in an

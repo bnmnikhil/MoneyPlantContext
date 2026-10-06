@@ -51,7 +51,7 @@ listing them):
 > "we have to add documentation on business logics, technical flows, architecture, and
 > plan for new items in some clean tool, like jira, confluence or notion, suggest something."
 
-**Not decided; the assistant's recommendation is below and awaits the owner's choice.** The
+**Decided and started (6 Oct 2026): git stays the source of truth, with a MkDocs Material site over it, hosted on the VM at `https://staging.goldenbook.in/docs/` behind basic auth and published by `scripts/publish-docs.ps1`.** The pages are in `docs/`. Still open: a board over the trackers (GitHub Projects), a dedicated host, an automatic publish, and more diagrams. The original recommendation follows. The
 substance already exists and is current, in git: `CLAUDE.md` (code truth), `SPEC.md`, the ADRs
 in `tradestack/docs/adr/`, `memory/` (the reasoning), the per-broker dossiers, the trackers
 (`PUBLIC-LAUNCH.md`, `BROKER-EXPANSION-PLAN.md`, `STAGING.md`, `OBSERVABILITY.md`,

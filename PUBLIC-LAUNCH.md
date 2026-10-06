@@ -78,6 +78,9 @@ their logins pass the user's secrets through GoldenBook). Angel One waits on a p
 accounts, later; FOUND-03 as the narrow optional client id; build Dhan despite the paid Data API; **enable both new
 brokers for everyone straight away**, skipping the certification gates.
 
+**The documentation site is live** at `https://staging.goldenbook.in/docs/` (basic auth, same login as staging; source `docs/` in the
+context repo; publish with `scripts/publish-docs.ps1`, manual for now). Its Caddy block is in `tradestack/deploy/Caddyfile`.
+
 **Waiting on the owner:**
 - Compare Kite's figures with GoldenBook's (ST-2) and check the reconnect banner after a token expires.
 - Copy the pre-release dump off the VM, or say it can wait.

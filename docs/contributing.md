@@ -40,8 +40,26 @@ python -m venv .venv-docs
 then open `http://127.0.0.1:8000`. `mkdocs build --strict` fails on a broken link or a page missing from the
 navigation, and is the check to run before a pull request.
 
+## Where it is hosted, and publishing
+
+The site is served from the VM at **`https://staging.goldenbook.in/docs/`**, behind the same basic auth and
+`noindex` as the rest of that host. It describes operations and known gaps, so it is never on the public host
+(`goldenbook.in/docs/` shows the app's own page, not these).
+
+To publish after a change, from the workspace root:
+
+```
+.\scripts\publish-docs.ps1
+```
+
+It runs the strict build (a broken link stops it before anything is uploaded), uploads the result, and swaps the
+directory on the VM in place. The files live in `/var/www/goldenbook-docs`, a directory of their own that a staging
+deploy cannot wipe. The Caddy block that serves it is in `tradestack/deploy/Caddyfile`.
+
+**Publishing is manual for now**, so merging a docs change does not update the site until someone runs the
+script. A scheduled or on-merge publish needs CI, which does not exist yet (see the gaps review).
+
 ## Not yet decided
 
-Where the built site is **hosted** (the options are the VM behind basic auth, as staging is, or a free static
-host with access control), and whether to add a board over the trackers (see [Planning](planning/index.md)).
-Until then the site is built and previewed locally, and every page reads correctly on GitHub as plain Markdown.
+A dedicated host such as `docs.goldenbook.in` (this needs a DNS record and moves nothing but the address), and
+whether to add a board over the trackers (see [Planning](planning/index.md)).
