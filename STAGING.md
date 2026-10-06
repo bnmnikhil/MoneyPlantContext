@@ -281,7 +281,7 @@ noindex, certificate issued. Verified: 401 without credentials, 200 with; ports 
 outside; production unaffected. The Google client is production's, with the staging redirect URI added.
 **Still to verify:** a refused (non-allowlisted) Google sign-in. An allowlisted owner sign-in and the simulated broker connects were done
 4 Oct. Alice Blue's connect needs exactly one pending flow (a repeated click fails until it expires, or the staging backend restarts).
-**Not yet installed on the VM:** the Upstox login path in the Caddy block (in #37).
+**Updated 6 Oct 2026:** staging runs the merged `main` and the simulator's Dhan branch; the Caddy block and `GB_UPSTOX_*`, `GB_DHAN_*` (including `GB_DHAN_LOGIN_URL`, the browser-facing page) are installed. The owner connected Upstox and Dhan there and confirmed both work. Not yet verified: a refused (non-allowlisted) Google sign-in, and a Chrome pass over every screen.
 
 **Do** (per D-1 and D-2):
 - Create the VM, or a second service on the existing one.

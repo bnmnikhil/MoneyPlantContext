@@ -85,3 +85,5 @@ below.
 - [Free market data options, researched](free-market-data-options-researched.md) — Upstox gives per-strike IV and greeks for ₹0; NSE direct is blocked from the VM and its terms do not cover a product.
 - [NSE SPAN margin parameters](nse-span-margin-parameters.md) — the published scan ranges, exposure rates and sixteen scenarios, with the two σ inputs this stack cannot compute.
 - [Browser-redirect brokers first](browser-redirect-brokers-first.md) — Upstox, Dhan, Groww; server-login brokers held back; friends' accounts for live checks
+- [Brokers switched on before certification](brokers-switched-on-before-certification.md) — Upstox and Dhan live for everyone since 6 Oct 2026 with unverified mappings; close the gates, switch off with one env line
+- [Browser URLs never share a setting with server URLs](browser-urls-never-share-a-setting-with-server-urls.md) — a login link for the browser needs its own setting; staging sent a browser to 127.0.0.1

@@ -5,6 +5,7 @@ Background research that informs design decisions but is not code-truth. Unlike 
 | Doc | Question it answers | Researched |
 |---|---|---|
 | [`BROKER-LAUNCH-SHORTLIST.md`](BROKER-LAUNCH-SHORTLIST.md) | Which seven brokers should join the existing three at launch, how they rank by NSE active clients, and where static-IP onboarding still blocks a read-only integration | 21 Sep 2026 |
+| [`DHAN-DOSSIER.md`](DHAN-DOSSIER.md) | Dhan certification dossier (CERT-01): three-step consent login with the user's client id, no price on holdings or positions, the Rs 499 Data API, and what only a live account can settle | 6 Oct 2026 |
 | [`UPSTOX-DOSSIER.md`](UPSTOX-DOSSIER.md) | Upstox certification dossier (CERT-01): login flow, endpoints, token life, the shapes the simulator uses, and what only a live account can settle | 4 Oct 2026 |
 | [`REGULATORY-API-STATIC-IP.md`](REGULATORY-API-STATIC-IP.md) | What SEBI, NSE and the three brokers require of API trading — static IPs, API keys, algo status, and what changes if GoldenBook ever places an order | 6 Aug 2026 |
 | [`BROKER-API-TERMS-MULTI-USER.md`](BROKER-API-TERMS-MULTI-USER.md) | Whether Zerodha, Alice Blue and Paytm Money's API terms allow an open-sign-up app to hold users' own API secrets, plus the SEBI RA and DPDP dates that bear on a public launch | 2 Oct 2026 |

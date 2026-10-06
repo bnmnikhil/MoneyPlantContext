@@ -122,7 +122,7 @@ risk but does not replace a real setup observation.
   holdings the required portfolio contract. Model margins, instruments, quotes,
   option chains and basket margins as independent optional providers. Unsupported
   must be explicit; it must never become an empty list or zero by accident.
-- [ ] **FOUND-03 — Generalise credential fields safely.** Replace the fixed
+- [x] **FOUND-03 — Generalise credential fields safely.** *(6 Oct 2026, MoneyPlant #40 + frontend #33. Deferred on 5 Oct on the reading that all three target brokers take a key plus a secret; Dhan's login needs the user's own client id, so it landed as the narrow form: an optional `clientId` identifier (V10, nullable, stored and shown in the clear), declared per broker in the catalogue and enforced by the credential controller. Fully arbitrary fields remain a job for the held-back server-login brokers.)* Replace the fixed
   key/secret UI assumption with definition-driven fields. Keep identifiers in
   cleartext only when required for login; encrypt every secret value; keep all
   secrets write-only in API responses and logs.
@@ -139,6 +139,8 @@ risk but does not replace a real setup observation.
   price, realised/unrealised P&L, product, exchange, instrument type, settled/T1
   and pledged-quantity behavior. Missing vendor facts remain missing rather than
   becoming zero.
+
+- [ ] **HOLD-PRICE — Let a holding say its price is unknown.** *(Raised 6 Oct 2026 by Dhan, which sends no price on holdings and quotes only on a paid Data API plan.)* Add `priceKnown` to `HoldingDto` (the eight-argument constructor defaults it true), set it false where a gateway had no mark, and carry it through the holdings table, the per-account totals and the overview (a dash, and a partial-total marker, as premium already does). Until it lands an unpriced Dhan holding reports zeros, never a loss computed from a missing mark. **Gates `GB_ROLLOUT_DHAN=available`.**
 
 ### Foundation acceptance criteria
 
@@ -187,18 +189,18 @@ remain the requirement; status lives there.
 - [x] **UPSTOX-02 — Add synthetic simulator fixtures** for authentication,
   positions and holdings before writing the production HTTP adapter. *(4 Oct 2026: `broker-sim` `UpstoxSim`, 41
   tests. Dossier: `research/UPSTOX-DOSSIER.md`; documented shapes, not yet live-verified.)*
-- [ ] **UPSTOX-03 — Implement auth and session handling** through
+- [x] **UPSTOX-03 — Implement auth and session handling** *(5 Oct 2026, `UpstoxSessionService`/`Controller`)* through
   `BrokerAuthProvider`, including state validation and expiry.
-- [ ] **UPSTOX-04 — Implement the portfolio adapter** and map vendor responses into
+- [x] **UPSTOX-04 — Implement the portfolio adapter** *(5 Oct 2026, `broker/upstox`; positions, holdings, equity margins, F&O instrument file)* and map vendor responses into
   canonical DTOs without leaking vendor types outside `broker/upstox`.
-- [ ] **UPSTOX-05 — Add catalogue and Settings UI metadata** with honest capability
+- [x] **UPSTOX-05 — Add catalogue and Settings UI metadata** *(5 Oct 2026; template defaults to `staging`; the Settings UI is catalogue-driven, no frontend change)* with honest capability
   labels and setup instructions.
-- [ ] **UPSTOX-06 — Run unit, shared contract, Postgres integration and browser
-  smoke tests** entirely against synthetic data.
-- [ ] **UPSTOX-07 — Perform a controlled live certification** from a non-whitelisted
+- [~] **UPSTOX-06 — Run unit, shared contract, Postgres integration and browser
+  smoke tests** *(unit: 29 tests; end to end against broker-sim by hand on 5 Oct. Still missing: the shared contract suite (TEST-02) and the browser smoke pack.)* entirely against synthetic data.
+- [ ] **UPSTOX-07 — Perform a controlled live certification** *(Now the top open item: Upstox went live to all users on 6 Oct 2026 before this. Do it on the laptop in `GB_ENVIRONMENT=local` with a `localhost` redirect.)* from a non-whitelisted
   IP, compare response shape with fixtures, then discard credentials and personal
   response data.
-- [ ] **UPSTOX-08 — Soak in staging** through token expiry, reconnect, empty
+- [x] **UPSTOX-08 — Soak in staging** *(6 Oct 2026: the owner connected it on staging and confirmed it works; token expiry and the funds window were verified in the simulator's tests, not yet over a real day on staging.)* through token expiry, reconnect, empty
   portfolio and vendor-error scenarios before enabling production availability.
 
 Review the pilot before copying it. Amend the common contracts, simulator and
@@ -212,7 +214,7 @@ soak → production flag.
 
 1. **Kotak Neo** — highest-confidence second adapter and a check that the pilot
    did not accidentally encode Upstox OAuth details.
-2. **Dhan** — only after the partner/use-model gate passes.
+2. **Dhan** — only after the partner/use-model gate passes. *(6 Oct 2026: dossier `research/DHAN-DOSSIER.md`; broker-sim profile #2; adapter MoneyPlant #41, staging-only, verified end to end against the simulator. Production waits on the gate, on HOLD-PRICE, and on a live account settling the open facts.)*
 3. **FYERS** — exercise its explicit data-only app mode and daily authentication.
 4. **Groww** — only after no-IP activation and portfolio calls are observed.
 5. **Motilal Oswal** — only after portal and hosted-use confirmation.
