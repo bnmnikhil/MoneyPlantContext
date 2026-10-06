@@ -15,10 +15,13 @@ only after the verification line has actually been run.** Branch names carry the
 
 Start the next session here. Replace this block rather than appending to it.
 
-**Production** (unchanged): `tradestack 02e33eb`, `frontend 69d7f68`, Flyway V1-V9, sign-up `open`. The Kite REST client
-(ST-2) has been live since 4 Oct, 09:25 IST; **the owner has not yet confirmed Kite's figures against GoldenBook's,
-nor the expired-token reconnect banner.** Everything merged since is on `main` but **not deployed to production**, and
-none of it changes production's behaviour (FOUND-06 keeps the three brokers `available`).
+**Production** runs `main` as of **6 Oct 2026, 12:05 IST**: backend `8b7ed3e` (FOUND-06 live), frontend `03d015e`
+(with the landing-page change LAND-06), Flyway V1-V9, sign-up `open`, boot line `aliceblue=available, kite=available,
+paytm=available`. The Kite REST client (ST-2) has been live since 4 Oct; **the owner has not yet confirmed Kite's
+figures against GoldenBook's, nor the expired-token reconnect banner.** The open PRs below are **not** in production.
+**The plan to ship them is `RELEASE-ADAPTERS-PLAN.md`**: Phase 1 ships FOUND-03, Upstox and Dhan dark (one additive
+migration, V10; the two brokers stay invisible); Phase 2, a separate per-broker decision, turns one on. Production's
+backups are still disabled (no off-VM copy), so Phase 1 takes and copies off a pre-release dump by hand.
 
 **Merged to `main`:** staging (context #20, broker-sim #1, frontend #29/#30, MoneyPlant #37) and **FOUND-06**
 (MoneyPlant #38: rollout states `hidden < internal < staging < available`, enforced in the catalogue, the credential
@@ -72,7 +75,7 @@ despite the paid Data API.
   `/root/goldenbook.env.pre-open-*`, `moneyplant-pgdata`, `/root/pre-goldenbook-*`.
 
 **Next work, in order:**
-1. Merge the stack, deploy the Dhan branch to staging (above), and soak Upstox and Dhan together: connect, reconnect,
+1. Follow `RELEASE-ADAPTERS-PLAN.md`: merge the stack, deploy the Dhan branch to staging (above), and soak Upstox and Dhan together: connect, reconnect,
    expiry (Upstox 03:30, Dhan 24 hours from issue, Dhan renewable), the Upstox funds window 00:00-05:30, an account
    with and without a data plan. Nothing here needs a real account.
 2. **HOLD-PRICE**: `priceKnown` on `HoldingDto` and the holdings, overview and risk screens (dash, partial-total marker,
