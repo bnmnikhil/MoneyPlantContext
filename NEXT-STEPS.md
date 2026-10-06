@@ -46,6 +46,25 @@ listing them):
 - Sequence: O1 and O2 (health endpoint, external uptime and Telegram) are the cheap start
   and the launch floor; the dashboard proper is O9 to O11.
 
+### 2. Documentation in a clean tool (6 Oct 2026)
+
+> "we have to add documentation on business logics, technical flows, architecture, and
+> plan for new items in some clean tool, like jira, confluence or notion, suggest something."
+
+**Not decided; the assistant's recommendation is below and awaits the owner's choice.** The
+substance already exists and is current, in git: `CLAUDE.md` (code truth), `SPEC.md`, the ADRs
+in `tradestack/docs/adr/`, `memory/` (the reasoning), the per-broker dossiers, the trackers
+(`PUBLIC-LAUNCH.md`, `BROKER-EXPANSION-PLAN.md`, `STAGING.md`, `OBSERVABILITY.md`,
+`RELEASE-ADAPTERS-PLAN.md`) and the runbook (`tradestack/deploy/README.md`). The gap is
+discoverability and presentation for a reader who is not an agent, plus diagrams, not content.
+
+**Recommended:** keep git as the source of truth (docs-as-code) and add a readable layer on
+top: a navigable site built from the same Markdown, Mermaid diagrams for the flows and the
+architecture, and GitHub Projects (issues linked to PRs) for the plan and backlog. Notion
+is the fallback if the owner wants a polished UI more than a single source of truth. Jira
+and Confluence are not recommended at this size. The reasoning and the proposed structure
+are in the 6 Oct 2026 conversation; carry them into the tracker that takes this on.
+
 ## Testing for agents
 
 `TESTING.md` and `scripts/verify.ps1` are the entry point (old TEST-01 to
