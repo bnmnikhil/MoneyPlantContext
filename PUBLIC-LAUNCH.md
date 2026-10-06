@@ -15,15 +15,19 @@ only after the verification line has actually been run.** Branch names carry the
 
 Start the next session here. Replace this block rather than appending to it.
 
-**Production** runs `main` as of **6 Oct 2026, 12:05 IST**: backend `8b7ed3e` (FOUND-06 live), frontend `03d015e`
-(with the landing-page change LAND-06), Flyway V1-V9, sign-up `open`, boot line `aliceblue=available, kite=available,
-paytm=available`. The Kite REST client (ST-2) has been live since 4 Oct; **the owner has not yet confirmed Kite's
-figures against GoldenBook's, nor the expired-token reconnect banner.** The open PRs below are **not** in production.
-**The plan to ship them is `RELEASE-ADAPTERS-PLAN.md`**: Phase 1 ships FOUND-03, Upstox and Dhan dark (one additive
-migration, V10; the two brokers stay invisible); Phase 2, a separate per-broker decision, turns one on. Production's
-backups are still disabled (no off-VM copy), so Phase 1 takes and copies off a pre-release dump by hand.
+**Production** runs `main` as of **6 Oct 2026, 20:43 IST** (backend `5ea7af6`, frontend `3fc1481`; FOUND-06, FOUND-03,
+the Upstox and Dhan adapters, LAND-06), **Flyway V1-V10**, sign-up `open`. **Upstox and Dhan were switched on for
+everyone at 20:58 IST** by the owner, ahead of every gate in `RELEASE-ADAPTERS-PLAN.md` Phase 2: boot line
+`aliceblue=available, dhan=available, kite=available, paytm=available, upstox=available`
+(`GB_ROLLOUT_UPSTOX` and `GB_ROLLOUT_DHAN` in `/etc/goldenbook/goldenbook.env`; remove a line and restart to switch
+that broker off). **Neither broker has met a live account**, so their figures are unverified (Upstox `average_price`
+and holdings quantities; Dhan `costPrice`, `totalQty`, and unpriced holdings showing zeros for users without Dhan's
+data plan). Production's pre-release copy is `/root/pre-release-20261006T151130Z` on the VM (dump, jar, site, env); the
+dump was **not** copied off the VM. Kite's REST client (ST-2) has been live since 4 Oct; **the owner has not yet
+confirmed Kite's figures against GoldenBook's, nor the reconnect banner.** The landing page and the privacy and terms
+pages still name only the original three brokers.
 
-**Merged to `main`:** staging (context #20, broker-sim #1, frontend #29/#30, MoneyPlant #37) and **FOUND-06**
+**Merged to `main` and in production:** staging (context #20, broker-sim #1, frontend #29/#30, MoneyPlant #37) and **FOUND-06**
 (MoneyPlant #38: rollout states `hidden < internal < staging < available`, enforced in the catalogue, the credential
 and connect paths, and `ConnectionService`; `GB_ROLLOUT_<BROKER>` overrides a template default).
 

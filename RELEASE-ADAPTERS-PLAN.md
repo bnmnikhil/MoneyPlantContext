@@ -166,10 +166,13 @@ saved and reappear if it is turned back on.
 
 ## Status
 
-- [ ] PRs merged in order
-- [ ] Gates green on merged `main` (backend 626, frontend 84, typecheck)
-- [ ] Staging on merged `main`
-- [ ] Kite comparison done
-- [ ] Phase 1 deployed and verified
-- [ ] Phase 2, Upstox: certified, user-facing copy updated, flipped
-- [ ] Phase 2, Dhan: certified, HOLD-PRICE landed, copy updated, flipped
+- [x] PRs merged (6 Oct, via #41 and #34, which carried the stack)
+- [x] Gates green: the VM ran the 626 backend tests before swapping the jar; the merged trees were identical to the staged branches
+- [x] Staging ran the same code and both brokers connected there
+- [ ] Kite comparison done (still outstanding)
+- [x] Phase 1 deployed and verified, 6 Oct 20:43 IST: V10 applied, boot lines as expected, no errors, callbacks inert
+- [x] Phase 2, Upstox: **flipped 6 Oct 20:58 IST, by the owner, before certification** (CERT-02/03/04, the three live-account facts and the user-facing copy are all still open)
+- [x] Phase 2, Dhan: **flipped 6 Oct 20:58 IST, by the owner, before certification and before HOLD-PRICE**
+- [ ] Off-VM copy of the pre-release dump (not done)
+- [ ] Landing page, privacy and terms updated to name Upstox and Dhan
+- [ ] Live certification of both on a real account: now the highest-priority open item, since users can connect
