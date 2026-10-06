@@ -110,6 +110,75 @@ broker, activation); a budget; and the compliance checklist.
 handle or a product one; whether any paid promotion is in scope (the compliance bar is
 higher); and the analytics decision above.
 
+## Gaps review, 6 Oct 2026
+
+The assistant's read of what is missing, written when sign-up was open, five brokers were live and
+there was still no safety net around them. It is a ranking of existing tracker items plus a few
+things no tracker owns. Item ids point at the tracker that owns each; this section only orders them.
+
+### Highest risk now
+
+1. **No backups.** The backup timer is disabled and there is no `backup.env`: nothing exists off the
+   one VM, including users' encrypted broker credentials. (`P0-LAUNCH.md` D1.) `GB_CREDENTIAL_KEY` was
+   backed up off-VM on 7 Aug and must stay so.
+2. **No monitoring or alerts.** No health endpoint, no external uptime check, no alert channel: an outage
+   is found out from a user. (`P0-LAUNCH.md` D2; `OBSERVABILITY.md` O1 to O3.) The cheap start is a health
+   endpoint, UptimeRobot and a Telegram bot, before the dashboard (O9 to O11, owner idea 1).
+3. **Security basics.** Zero security headers (C1); no rate limiting, body cap or validation (C4); no way
+   for a user to disconnect or revoke a broker (C5); cross-user isolation not tested on production (L11);
+   no security review or dependency audit (L12).
+4. **No data erasure and no way to reach a human.** The erasure path (E3), a support and grievance contact
+   (E6, R4), a risk disclosure (E4) and recorded terms acceptance (L4) are open. Under India's data
+   protection law these are obligations, not extras.
+5. **The risk page can show wrong numbers.** It computes on old positions (A1), and failed queries can render
+   a confident zero (B4, B5), with `NaN` reaching the screen (A4). A finance app showing wrong figures with
+   confidence is worse than showing nothing. HOLD-PRICE is the same problem for Dhan holdings.
+
+### Not on any tracker, and worth a decision
+
+- **Pricing and cost.** Whether this is free, and what it costs to run: the VM, Groww's Rs 499 a month, Dhan's
+  Rs 499 a month data plan per user, a possible paid data subscription for market data.
+- **Users.** Three on 6 Oct. Who are the next twenty, and has anyone outside been asked? Onboarding makes each
+  user create a developer app at every broker, which is a large drop-off; where people stop is the most useful
+  thing to measure. L6 (the self-serve guide) and L16 (launch comms and feedback) are the existing items.
+- **Competitors.** Payoff charts and multi-leg views already exist elsewhere (Sensibull, Opstra, Streak,
+  Quantsapp, the brokers' own tools). The one-line difference is multi-broker, read-only, in one place; it
+  should be written down and tested against real traders.
+- **Google sign-in status.** Whether the OAuth consent screen is still in Testing, which can silently block
+  strangers (L5). A new account did register on 3 Oct, but confirm.
+- **SEBI.** Whether the strategy builder and any analysis count as research or advice (L17), and the
+  marketing rules in owner idea 3.
+
+### Engineering process
+
+- **No CI.** Neither repo runs tests on a push; they run only on the VM at deploy. No automatic dependency or
+  secret scanning. A merge that git calls clean has failed to compile before.
+- **Frontend and backend types are synced by hand** (`D11`, generated types, was deferred).
+- **The staging smoke pack (`STAGING.md` ST-10) and the `db`-tagged test suite** do not run anywhere
+  automatically; the repository SQL for a new column is checked by hand against a local Postgres.
+- **Real-broker verification is manual and rare.** Two live brokers have never met an account; the live
+  certification in `RELEASE-ADAPTERS-PLAN.md` is the fix, and a repeatable certification script would make it
+  cheap for the next broker.
+
+### Resilience
+
+- **One VM runs production and staging.** The free resize to 24 GB (L13) is overdue; `raw_capture` has no
+  retention (L14), so the disk will eventually fill; there is no tested rollback path (D4) beyond the
+  pre-release copy taken by hand, and no incident runbook (L15).
+- **Bus factor.** All knowledge sits with the owner and the assistant. Owner idea 2 (documentation) is the
+  mitigation; so is a short list of what only the owner can access (the VM key, DNS at Hostinger, the Google
+  and broker consoles, the credential key).
+- **Domain, email and certificate hygiene.** The support mailbox does not exist (R4); renewals of the domain
+  and the DNS records are on the owner's calendar, not in any tracker.
+
+### A suggested order for the next week
+
+1. A health endpoint, external uptime and a Telegram alert (O1, O2, O3).
+2. Backups with an off-VM copy, and a restore test (D1).
+3. Security headers, rate limits and a revoke path (C1, C4, C5).
+4. A support contact and the erasure path (E6, E3).
+5. Live certification of Upstox and Dhan (`RELEASE-ADAPTERS-PLAN.md` Phase 2).
+
 ## Testing for agents
 
 `TESTING.md` and `scripts/verify.ps1` are the entry point (old TEST-01 to
