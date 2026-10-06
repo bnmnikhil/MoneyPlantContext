@@ -1,0 +1,65 @@
+site_name: GoldenBook documentation
+site_description: The readable layer over GoldenBook's plans, decisions and code. Source of truth stays in git.
+docs_dir: docs
+site_dir: site
+use_directory_urls: true
+
+theme:
+  name: material
+  language: en
+  palette:
+    - scheme: default
+      primary: amber
+      accent: teal
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - scheme: slate
+      primary: amber
+      accent: teal
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - toc.follow
+    - search.suggest
+    - content.code.copy
+
+nav:
+  - Home: index.md
+  - Product:
+      - Overview: product/overview.md
+      - Business rules: product/business-rules.md
+      - Brokers: product/brokers.md
+  - Architecture:
+      - Overview: architecture/overview.md
+      - Security and data: architecture/security-and-data.md
+  - Flows:
+      - Connect flows: flows/connect.md
+      - Reading and analysis: flows/read-and-analysis.md
+  - Operations:
+      - Environments and deploy: operations/environments-and-deploy.md
+  - Planning: planning/index.md
+  - Maintaining the docs: contributing.md
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+plugins:
+  - search
+
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn

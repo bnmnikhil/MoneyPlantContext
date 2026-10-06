@@ -8,3 +8,7 @@
 
 # Postman exports can carry live session tokens - keep them out of git.
 /Postman/
+
+# The built docs site and its virtualenv are local build output.
+/site/
+/.venv-docs/
