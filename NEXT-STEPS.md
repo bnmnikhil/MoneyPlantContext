@@ -65,6 +65,51 @@ is the fallback if the owner wants a polished UI more than a single source of tr
 and Confluence are not recommended at this size. The reasoning and the proposed structure
 are in the 6 Oct 2026 conversation; carry them into the tracker that takes this on.
 
+### 3. A marketing, distribution, social media and SEO pipeline and strategy (6 Oct 2026)
+
+> "we have to setup pipeline and strategy for marketing, distributing, social media and
+> seo items."
+
+**Nothing exists yet beyond landing-page copy.** Constraints already on record, which any
+strategy has to start from (the assistant's mapping, not the owner's words):
+
+- **SEO is architecturally limited today.** `frontend/docs/adr/0023-static-spa-no-ssr.md`
+  records "no meaningful SEO for the landing page" and accepts it because the product was
+  invite-only. Sign-up has been open since 3 Oct, so that ADR needs revisiting. The landing
+  page is client-rendered, so crawlers see little. Options to weigh: prerender the landing
+  and legal pages at build time, or a separate marketing site (`REBRAND-GOLDENBOOK.md` already
+  routes `/`, `/privacy` and `/terms` so a marketing site could replace the landing page).
+  Still open from the rebrand: `og:image`, and a rendered check of the social previews.
+- **No analytics today, by promise.** The privacy policy says exactly two cookies (session
+  and XSRF) and no analytics (`PUBLIC-LAUNCH.md` L7, `OBSERVABILITY.md`: "no analytics script
+  and no tracking cookie"). Measuring marketing needs a decision: cookieless and
+  self-hosted analytics (for example Plausible or Umami) keeps the promise; Google Analytics
+  or an ad pixel would not, and would need the policy and the cookie statement rewritten.
+- **Landing copy has standing rules** (`NEXT-STEPS.md`, "Landing page beyond launch"): no
+  "bank-grade", "real-time", "secure", "official partner", "all brokers" or an uptime claim
+  without a measured basis, and no broker logo without permission. LAND-05 (honest broker
+  support), LAND-06 (proof without exposing users) and LAND-08 (quality and social
+  previews) are the existing items.
+- **Regulatory.** GoldenBook is a read-only viewer. Anything that reads as a recommendation
+  may fall under SEBI research-analyst or investment-adviser rules (`research/REGULATORY-API-STATIC-IP.md`,
+  "confirm before Step 8"), and SEBI's rules on promotions and on finfluencers apply to
+  social media content about F&O. A compliance checklist for every post and page belongs in
+  the pipeline. Not legal advice; confirm with a professional before paid promotion.
+- **Brokers are both the product and the audience's identity.** Naming Zerodha, Upstox or
+  Dhan in marketing touches their trademark and each API's terms (`research/BROKER-API-TERMS-MULTI-USER.md`).
+  Broker outreach is deferred to the 17-24 Oct review.
+
+**Pieces a pipeline would need** (to design, in the owner's order of priority): who it is for
+(retail F&O traders running more than one broker) and the one-line promise; the channels and
+a realistic weekly cadence for one person; a content backlog and calendar kept in the same
+tool as the rest of the plan (see item 2); the SEO technical work above plus a keyword and
+content plan; a measurement set that respects the privacy promise (sign-ups, connects per
+broker, activation); a budget; and the compliance checklist.
+
+**To settle first:** the audience and budget; whether the owner posts under a personal
+handle or a product one; whether any paid promotion is in scope (the compliance bar is
+higher); and the analytics decision above.
+
 ## Testing for agents
 
 `TESTING.md` and `scripts/verify.ps1` are the entry point (old TEST-01 to
