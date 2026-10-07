@@ -86,4 +86,5 @@ below.
 - [NSE SPAN margin parameters](nse-span-margin-parameters.md) — the published scan ranges, exposure rates and sixteen scenarios, with the two σ inputs this stack cannot compute.
 - [Browser-redirect brokers first](browser-redirect-brokers-first.md) — Upstox, Dhan, Groww; server-login brokers held back; friends' accounts for live checks
 - [Brokers switched on before certification](brokers-switched-on-before-certification.md) — Upstox and Dhan live for everyone since 6 Oct 2026 with unverified mappings; close the gates, switch off with one env line
+- [The Overview shows what needs attention](overview-shows-what-needs-attention.md) — one accounts table plus Needs attention; 75% margin per account, 7-day expiry, top-3 moves; tightest account beside combined capital
 - [Browser URLs never share a setting with server URLs](browser-urls-never-share-a-setting-with-server-urls.md) — a login link for the browser needs its own setting; staging sent a browser to 127.0.0.1

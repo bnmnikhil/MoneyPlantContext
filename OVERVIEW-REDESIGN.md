@@ -28,13 +28,13 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[-
 | Id | Item | Status |
 |---|---|---|
 | OV-1 | Attention model (pure functions + tests) | `[x]` |
-| OV-2 | Capital: tightest account beside the combined figure | `[ ]` |
-| OV-3 | One accounts table replaces the two broker tables | `[ ]` |
-| OV-4 | Needs attention band, with the all-clear state | `[ ]` |
-| OV-5 | Page assembly, freshness at the top, fit-to-screen and phone | `[ ]` |
-| OV-6 | Simulator data that exercises every card | `[ ]` |
-| OV-7 | Verify on staging, then production | `[ ]` |
-| OV-8 | Docs, memory and dead-code removal | `[ ]` |
+| OV-2 | Capital: tightest account beside the combined figure | `[x]` |
+| OV-3 | One accounts table replaces the two broker tables | `[x]` |
+| OV-4 | Needs attention band, with the all-clear state | `[x]` |
+| OV-5 | Page assembly, freshness at the top, fit-to-screen and phone | `[x]` |
+| OV-6 | Simulator data that exercises every card | `[x]` |
+| OV-7 | Verify on staging, then production | `[~]` |
+| OV-8 | Docs, memory and dead-code removal | `[x]` |
 
 Decisions, **confirmed by the owner 7 Oct 2026** as the defaults below:
 
@@ -81,7 +81,7 @@ skipped, expiry window edges at IST midnight (a 23:30 UTC `now` is already the n
 unpriced legs excluded from moves, `CALL_FAILED` never labelled as reconnect, all-clear only when
 everything is empty.
 
-## `[ ]` OV-2 — Capital: tightest account
+## `[x]` OV-2 — Capital: tightest account
 
 The strip's capital cell keeps the combined bar and adds **"Tightest: {account} {pct}% · ₹{free}
 free"**, amber when that account is over the threshold, neutral otherwise. Only one account →
@@ -90,7 +90,7 @@ meaning are unchanged.
 
 **Verify:** a server-rendered component test for the three cases (one account, all calm, one hot).
 
-## `[ ]` OV-3 — One accounts table
+## `[x]` OV-3 — One accounts table
 
 New `AccountsTable` replacing `OverviewPnlTable` + `OverviewCapitalTable`
 (`features/dashboard/OverviewBrokerTables.tsx`). Columns: Account · Positions · Holdings · Total
@@ -108,7 +108,7 @@ cells.
 **Verify:** component test — two Kite accounts stay two rows; a null margin renders dashes; the idle
 account is dimmed; the totals equal the sum of rows.
 
-## `[ ]` OV-4 — Needs attention band
+## `[x]` OV-4 — Needs attention band
 
 New `AttentionBand` rendering OV-1's output as up to four cards — Margin pressure, Expiring soon,
 Biggest moves today, To fix — each **hidden when empty**. When all are empty it collapses to one
@@ -122,7 +122,7 @@ line: "Nothing needs attention" plus what was checked.
 
 **Verify:** component tests for each card's empty/non-empty state and the all-clear line.
 
-## `[ ]` OV-5 — Page assembly
+## `[x]` OV-5 — Page assembly
 
 `src/pages/DashboardPage.tsx`: strip → accounts → attention. Removes the `OverviewPreview` pair and
 the bottom "Capital is held separately…" line (it moves into the accounts panel subtitle).
@@ -138,7 +138,7 @@ the bottom "Capital is held separately…" line (it moves into the accounts pane
 **Verify:** `tsc -b`, `npm test`, `vite build`; and in the browser on staging at 1536×640 (the owner's
 window) and at phone width, no page scroll on desktop.
 
-## `[ ]` OV-6 — Simulator data for every card
+## `[x]` OV-6 — Simulator data for every card
 
 `broker-sim`'s sample book has every expiry on 27 Oct, so "Expiring soon" can never appear on
 staging. Add one Kite leg pair expiring within the next week, computed from the current date so it
@@ -147,12 +147,12 @@ before production.
 
 **Verify:** staging Overview shows the Expiring soon card with the new legs.
 
-## `[ ]` OV-7 — Staging, then production
+## `[~]` OV-7 — Staging, then production
 
 Deploy `ux/overview-a` to staging; owner checks it; PR, merge, production deploy with the usual
 pre-release copy (`/root/pre-…`), staging stopped during the build, health and log check after.
 
-## `[ ]` OV-8 — Docs, memory, dead code
+## `[x]` OV-8 — Docs, memory, dead code
 
 - Delete `BrokerPnlTable.tsx` and `BrokerFundsTable.tsx` (already unused) and, after OV-5,
   `OverviewBrokerTables.tsx` and `OverviewPreview.tsx` with their CSS.
@@ -160,3 +160,24 @@ pre-release copy (`/root/pre-…`), staging stopped during the build, health and
   and that "tightest account" is shown because capital is held per account.
 - `CLAUDE.md` *Frontend → Overview layout* paragraph regenerated to describe the three bands;
   `docs/` page for the dashboard updated per `docs/contributing.md`.
+
+## Build notes, 7 Oct 2026
+
+All of OV-2 to OV-6 and OV-8 landed the same day, on frontend `ux/overview-a` (`6528352`, on top of
+the security branch so staging carries both) and broker-sim `feature/near-expiry-legs` (`d3d2ae2`,
+based on `feature/dhan-profile`). Gates: `tsc -b` clean, `npm test` 109 passing, `vite build` clean;
+broker-sim 57 passing. Decisions taken while building, beyond the plan:
+
+- **"Updated … ago" and Refresh** sit in the accounts panel header, not the capital cell, which is too
+  narrow for them.
+- **The per-account warning banners are not shown on the Overview**: the To fix card carries them with
+  the action. Other pages keep the banners.
+- **Utilisation bars turn amber at 75%** (was 60%), the same threshold as margin pressure.
+- **A total over nothing is a dash**: the totals row showed ₹0 for Holdings when no account held any.
+- **Overview no longer uses the fixed-height page fit**: with the previews gone nothing needs to
+  stretch, so the page takes its natural height.
+- **Staging's simulator had silently lost Dhan**: today's staging deploys used broker-sim `main`, which
+  has no Dhan. The new sim branch carries Dhan again; broker-sim `feature/dhan-profile` should be merged
+  to `main` so the default deploy keeps it.
+
+OV-7 is in progress: on staging for the owner to validate.

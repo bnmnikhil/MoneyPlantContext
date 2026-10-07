@@ -464,12 +464,13 @@ The four `UX mockup/` PNGs are the selected visual reference;
 `memory/ux-mockup-redesign.md` records the semantics, and `P0-LAUNCH.md` the
 remaining consistency work (session-status agreement, keyboard/empty/error states).
 
-**Overview layout:** `/app` follows `dashboard.png` with
-a horizontal summary strip, paired P&L/capital tables and collapsible per-account
-positions/holdings previews. Partial totals are marked, unavailable figures use
-dashes, and combined capital is labelled as held separately per account. Explicit
-line heights keep the desktop summary near 104px and broker rows at 49px;
-phone figures fit their columns and tables scroll within their panels.
+**Overview layout (concept A, `OVERVIEW-REDESIGN.md`):** `/app` is three bands: the
+summary strip (its capital cell names the tightest account beside the combined figure),
+one `AccountsTable` with P&L and capital per connection, and `AttentionBand` (margin
+pressure, expiring soon, biggest moves, to fix; one all-clear line when empty), driven by
+the pure `features/dashboard/attention.ts`. Partial totals are marked, unavailable figures
+and totals over nothing use dashes. The previews and the two broker tables are gone; see
+`memory/overview-shows-what-needs-attention.md`.
 
 **Positions layout:** `/app/positions` has the mockup's
 five-metric strip and nine-column table, with separate P&L/day P&L and collapsible
