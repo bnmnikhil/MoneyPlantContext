@@ -27,7 +27,7 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[-
 
 | Id | Item | Status |
 |---|---|---|
-| OV-1 | Attention model (pure functions + tests) | `[ ]` |
+| OV-1 | Attention model (pure functions + tests) | `[x]` |
 | OV-2 | Capital: tightest account beside the combined figure | `[ ]` |
 | OV-3 | One accounts table replaces the two broker tables | `[ ]` |
 | OV-4 | Needs attention band, with the all-clear state | `[ ]` |
@@ -36,7 +36,7 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[-
 | OV-7 | Verify on staging, then production | `[ ]` |
 | OV-8 | Docs, memory and dead-code removal | `[ ]` |
 
-Decisions to confirm before OV-1, with the defaults the plan assumes:
+Decisions, **confirmed by the owner 7 Oct 2026** as the defaults below:
 
 1. **Margin pressure threshold: 75%** used, per account.
 2. **Expiring soon window: 7 calendar days** (IST), counting today; shows the nearest later expiry
@@ -47,7 +47,14 @@ Decisions to confirm before OV-1, with the defaults the plan assumes:
 
 ---
 
-## `[ ]` OV-1 — Attention model
+## `[x]` OV-1 — Attention model
+
+**Done 7 Oct 2026**, frontend `ux/overview-a` `a758690`: `src/features/dashboard/attention.ts`,
+`tests/overview-attention.test.mjs` (11 tests; suite 103 passing, `tsc -b` clean). Two decisions made
+while building it: `UNSUPPORTED_CAPABILITY` warnings are not "to fix" items (a broker without a
+margins call is a fact, not something the user can act on), and **biggest moves do not stop a day
+being all clear** (they are information, not a problem), so OV-4 shows the moves card beside the
+all-clear line when there are any.
 
 New `src/features/dashboard/attention.ts`, pure, imported by tests with relative imports (Node's
 test runner does not resolve `@/`). Inputs: `BrokerRow[]`, `Position[]`, `SessionStatus`, the
