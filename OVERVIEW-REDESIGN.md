@@ -33,7 +33,7 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[-
 | OV-4 | Needs attention band, with the all-clear state | `[x]` |
 | OV-5 | Page assembly, freshness at the top, fit-to-screen and phone | `[x]` |
 | OV-6 | Simulator data that exercises every card | `[x]` |
-| OV-7 | Verify on staging, then production | `[~]` |
+| OV-7 | Verify on staging, then production | `[x]` |
 | OV-8 | Docs, memory and dead-code removal | `[x]` |
 
 Decisions, **confirmed by the owner 7 Oct 2026** as the defaults below:
@@ -147,7 +147,7 @@ before production.
 
 **Verify:** staging Overview shows the Expiring soon card with the new legs.
 
-## `[~]` OV-7 — Staging, then production
+## `[x]` OV-7 — Staging, then production
 
 Deploy `ux/overview-a` to staging; owner checks it; PR, merge, production deploy with the usual
 pre-release copy (`/root/pre-…`), staging stopped during the build, health and log check after.
@@ -180,4 +180,4 @@ broker-sim 57 passing. Decisions taken while building, beyond the plan:
   has no Dhan. The new sim branch carries Dhan again; broker-sim `feature/dhan-profile` should be merged
   to `main` so the default deploy keeps it.
 
-OV-7 is in progress: on staging for the owner to validate.
+OV-7 done: validated on staging by the owner, merged as frontend #38 and deployed to production on 7 Oct 2026 (18:15 IST) with the security changes. Remaining housekeeping: merge broker-sim `feature/dhan-profile` and `feature/near-expiry-legs` into its `main`.

@@ -186,11 +186,11 @@ moment there is a second user. → **B1**
 | B5 | Failed simulation looks like an empty one | B · resilience | `[ ]` |
 | B6 | No generic exception handler | B · resilience | `[ ]` |
 | B7 | Kite builds a new HTTP client per call | B · resilience | `[ ]` |
-| C1 | Zero security headers | C · security | `[ ]` |
+| C1 | Zero security headers | C · security | `[x]` |
 | C2 | Caddy logs callback query strings | C · security | `[x]` |
 | C3 | Debug endpoints live in production | C · security | `[x]` |
-| C4 | No rate limit, body cap, or validation | C · security | `[ ]` |
-| C5 | No disconnect / revoke path | C · security | `[ ]` |
+| C4 | No rate limit, body cap, or validation | C · security | `[x]` |
+| C5 | No disconnect / revoke path | C · security | `[x]` |
 | C6 | Prove `GB_DEV_AUTH` is off in prod | C · security | `[x]` |
 | C7 | Stale "MUST NOT SHIP AS-IS" comment | C · security | `[x]` |
 | D1 | **No backups** | D · operability | `[~]` |
@@ -471,7 +471,9 @@ delayed Kite response is cut off by the app's deadline.
 
 ## Gate C — Security hardening
 
-### `[ ]` C1 — Zero security headers
+### `[x]` C1 — Zero security headers
+
+**Done 7 Oct 2026, live in production 18:15 IST** (MoneyPlant #44, `deploy/Caddyfile` installed on the VM). HSTS, nosniff, X-Frame-Options DENY, Referrer-Policy no-referrer, Permissions-Policy and a CSP allowing only the SPA's own files, Google Fonts and the Google profile picture; `Server` header removed. Verified with `curl -I https://goldenbook.in` and `/api/health`. The CSP was checked on every signed-in page of the production build in headless Edge (zero violations; a negative control was caught), and on production's login page in Chrome. Staging's `/docs` has no CSP (MkDocs needs inline scripts). Not yet run through an external scanner.
 
 `deploy/Caddyfile` sets none, and Caddy adds none by default. The best value-per-hour item
 in this whole document.
@@ -522,7 +524,9 @@ uses. (The Alice Blue one is deleted outright when the chain graduates into `mar
 
 **Verify:** in a prod-shaped profile all three return 404.
 
-### `[ ]` C4 — No rate limiting, body cap, or validation
+### `[x]` C4 — No rate limiting, body cap, or validation
+
+**Done 7 Oct 2026, in production** (MoneyPlant #44). `common/RequestBodyLimitFilter` (64 KB, 413; chunked bodies counted while read), `common/WriteRateLimiter` (per-user bucket on API writes, 40 burst + 2/s, 429 with Retry-After; reads never limited), leg bounds and NaN/Infinity rejection on `/simulate` and `/margin-estimate` (max 50 legs), 256-character credential fields. **Deviation from "Do":** no validation starter; the checks are explicit, in the style `BrokerCredentialController` already uses. Verified through the real security chain on a local server: 84 KB → 413, NaN and 51 legs → 400, a burst → 429, reads 200.
 
 None of the three exist. `spring-boot-starter-validation` is **not in the pom**, and there
 are zero `@Valid` / `jakarta.validation` hits in `src/` — so any annotation added later
@@ -546,7 +550,9 @@ caps on the credential fields.
 **Verify:** post an oversized `legs` array and one containing `NaN`; expect 4xx, not a 500
 and not an OOM.
 
-### `[ ]` C5 — No disconnect / revoke path
+### `[x]` C5 — No disconnect / revoke path
+
+**Done 7 Oct 2026, in production** (MoneyPlant #44, frontend #37). `DELETE /api/session/{connectionId}` removes the caller's own session from memory and the session store (`ConnectionService.remove`); another user's id is a 404. A two-click Disconnect sits on each account badge in Broker credentials. It does not call the broker; the token dies at its daily expiry. The live click-through on staging was not exercised by Claude (it ends the owner's session); unit tests cover removal, ownership and the store write.
 
 There is no `sessions.remove` anywhere in the codebase, and `SessionController` exposes
 only `GET /status` and `GET /login-url`. A user cannot revoke a broker link. Entries stay
