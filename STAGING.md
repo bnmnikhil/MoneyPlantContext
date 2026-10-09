@@ -104,8 +104,11 @@ The VM today: 1 OCPU, 7 GB RAM, aarch64. The always-free allowance is 4 OCPU / 2
   L13's free resize to 4 OCPU / 24 GB becomes more urgent. Revisit a separate VM if
   staging ever affects production.
 - **D-2 Access:** `staging.goldenbook.in` behind Caddy **basic auth** plus `noindex`,
-  with real Google sign-in in **allowlist** mode for testers. Dev auth is deliberately
-  impossible off loopback.
+  with real Google sign-in for testers. Dev auth is deliberately impossible off loopback.
+  **Since 9 Oct 2026 staging runs `GB_SIGNUP_MODE=open`** (owner decision): any Google
+  account that gets past basic auth can sign in, so the basic-auth password is now the
+  only gate. Set in `/etc/goldenbook-staging/goldenbook.env` on the VM, not in the repo's
+  example; the previous file is beside it as `goldenbook.env.bak-20261009T…`.
 - **D-3 Simulator location:** its own repository, `broker-sim` (changed from a module in the `MoneyPlant` repo,
   4 Oct 2026), built and run separately. It is **never** inside the app jar, and a check on the
   app jar enforces that.
