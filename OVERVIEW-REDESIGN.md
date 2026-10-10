@@ -180,4 +180,4 @@ broker-sim 57 passing. Decisions taken while building, beyond the plan:
   has no Dhan. The new sim branch carries Dhan again; broker-sim `feature/dhan-profile` should be merged
   to `main` so the default deploy keeps it.
 
-OV-7 done: validated on staging by the owner, merged as frontend #38 and deployed to production on 7 Oct 2026 (18:15 IST) with the security changes. Remaining housekeeping: merge broker-sim `feature/dhan-profile` and `feature/near-expiry-legs` into its `main`.
+OV-7 done: validated on staging by the owner, merged as frontend #38 and deployed to production on 7 Oct 2026 (18:15 IST) with the security changes. Remaining housekeeping: merge broker-sim `feature/dhan-profile` and `feature/near-expiry-legs` into its `main`. *(Done 10 Oct 2026: broker-sim #2 and #3.)*

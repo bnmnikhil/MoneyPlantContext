@@ -92,7 +92,7 @@ context repo; publish with `scripts/publish-docs.ps1`, manual for now). Its Cadd
   shares the VM, and a staging build briefly timed out SSH); O2/O3 Telegram, UptimeRobot, Healthchecks.io accounts.
 - Staging's basic-auth login (it also fronts the docs site at `/docs/`) was changed on 6 Oct, at the owner's request, to a deliberately short one; the old password had been shown in chat. It is in `/root/staging-basic-auth.txt` on the VM. **It is weak and Caddy does not rate-limit**, so strengthen it before the docs or staging hold anything sensitive (regenerate with `setup-staging.sh`'s method: write `STAGING_BASIC_USER` and a `caddy hash-password` hash to `/etc/caddy/staging.env`, then restart Caddy).
 
-**Next work, in order:**
+**Next work, in order** (superseded on 10 Oct 2026 by `NEXT-10.md`, which orders these and adds Groww):
 1. **Live certification of Upstox, then Dhan**, now the top priority because real users can connect. Method: the laptop
    in `GB_ENVIRONMENT=local` with dev auth (it accepts vendor hosts and shows every broker), the owner's or a friend's
    real account, and a `localhost` redirect URL registered at the broker (both accept one). Settle the open facts
@@ -356,6 +356,9 @@ estimates disclosure (E4) and links the terms and privacy pages. Accepting write
 **Verify:** a new user cannot reach `/app` without accepting, and the row records the version.
 
 ### `[ ]` L5 — Google OAuth to Production, brand verification
+
+**Owner, 10 Oct 2026:** the test-user limit does not apply to GoldenBook's application, so this
+is not a sign-in blocker and is out of the `NEXT-10.md` queue. Brand verification stays open.
 
 `openid email profile` are non-sensitive scopes, so Production status lifts the 100-test-user
 cap without a security review. Brand verification (name and logo on the consent screen)

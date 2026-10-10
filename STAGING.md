@@ -111,7 +111,7 @@ The VM today: 1 OCPU, 7 GB RAM, aarch64. The always-free allowance is 4 OCPU / 2
   example; the previous file is beside it as `goldenbook.env.bak-20261009T…`.
   **Any broker key and secret connect on staging, also since 9 Oct 2026** (owner
   decision): `/etc/goldenbook-staging/broker-sim.env` sets `SIM_REQUIRE_KEY_PREFIX=false`
-  and `SIM_VERIFY_SECRETS=false` (simulator branch `feature/any-credentials`). The
+  and `SIM_VERIFY_SECRETS=false` (simulator `main` since broker-sim #3, 10 Oct 2026). The
   `sim_` prefix no longer catches a real key pasted into staging; it still only ever
   reaches the simulator, because `BrokerEndpointGuard` refuses vendor hosts there.
 - **D-3 Simulator location:** its own repository, `broker-sim` (changed from a module in the `MoneyPlant` repo,
