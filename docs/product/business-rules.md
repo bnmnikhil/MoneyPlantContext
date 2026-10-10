@@ -83,6 +83,24 @@ Premium left is the negated market value of the option legs (a short position's 
 collected and may still lose back). A leg that could not be quoted is excluded and the total is marked partial
 with a `?`; a missing short adds and a missing long subtracts, so a partial figure is not a floor.
 
+## The Overview page
+
+The Overview answers "what should I do?". Under the totals it shows one table of accounts (P&L and
+capital side by side) and a **Needs attention** band:
+
+- **Margin pressure**: any account using 75% or more of its own capital. Capital is held per account, so
+  the summary also names the **tightest** account beside the combined percentage: 27% overall can hide
+  one account at 84%.
+- **Expiring soon**: open legs expiring within the next 7 calendar days (Indian time), by account and
+  expiry, with the next expiry after that.
+- **Biggest moves today**: the three legs with the largest day P&L, at least ₹100, priced legs only.
+- **To fix**: a broker that is set up but not connected, an expired session (reconnect), a broker that
+  could not be read (temporary, never "reconnect"), legs with no current price, and stale margin
+  estimates.
+
+When nothing needs attention the band is one line saying what was checked. Biggest moves can still
+appear beside it: a big move is information, not a problem.
+
 ## Sessions and sign-in
 
 - **The application login expires at midnight IST**, and polling cannot carry it past midnight. A foreground

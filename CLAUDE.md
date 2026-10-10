@@ -6,7 +6,7 @@
 
 **`memory/` — read `memory/MEMORY.md` at the start of any non-trivial task.** It is the project memory: one file per durable decision or piece of project state, carrying the *reasoning* this file deliberately cuts. This file answers "what is true of the code now?"; `memory/` answers "why did we choose this, and when?". Keep the two from overlapping, and add a memory whenever a decision is made that a future reader would otherwise have to reverse-engineer from a diff.
 
-**Companion docs.** `PUBLIC-LAUNCH.md` — the open-sign-up launch plan (target 9 Oct 2026): the schedule, the L-items, and which P0 items gate it; **the authority for what is being worked on now**. `OBSERVABILITY.md` — logs, metrics and alerting plan (O-items; expands P0's D2). `REBRAND-GOLDENBOOK.md` — the rename to GoldenBook and the move to `goldenbook.in` (R-items; carries out L2). `P0-LAUNCH.md` — the production-launch tracker; it owns status for items A1–F2, this file owns code-truth, and the two must not overlap. `STAGING.md` — the staging environment and the broker simulator (ST-items; absorbs SIM-01–05, SIM-07/08). `NEXT-STEPS.md` — the open testing and landing-page backlog not tracked anywhere else. `BROKER-EXPANSION-PLAN.md` — the executable sequence for adding read-only brokers that require no static IP. `SPEC.md` — the Step 4 plan, and the authority for it. `tradestack/docs/symbol-model.md`, `aliceblue-api.md`, `paytm-api.md`. `tradestack/deploy/README.md` — deploy runbook. `research/` — regulatory and IP findings. The retired design docs (`DEPLOY-STEP3.md`, deleted in `84bd89b`; `CREDENTIALS-STEP3D.md`; `UX-STEP2.md`; `UX-REDESIGN.md`; `STRATEGY-BUILDER-IMPLEMENTATION.md`) live only in git history; their decisions are in `memory/`.
+**Companion docs.** `NEXT-10.md` — the current working queue (from 10 Oct 2026), worked one item at a time; it wraps ids owned by the trackers below. `PUBLIC-LAUNCH.md` — the open-sign-up launch plan (target 9 Oct 2026): the schedule, the L-items, and which P0 items gate it; **the authority for what is being worked on now**. `OBSERVABILITY.md` — logs, metrics and alerting plan (O-items; expands P0's D2). `REBRAND-GOLDENBOOK.md` — the rename to GoldenBook and the move to `goldenbook.in` (R-items; carries out L2). `P0-LAUNCH.md` — the production-launch tracker; it owns status for items A1–F2, this file owns code-truth, and the two must not overlap. `OVERVIEW-REDESIGN.md` — the Overview redesign (concept A: summary strip, one accounts table, Needs attention); OV-items and their status. `STAGING.md` — the staging environment and the broker simulator (ST-items; absorbs SIM-01–05, SIM-07/08). `NEXT-STEPS.md` — the open testing and landing-page backlog not tracked anywhere else. `BROKER-EXPANSION-PLAN.md` — the executable sequence for adding read-only brokers that require no static IP. `SPEC.md` — the Step 4 plan, and the authority for it. `tradestack/docs/symbol-model.md`, `aliceblue-api.md`, `paytm-api.md`. `tradestack/deploy/README.md` — deploy runbook. `research/` — regulatory and IP findings. The retired design docs (`DEPLOY-STEP3.md`, deleted in `84bd89b`; `CREDENTIALS-STEP3D.md`; `UX-STEP2.md`; `UX-REDESIGN.md`; `STRATEGY-BUILDER-IMPLEMENTATION.md`) live only in git history; their decisions are in `memory/`.
 
 ---
 
@@ -464,12 +464,13 @@ The four `UX mockup/` PNGs are the selected visual reference;
 `memory/ux-mockup-redesign.md` records the semantics, and `P0-LAUNCH.md` the
 remaining consistency work (session-status agreement, keyboard/empty/error states).
 
-**Overview layout:** `/app` follows `dashboard.png` with
-a horizontal summary strip, paired P&L/capital tables and collapsible per-account
-positions/holdings previews. Partial totals are marked, unavailable figures use
-dashes, and combined capital is labelled as held separately per account. Explicit
-line heights keep the desktop summary near 104px and broker rows at 49px;
-phone figures fit their columns and tables scroll within their panels.
+**Overview layout (concept A, `OVERVIEW-REDESIGN.md`):** `/app` is three bands: the
+summary strip (its capital cell names the tightest account beside the combined figure),
+one `AccountsTable` with P&L and capital per connection, and `AttentionBand` (margin
+pressure, expiring soon, biggest moves, to fix; one all-clear line when empty), driven by
+the pure `features/dashboard/attention.ts`. Partial totals are marked, unavailable figures
+and totals over nothing use dashes. The previews and the two broker tables are gone; see
+`memory/overview-shows-what-needs-attention.md`.
 
 **Positions layout:** `/app/positions` has the mockup's
 five-metric strip and nine-column table, with separate P&L/day P&L and collapsible

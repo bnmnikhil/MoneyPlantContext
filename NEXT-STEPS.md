@@ -110,6 +110,33 @@ broker, activation); a budget; and the compliance checklist.
 handle or a product one; whether any paid promotion is in scope (the compliance bar is
 higher); and the analytics decision above.
 
+### 4. The Risk page, hidden until it is defined (10 Oct 2026)
+
+> "lets hide risk page for now we have not clearly finalised what exactly risk should show."
+
+**Hidden, not deleted** (`NEXT-10.md` N2): the nav item and the `/app/risk` route come out of
+the build; `/api/risk/summary` stays, because the positions table's margin column reads it
+(`memory/positions-margin-comes-from-risk.md`). **To settle before it comes back:**
+- What the page is for: a portfolio-wide view (exposure, margin and capital use, expiry
+  buckets, decay), or risk per strategy, beside the payoff.
+- The three open questions in `CLAUDE.md`'s *The risk page* section: margin data against
+  ADR 0012, no defined formula for capital utilisation, and option exposure computed as
+  premium (`qty × ltp`) rather than notional or delta.
+- The data underneath: the page reads `position_snapshot`, frozen since the first request
+  after V5 (`P0-LAUNCH.md` A1, D6); the decay series is still `[]`.
+
+## Error tracing (7 Oct 2026, owner asked to park it)
+
+The admin status page (`/app/admin`) shows an in-memory error list that a restart clears. That answers "is anything on fire?" but not "what happened to this user on Tuesday?". Agreed direction, in order:
+
+1. **A request ID on every request**: in every log line, in the `X-Request-Id` response header and error body, and shown in the UI's error toast ("ref a1b2c3"), so a report can be traced end to end.
+2. **A hashed user or connection id in each log line**, never an email or token, plus a test that no secret reaches the logs.
+3. **Log retention**: journald/rsyslog kept about 30 days with a size cap, and a daily error count in the digest.
+4. **Later, only if history is needed**: an `error_event` table (time, request ID, hashed user, logger, exception class, message) behind the admin page.
+5. **No hosted error tracker for now**: a third party would see context from live brokerage sessions.
+
+Not started.
+
 ## Gaps review, 6 Oct 2026
 
 The assistant's read of what is missing, written when sign-up was open, five brokers were live and
