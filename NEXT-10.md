@@ -23,7 +23,7 @@ verified, `[-]` dropped. `[x]` means the verification below was run, not that co
 | N8 | Cross-user isolation on production | L11 | S–M | `[ ]` |
 | N9 | Monitoring floor: health, uptime, alerts | D2, O1, O2 | S–M | `[ ]` |
 | N10 | Groww broker support | `BROKER-EXPANSION-PLAN.md` Phase 4 | L | `[ ]` |
-| N11 | Payoff: "today" curve (projected P&L), then a days slider | owner request, 10 Oct | M | `[~]` Phase 1 on staging |
+| N11 | Payoff: "today" curve (projected P&L), then a days slider | owner request, 10 Oct | M | `[~]` Phases 1–2 on staging |
 
 **Removed 10 Oct 2026 (owner):** L5, the Google consent screen, because its test-user limit
 does not apply to this application; and A1, the frozen risk data, because the Risk page is
@@ -205,10 +205,19 @@ redraws there on every leg toggle and zoom; it mirrors `pricing/BlackScholes` an
   breakevens; title "Payoff". Gates: frontend 127 tests and build; backend 667 on the staging
   build. **Verified on staging 10 Oct** (SIM004 BANKNIFTY condor): Today at spot −₹89 against
   Current P/L −₹89; with one leg unticked, −₹3,507 against −₹3,507. Convergence to the expiry
-  curve at expiry is unit-tested. Remaining: merge and production deploy.
-- **Phase 2:** a target-date slider, **days only** (owner: no volatility control). From today to
-  the last expiry; a leg past its own expiry counts at intrinsic, which handles mixed-expiry books
-  properly; target-date breakevens. Max profit/loss stay expiry-based.
+  curve at expiry is unit-tested.
+- **Phase 2** (same branch and PRs; frontend `05f0479`, `90b660d`): a target-date slider, **days
+  only** (owner: no volatility control). Day 0 is now; day *n* is that day's 15:30 IST close, up to
+  the last open expiry. Volatility stays solved at today's marks; a leg past its own expiry counts at
+  intrinsic (mixed-expiry books); a future's basis shrinks to nil at its expiry. Target-date
+  breakevens are listed under the slider, found over the auto range so zooming does not move them,
+  and drawn in blue in the Projected-only view. The toggle's middle button is now **Projected**; the
+  legend and tooltip name the curve "Today" or its date. Max profit/loss stay expiry-based. Gates:
+  frontend 135 tests, typecheck, build. **Verified on staging 11 Oct** (SIM004 condor): the T+7
+  curve lifts as time value decays; at T+16 (27 Oct, last expiry) it lies on the expiry curve, with
+  the expiry breakevens 56,449 · 58,951; Projected-only draws 56,427 · 58,820 for 19 Oct; the
+  tooltip shows both curves. Phone width not checked.
 - **Phase 3:** the Strategy Builder chart and its compare view; draft legs take volatility from
   the chain's price at their strike.
+- **Remaining for Phases 1–2:** merge frontend #43 and MoneyPlant #45, then deploy to production.
 
