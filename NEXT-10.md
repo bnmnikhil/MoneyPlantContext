@@ -22,8 +22,8 @@ verified, `[-]` dropped. `[x]` means the verification below was run, not that co
 | N7 | Frontend failure states | B2, B3, B4, O13 | M | `[ ]` |
 | N8 | Cross-user isolation on production | L11 | S–M | `[ ]` |
 | N9 | Monitoring floor: health, uptime, alerts | D2, O1, O2 | S–M | `[ ]` |
-| N10 | Groww broker support | `BROKER-EXPANSION-PLAN.md` Phase 4 | L | `[ ]` |
-| N11 | Payoff: "today" curve (projected P&L), then a days slider | owner request, 10 Oct | M | `[~]` Phases 1–2 in production; Phase 3 open |
+| N10 | Groww broker support | `BROKER-EXPANSION-PLAN.md` Phase 4 | L | `[~]` dossier done; login gate fails, owner decision |
+| N11 | Payoff: "today" curve (projected P&L), then a days slider | owner request, 10 Oct | M | `[~]` Phases 1–2 in production; Phase 3 on staging (frontend #44) |
 
 **Removed 10 Oct 2026 (owner):** L5, the Google consent screen, because its test-user limit
 does not apply to this application; and A1, the frozen risk data, because the Risk page is
@@ -161,7 +161,14 @@ restart alerted. Flip the O-items as each is verified.
 **Verify:** stopping the backend on staging (not production) raises an alert within the
 uptime interval; `/api/health` answers without auth and leaks nothing.
 
-## `[ ]` N10 — Groww broker support
+## `[~]` N10 — Groww broker support
+
+**11 Oct 2026: step 1 done, stopped at step 2's gate.** `research/GROWW-DOSSIER.md`. Groww's retail Trade API
+has **no browser-redirect login**: its routes are an API key and secret with a daily approval at Groww, a TOTP
+seed, or a pasted daily token. The dossier recommends the first as a Groww-only exception (no login secret passes
+through GoldenBook; the user consents daily at Groww) and rules out the TOTP seed. Also open: whether the
+static-IP field is mandatory at key creation (CERT-02, a hard stop if so), and the **₹499 a month plus taxes**
+every user would pay Groww. **Waiting on the owner;** no simulator or adapter work until then.
 
 Groww is rank 1 by NSE active clients and next in the approved order. The vertical slice is
 `BROKER-EXPANSION-PLAN.md`'s: **dossier → gate → simulator → auth → adapter → catalogue/UI →
@@ -230,4 +237,13 @@ redraws there on every leg toggle and zoom; it mirrors `pricing/BlackScholes` an
   (`3611be6`) merged and deployed; backend gate 667 on the host, site 200, `/api/me` 401, served
   bundle identical to the local build. The gold slider and the phone layout were not seen in a
   browser before the deploy (staging had signed out); check both next time Payoff is open.
+  **Validated in production 11 Oct** on a live HEROMOTOCO call ratio spread: today at spot +₹2,926
+  against Current P/L +₹2,927; at the last expiry the curve lies on the expiry payoff and its
+  breakeven (5,412) is the expiry one. Phone width still unchecked.
+- **Phase 3** (`payoff/builder-projected`, frontend #44, `7c16a25`, `1e6aa32`): the Strategy Builder
+  uses the live chart panel (toolbar, both curves, gold target-date slider). Imported legs project
+  from the broker's mark, draft legs from the chain quote they were added at, so a strategy built
+  from quotes is flat today at spot (tested). The "If it expires at" spot slider and its three
+  figures are removed (owner). Gates: 136 tests, typecheck, build; on staging (simulator 59, backend
+  667), **not yet seen in a browser**. Remaining: browser check, merge, production.
 
