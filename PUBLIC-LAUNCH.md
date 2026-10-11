@@ -110,6 +110,14 @@ context repo; publish with `scripts/publish-docs.ps1`, manual for now). Its Cadd
    no quote.
 7. Tier 1 items: L11, C4, L4, A1, L6, the O-items. A1 matters: the local risk page reads 11 Aug snapshots.
 
+## Launch plan — 11 Oct 2026 (owner)
+
+**The remaining work is sequenced in `NEXT-10.md`, "The launch plan"**: stages A (correct and
+safe for a stranger) → B (friends as first users, backups on) → C (ready to announce, ending in
+the go/no-go checklist below) → D (after launch). Launch scope is positions, holdings, payoff and
+the Strategy Builder on live data only (`memory/launch-scope-is-live-data-only.md`); the
+announcement, not the 3 Oct sign-up opening, is the launch. Item status stays in its own tracker.
+
 ## Current priority revision — 3 Oct 2026 (owner)
 
 Current usage is the owner's single account, with little irreplaceable retained
@@ -182,7 +190,7 @@ week after.
 | L12 | Security review of the launch diff + dependency audit | 1 · security | `[ ]` |
 | L18 | Spot and chain: own brokers first, then a flagged admin feed; never another user's | 1 · terms | `[~]` |
 | L13 | Capacity: resize the VM to the free 4 OCPU / 24 GB, set JVM heap, smoke-load | 2 · ops | `[ ]` |
-| L14 | `raw_capture` growth: measure per user/day, add retention | 2 · ops | `[ ]` |
+| L14 | `raw_capture` growth: measure per user/day, add retention | 2 · ops | `[-]` dropped 11 Oct: capture switched off (N13) |
 | L15 | Incident runbook: breach, key rotation, disabling sign-up | 2 · ops | `[ ]` |
 | L16 | Launch comms + feedback channel | 2 · comms | `[ ]` |
 | L17 | SEBI RA: lawyer's read on the builder's recipes | 3 · legal | `[ ]` |
@@ -574,7 +582,10 @@ Postgres connections.
 
 **Verify:** p95 for `/api/positions` and memory stay flat across 15 minutes of load.
 
-### `[ ]` L14 — `raw_capture` growth
+### `[-]` L14 — `raw_capture` growth
+
+**Dropped 11 Oct 2026 (owner):** `raw_capture` is switched off instead (`NEXT-10.md` N13,
+`memory/launch-scope-is-live-data-only.md`), so there is no growth to bound.
 
 `OnFetchCapture` is throttled, but no retention exists anywhere, so the table grows per
 user per day forever on a single VM disk, and inside every nightly backup.
