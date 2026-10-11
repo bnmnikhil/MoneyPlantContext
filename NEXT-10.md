@@ -353,19 +353,70 @@ gives no steps and no redirect URL to paste, so nobody gets through it without t
 This takes over L6 from N5. It sits in Stage B because friends connecting Upstox and Dhan are the
 first people who will need it.
 
-**Do:** in the add-registration form (and linked from Settings' empty state), per broker:
-numbered steps from opening the developer portal to copying the key and secret; the **exact
-redirect URL** with a copy button, built for the environment it is shown in (production
-`https://goldenbook.in/<broker>/callback`, staging its own host); and each broker's catches:
-- **Kite:** the Personal tier costs ₹0 and covers everything GoldenBook calls.
-- **Alice Blue:** its admin team must activate the app, otherwise login answers `"Invalid vendor id"`.
-- **Paytm Money:** needs a KYC'd account, and every login asks for a password and an OTP.
-- **Dhan:** TOTP required, the API key lasts 12 months, and live prices need the paid Data API.
-- **Upstox:** to be filled from `research/UPSTOX-DOSSIER.md`.
+### Plan (11 Oct 2026)
 
-Keep the steps as data per broker (beside the catalogue's `developerConsoleUrl`), not
-as prose on a page, so a new broker adds an entry and touches nothing else (N5's direction).
-Walk each portal once while writing the steps, because the vendors' screens move.
+**What the user sees.** Choosing a broker in `AddRegistrationPanel` opens a **"How to get these"**
+block above the fields:
+1. **Numbered steps**, from opening the developer portal (the existing link moves into step 1) to
+   copying the key and secret into the boxes below.
+2. **The redirect URL** in a read-only box with a **Copy** button. The steps say "paste the URL
+   below" rather than spelling it out, so the text stays the same on every host.
+3. **Before you start** notes in an amber callout: costs, waits and prerequisites, shown *before*
+   step 1 so nobody finds out at the end that Dhan prices cost ₹499 a month.
+
+Open by default when the user has no registration at that broker; collapsed to a one-line
+"How to get these" toggle when they already have one (they have done it before). The inline
+**Replace** form on `RegistrationRow` gets the same toggle, collapsed. Settings' empty state
+says to choose Add broker to see the steps, instead of "register a developer app at your
+broker" with nothing to follow.
+
+**Where the content lives: the backend catalogue.** `BrokerCatalog`'s templates already own
+each broker's name, fields and portal link, and the catalogue refuses to start for a gateway
+with no template. It gains a `SetupGuide(List<String> steps, List<String> notes)` per template
+and refuses to start if `steps` is empty, so **no broker can ship without instructions**.
+`BrokerDefinition` and `GET /api/brokers` gain `setup` and `redirectUrl`; `types/api.ts` mirrors
+them as optional fields, so a frontend deployed against an older backend renders no guide rather than crashing.
+
+**The redirect URL is computed, never typed.** `redirectUrl = app.frontend-url + "/" + id +
+"/callback"`, the convention all five session controllers follow (`@GetMapping("/<id>/callback")`).
+A test fails if any gateway's id has no controller mapped at that path, and checks that
+`UpstoxSessionService.redirectUri()` (the one adapter that sends the URL in its login request)
+equals the catalogue's. Production shows `https://goldenbook.in/kite/callback`, staging its own
+host, and the laptop `localhost`, each correct where it is shown.
+
+**The text, per broker.** Draft from the vendors' current documentation, then walk each portal
+once to correct it. The owner walks Kite, Alice Blue and Paytm (accounts held); Upstox and Dhan
+are walked by the Stage B friends, which is also their L6 test. The notes known today:
+- **Kite:** the Personal tier costs ₹0 and covers everything GoldenBook reads; leave the
+  postback URL empty. Existing apps registered at the old `moneyplant.bonamnikhilbabu.in`
+  callback keep working through its redirect until R11, but new apps use the URL shown.
+- **Alice Blue:** after creating the app, its admin team must activate it; until then login
+  answers "Invalid vendor id". Say how long that took when the owner walks it.
+- **Paytm Money:** a KYC'd Paytm Money account is required, and every daily connect asks for
+  the password and an OTP (there is no refresh token).
+- **Upstox:** a standard OAuth app; the URL must match character for character. Record whether
+  the form asks for a static IP (CERT-02) while walking it.
+- **Dhan:** TOTP must be on before the key can be made; key and secret come from web.dhan.co →
+  Profile → *Access DhanHQ APIs* and **expire after 12 months**; the third box is the Dhan client
+  ID; live prices need the **Data API at ₹499 + tax a month**, without which positions show
+  Dhan's own P&L but no marks.
+- Text only, no screenshots: the vendors' screens move and a stale picture misleads more
+  than a stale sentence.
+
+**Order of work** (one branch, `n14/broker-setup-steps`, in both repos):
+1. Draft the five guides in the chat for the owner to approve the wording.
+2. Backend: `SetupGuide` on the templates, `setup` and `redirectUrl` on `BrokerDefinition`;
+   tests for the non-empty rule, the URL convention and the Upstox match. `mvnw clean test`.
+3. Frontend: `features/credentials/SetupGuide.tsx` (steps, copy box, notes; the open/collapsed
+   rule as a pure function in `model.ts` with a node test), wired into the Add panel, the
+   Replace form and the empty state. Typecheck, `npm test`, build.
+4. Staging: the owner looks at desktop and phone width (the automation browser cannot pass
+   staging's basic auth), every broker's URL is staging's own, and Copy works.
+5. Production, with approval; check that every URL reads `https://goldenbook.in/<id>/callback`.
+6. The owner walks Kite, Alice Blue and Paytm against the text and corrections ship. Upstox and
+   Dhan are corrected after the friends' walk in Stage B.
+7. Update `frontend/docs/broker-credential-setup.md` and `docs/product/brokers.md`; tick L6 in
+   `PUBLIC-LAUNCH.md` only after a friend has connected using the guide alone.
 
 **Verify:** frontend gates; every listed broker shows steps and its redirect URL on staging and
 in production, with the URL matching that host's callback; a person who has never seen the app
