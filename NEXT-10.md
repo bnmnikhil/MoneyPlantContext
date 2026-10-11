@@ -14,7 +14,7 @@ verified, `[-]` dropped. `[x]` means the verification below was run, not that co
 | ID | Item | Wraps | Size | Status |
 |---|---|---|---|---|
 | N1 | Land the pending branches | broker-sim #2, frontend `docs/rewrite-legal-copy`, context `docs/overview-a-plan` | S | `[x]` |
-| N2 | Hide the Risk page | owner decision, 10 Oct | S | `[ ]` |
+| N2 | Hide the Risk page | owner decision, 10 Oct | S | `[ ]` postponed (owner, 10 Oct) |
 | N3 | Upstox live certification | UPSTOX-07, CERT-02, CERT-04 | M | `[ ]` |
 | N4 | Dhan live certification and HOLD-PRICE | HOLD-PRICE, Dhan's open facts, CERT-02, CERT-04 | M | `[ ]` |
 | N5 | Broker copy that scales past five brokers | L6, L7, E1, E2, E4, E6 | M | `[ ]` under discussion |
@@ -23,10 +23,13 @@ verified, `[-]` dropped. `[x]` means the verification below was run, not that co
 | N8 | Cross-user isolation on production | L11 | S–M | `[ ]` |
 | N9 | Monitoring floor: health, uptime, alerts | D2, O1, O2 | S–M | `[ ]` |
 | N10 | Groww broker support | `BROKER-EXPANSION-PLAN.md` Phase 4 | L | `[ ]` |
+| N11 | Payoff: "today" curve (projected P&L), then a days slider | owner request, 10 Oct | M | `[~]` Phases 1–2 in production; Phase 3 open |
 
 **Removed 10 Oct 2026 (owner):** L5, the Google consent screen, because its test-user limit
 does not apply to this application; and A1, the frozen risk data, because the Risk page is
 hidden until it is defined (`NEXT-STEPS.md` owner idea 4, `memory/risk-page-hidden-until-defined.md`).
+
+**10 Oct 2026, later (owner):** N11 jumps the queue and N2 waits behind it.
 
 **Why this order.** N1 and N2 are small. N3 and N4 come next because real users can already
 connect two uncertified brokers (switched on 6 Oct), and Dhan shows zeros for anyone without
@@ -181,3 +184,50 @@ verification → live certification → staging soak → production flag**, each
 
 **Verify:** the plan's "Definition of done for one broker", item by item; backend gate and
 `verify.ps1 -Scope broker -Broker groww` green; connected end to end on staging.
+
+## `[~]` N11 — Payoff: "today" curve, then a days slider
+
+Sensibull-style projected P&L: beside the expiry payoff, the open legs valued **now** at each
+spot. On staging's BANKNIFTY condor the page showed Current P/L −₹89 while the expiry curve at
+spot read +₹8,785; the today curve is what joins the two.
+
+**Model.** Each option leg is priced with Black-Scholes at the volatility implied by its own
+current mark, held as spot moves (sticky strike; no smile dynamics). That makes the curve pass
+through Current P/L at spot, which is the built-in check. Futures and shares keep today's basis.
+A leg with no usable mark borrows the nearest-the-money volatility (same expiry first) and the
+chart says how many did; with no volatility anywhere, the curve is not drawn and the chart says
+why. Computed in the browser (`frontend/src/features/payoff/projection.ts`) because the chart
+redraws there on every leg toggle and zoom; it mirrors `pricing/BlackScholes` and
+`ImpliedVolatility` constant for constant, and both test suites pin the same reference prices.
+
+- **Phase 1** (`payoff/today-curve`; frontend #43, MoneyPlant #45): live Payoff page; Both /
+  Today / Expiry toggle, default Both (owner); tooltip shows both; Today-only hides the expiry
+  breakevens; title "Payoff". Gates: frontend 127 tests and build; backend 667 on the staging
+  build. **Verified on staging 10 Oct** (SIM004 BANKNIFTY condor): Today at spot −₹89 against
+  Current P/L −₹89; with one leg unticked, −₹3,507 against −₹3,507. Convergence to the expiry
+  curve at expiry is unit-tested.
+- **Phase 2** (same branch and PRs; frontend `05f0479`, `90b660d`): a target-date slider, **days
+  only** (owner: no volatility control). Day 0 is now; day *n* is that day's 15:30 IST close, up to
+  the last open expiry. Volatility stays solved at today's marks; a leg past its own expiry counts at
+  intrinsic (mixed-expiry books); a future's basis shrinks to nil at its expiry. Target-date
+  breakevens are listed under the slider, found over the auto range so zooming does not move them,
+  and drawn in blue in the Projected-only view. The toggle's middle button is now **Projected**; the
+  legend and tooltip name the curve "Today" or its date. Max profit/loss stay expiry-based. Gates:
+  frontend 135 tests, typecheck, build. **Verified on staging 11 Oct** (SIM004 condor): the T+7
+  curve lifts as time value decays; at T+16 (27 Oct, last expiry) it lies on the expiry curve, with
+  the expiry breakevens 56,449 · 58,951; Projected-only draws 56,427 · 58,820 for 19 Oct; the
+  tooltip shows both curves. Phone width not checked.
+- **Phase 3:** the Strategy Builder chart and its compare view; draft legs take volatility from
+  the chain's price at their strike.
+- **Layout, owner review 11 Oct** (frontend `2846add`, `8389676`): the Both / Projected / Expiry
+  selector is gone, both curves always show. Range buttons, reset and legend share one toolbar; the
+  range explanation and the model note sit behind ⓘ tips; the axis titles are dropped. The target
+  date moved under the chart as one gold slider (owner picked design A from four mocks on the
+  canvas `https://claude.ai/artifact/CMCeNzw5T2TFiiLvU1N5Tg`, then gold over blue: controls take the
+  theme colour, curves keep data colours; a blue swatch in the thumb's date label ties it to the
+  curve). The stepper and the separate Today button are gone; Today is a pill at the track's left end.
+- **In production 11 Oct 2026, 11:16 IST:** frontend #43 (`cc15e5b`) and MoneyPlant #45
+  (`3611be6`) merged and deployed; backend gate 667 on the host, site 200, `/api/me` 401, served
+  bundle identical to the local build. The gold slider and the phone layout were not seen in a
+  browser before the deploy (staging had signed out); check both next time Payoff is open.
+
