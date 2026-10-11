@@ -22,8 +22,8 @@ verified, `[-]` dropped. `[x]` means the verification below was run, not that co
 | N7 | Frontend failure states | B2, B3, B4, O13 | M | `[ ]` |
 | N8 | Cross-user isolation on production | L11 | S–M | `[ ]` |
 | N9 | Monitoring floor: health, uptime, alerts | D2, O1, O2 | S–M | `[ ]` |
-| N10 | Groww broker support | `BROKER-EXPANSION-PLAN.md` Phase 4 | L | `[~]` dossier done; login gate fails, owner decision |
-| N11 | Payoff: "today" curve (projected P&L), then a days slider | owner request, 10 Oct | M | `[~]` Phases 1–2 in production; Phase 3 on staging (frontend #44) |
+| N10 | Groww broker support | `BROKER-EXPANSION-PLAN.md` Phase 4 | L | `[-]` on hold (owner, 11 Oct); dossier done |
+| N11 | Payoff: "today" curve (projected P&L), then a days slider | owner request, 10 Oct | M | `[x]` all three phases in production, 11 Oct |
 
 **Removed 10 Oct 2026 (owner):** L5, the Google consent screen, because its test-user limit
 does not apply to this application; and A1, the frozen risk data, because the Risk page is
@@ -161,14 +161,17 @@ restart alerted. Flip the O-items as each is verified.
 **Verify:** stopping the backend on staging (not production) raises an alert within the
 uptime interval; `/api/health` answers without auth and leaks nothing.
 
-## `[~]` N10 — Groww broker support
+## `[-]` N10 — Groww broker support (on hold)
 
 **11 Oct 2026: step 1 done, stopped at step 2's gate.** `research/GROWW-DOSSIER.md`. Groww's retail Trade API
 has **no browser-redirect login**: its routes are an API key and secret with a daily approval at Groww, a TOTP
 seed, or a pasted daily token. The dossier recommends the first as a Groww-only exception (no login secret passes
 through GoldenBook; the user consents daily at Groww) and rules out the TOTP seed. Also open: whether the
 static-IP field is mandatory at key creation (CERT-02, a hard stop if so), and the **₹499 a month plus taxes**
-every user would pay Groww. **Waiting on the owner;** no simulator or adapter work until then.
+every user would pay Groww. **On hold (owner, 11 Oct 2026):** too few Groww users would pay ₹499 a month
+to connect a read-only app, against the largest build in the queue. Reopen if Groww offers a partner/OAuth
+route for read-only apps (ask in the L1 outreach, 17–24 Oct) or a friend confirms the static-IP field is
+optional. Until then no simulator or adapter work.
 
 Groww is rank 1 by NSE active clients and next in the approved order. The vertical slice is
 `BROKER-EXPANSION-PLAN.md`'s: **dossier → gate → simulator → auth → adapter → catalogue/UI →
@@ -192,7 +195,7 @@ verification → live certification → staging soak → production flag**, each
 **Verify:** the plan's "Definition of done for one broker", item by item; backend gate and
 `verify.ps1 -Scope broker -Broker groww` green; connected end to end on staging.
 
-## `[~]` N11 — Payoff: "today" curve, then a days slider
+## `[x]` N11 — Payoff: "today" curve, then a days slider
 
 Sensibull-style projected P&L: beside the expiry payoff, the open legs valued **now** at each
 spot. On staging's BANKNIFTY condor the page showed Current P/L −₹89 while the expiry curve at
@@ -245,5 +248,9 @@ redraws there on every leg toggle and zoom; it mirrors `pricing/BlackScholes` an
   from the broker's mark, draft legs from the chain quote they were added at, so a strategy built
   from quotes is flat today at spot (tested). The "If it expires at" spot slider and its three
   figures are removed (owner). Gates: 136 tests, typecheck, build; on staging (simulator 59, backend
-  667), **not yet seen in a browser**. Remaining: browser check, merge, production.
+  667). **Verified on staging 11 Oct** (ITC bear call spread from chain quotes): today +₹0 at spot,
+  T+8 breakeven 429.38, at the last expiry the curve lies on the expiry payoff with breakeven 432.
+  Follow-up `c6b479b` drops a focus box the builder drew round the slider. **In production 11 Oct**
+  (frontend #44, `522c9f9`): backend 667 on the host, site 200, `/api/me` 401, served bundle identical
+  to the local build of `main`.
 
