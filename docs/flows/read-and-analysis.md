@@ -82,20 +82,20 @@ connections can serve it; Alice Blue is the only chain source today.
 
 ```mermaid
 flowchart LR
-    brokers["Brokers"] -- "every fetch" --> cap["Capture"]
-    cap --> snap[("Snapshot tables")]
-    snap --> risk["Risk service"]
+    brokers["Brokers"] -- "positions, margins, spot" --> src["Live position and margin sources"]
+    src --> risk["Risk service"]
     risk --> exp["Exposure"]
     risk --> bucket["Expiry buckets"]
     risk --> margin["Heuristic margin engine<br/>SPAN + exposure"]
 ```
 
-**The risk module reads stored snapshots, never brokers**
-([ADR 0012](https://github.com/bnmnikhil/MoneyPlant/blob/main/docs/adr/0012-risk-reads-snapshots-never-brokers.md)).
-That keeps a risk request from depending on a live session or on market hours. The cost is that the figures are
-only as fresh as the last capture, and the page says which. **Known problem:** the snapshot tables were seeded
-once and are not refreshed from the archive, so the risk page can compute on positions days old (launch item A1).
-The numbers are labelled `STALE`, but they are wrong until A1 is fixed.
+**Risk is computed on the live book**
+([ADR 0029](https://github.com/bnmnikhil/MoneyPlant/blob/main/docs/adr/0029-risk-inputs-are-live.md), which
+supersedes 0012). `risk/` declares two inputs, `PositionSource` and `MarginSource`; their implementations in
+`portfolio/` make the same broker calls the positions page makes, resolve each row through the contract master
+and quote spot live, with no stored fallback. The calculators stay pure and never touch a broker (ArchUnit A2).
+This is what the positions page's margin column reads, so it moves with the user's book. The cost: figures are
+not reproducible from stored rows, and the call is repeated at the positions page's 30-second refresh.
 
 ## Where to read the code
 

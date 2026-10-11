@@ -58,7 +58,8 @@ hidden.
 | Multi-broker positions, holdings and margins | Live |
 | Payoff charts, with exact strikes, breakevens and range controls | Live |
 | Strategy builder with live option-chain quotes | Live (the chain comes from Alice Blue only) |
-| Risk view: exposure, expiry buckets, margin estimate | Live, but computed from stored snapshots that can be stale |
+| Margin estimate per position group | Live, computed on the current book |
+| Risk page: exposure, expiry buckets | Live on the current book; to be hidden for launch and redefined after it (N2) |
 | Open Google sign-up with an admission switch | Live |
 | Backups, monitoring and alerting | **Not yet** |
 | Self-serve broker setup guide, support contact, data erasure | **Not yet** |
