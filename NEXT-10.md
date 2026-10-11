@@ -23,7 +23,7 @@ verified, `[-]` dropped. `[x]` means the verification below was run, not that co
 | N8 | Cross-user isolation on production | L11 | S–M | `[ ]` |
 | N9 | Monitoring floor: health, uptime, alerts | D2, O1, O2 | S–M | `[ ]` |
 | N10 | Groww broker support | `BROKER-EXPANSION-PLAN.md` Phase 4 | L | `[ ]` |
-| N11 | Payoff: "today" curve (projected P&L), then a days slider | owner request, 10 Oct | M | `[~]` Phases 1–2 on staging |
+| N11 | Payoff: "today" curve (projected P&L), then a days slider | owner request, 10 Oct | M | `[~]` Phases 1–2 in production; Phase 3 open |
 
 **Removed 10 Oct 2026 (owner):** L5, the Google consent screen, because its test-user limit
 does not apply to this application; and A1, the frozen risk data, because the Risk page is
@@ -219,5 +219,15 @@ redraws there on every leg toggle and zoom; it mirrors `pricing/BlackScholes` an
   tooltip shows both curves. Phone width not checked.
 - **Phase 3:** the Strategy Builder chart and its compare view; draft legs take volatility from
   the chain's price at their strike.
-- **Remaining for Phases 1–2:** merge frontend #43 and MoneyPlant #45, then deploy to production.
+- **Layout, owner review 11 Oct** (frontend `2846add`, `8389676`): the Both / Projected / Expiry
+  selector is gone, both curves always show. Range buttons, reset and legend share one toolbar; the
+  range explanation and the model note sit behind ⓘ tips; the axis titles are dropped. The target
+  date moved under the chart as one gold slider (owner picked design A from four mocks on the
+  canvas `https://claude.ai/artifact/CMCeNzw5T2TFiiLvU1N5Tg`, then gold over blue: controls take the
+  theme colour, curves keep data colours; a blue swatch in the thumb's date label ties it to the
+  curve). The stepper and the separate Today button are gone; Today is a pill at the track's left end.
+- **In production 11 Oct 2026, 11:16 IST:** frontend #43 (`cc15e5b`) and MoneyPlant #45
+  (`3611be6`) merged and deployed; backend gate 667 on the host, site 200, `/api/me` 401, served
+  bundle identical to the local build. The gold slider and the phone layout were not seen in a
+  browser before the deploy (staging had signed out); check both next time Payoff is open.
 
