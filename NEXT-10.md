@@ -50,7 +50,7 @@ or Dhan accounts for B.
 | N9 | Monitoring floor: health, uptime, alerts, new sign-ups | D2, O1, O2 | S–M | A | `[ ]` |
 | N10 | Groww broker support | `BROKER-EXPANSION-PLAN.md` Phase 4 | L | D | `[-]` on hold (owner, 11 Oct); dossier done |
 | N11 | Payoff: "today" curve (projected P&L), then a days slider | owner request, 10 Oct | M | — | `[x]` all three phases in production, 11 Oct |
-| N12 | Positions margin calculated live | owner, 11 Oct; supersedes the column's risk dependency | S–M | A | `[ ]` |
+| N12 | Positions margin calculated live | owner, 11 Oct; supersedes the column's risk dependency | S–M | A | `[x]` |
 | N13 | Switch off `raw_capture` | owner, 11 Oct; drops L14 | S | A | `[ ]` |
 
 **Removed 10 Oct 2026 (owner):** L5, the Google consent screen, because its test-user limit
@@ -296,7 +296,7 @@ redraws there on every leg toggle and zoom; it mirrors `pricing/BlackScholes` an
   (frontend #44, `522c9f9`): backend 667 on the host, site 200, `/api/me` 401, served bundle identical
   to the local build of `main`.
 
-## `[ ]` N12 — Positions margin calculated live
+## `[x]` N12 — Positions margin calculated live
 
 **Owner, 11 Oct 2026: margin has to be calculated live.** The positions table's margin column
 reads `/api/risk/summary` (`memory/positions-margin-comes-from-risk.md`), whose positions come
@@ -313,6 +313,20 @@ nothing on a visible page reads `/api/risk/summary`, and `raw_capture` can stop 
 **Verify:** backend and frontend gates; a position opened today gets a margin figure the same
 day and no stale caption; on staging the figures equal the engine's on the same positions;
 checked in production on the owner's book.
+
+**Done 11 Oct 2026** (tradestack PR #46, `6ef0d26`; ADR 0029 supersedes 0012; docs PR #33).
+Built differently from the plan above: rather than moving the engine out of `risk/`, risk's two
+inputs are now read live (`portfolio/LivePositionSource`, `LiveMarginSource`), so the column
+still comes from `/api/risk/summary` but over the live book. Gates: `mvnw clean test` 670.
+Staging: every risk request computed all three simulator accounts from live margins. Production,
+deployed 15:28 IST: the owner's Alice Blue estimate is over **6** live positions where the frozen
+snapshot holds 11 from 13 Aug; no WARN or ERROR since the deploy.
+- **Not checked:** the rendered page by automation (staging's basic auth blocked it; the owner
+  viewed production), and "a position opened today" (Sunday; confirm on the next trading day).
+- **Engine finding, not N12's:** the estimate is 0.94× Kite's bill but **0.60×** Alice Blue's.
+  Alice Blue's `utilizedSpanMargin` 109,991 + `utilizedExposureMargin` 96,678 is exactly its
+  `used`, so the shortfall is mostly exposure, which the engine charges at 2% / 3.5% of
+  notional. Worth calibrating before friends compare the column with their Alice Blue bill.
 
 ## `[ ]` N13 — Switch off `raw_capture`
 
