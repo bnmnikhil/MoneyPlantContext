@@ -53,7 +53,7 @@ Package-by-module under `com.goldenbook.tradestack`. The boundaries are enforced
 | `analytics/` | Payoff engine and service, the strategy builder, strategy templates |
 | `marketdata/` | Spot prices and the option chain, with their per-user caches |
 | `pricing/` | Option pricing (Black-Scholes) |
-| `risk/` | Exposure, expiry buckets, and the heuristic margin engine. **Reads snapshots, never brokers** |
+| `risk/` | Exposure, expiry buckets, and the heuristic margin engine. **Pure: its live inputs come from `portfolio/`** |
 | `snapshot/` | Capture of every broker fetch, the end-of-day job, typed snapshot tables |
 | `credential/` | Per-user, per-broker credentials, encrypted |
 | `auth/` | Google sign-in, admission modes, the application session |
