@@ -28,6 +28,8 @@ below.
 
 ## Decisions
 
+- [Launch scope is live data only](launch-scope-is-live-data-only.md) — 11 Oct 2026: positions, holdings, payoff, builder on live data; no history captured, `raw_capture` off, Risk hidden, margin calculated live.
+
 - [Risk page hidden until defined](risk-page-hidden-until-defined.md) — 10 Oct 2026: `/app/risk` leaves the build until its purpose is settled; the API stays for positions' margin column. L5's test-user limit does not apply.
 
 - [Explicit Google signup modes](google-signup-modes.md) — Oct 2026: allowlist/open/closed admission is keyed by Google subject; V9 preserves legacy users, and disabling applies at the next sign-in, not per request.

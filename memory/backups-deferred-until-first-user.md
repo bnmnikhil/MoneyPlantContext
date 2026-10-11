@@ -17,6 +17,8 @@ N9's monitoring can alert on new sign-ups.
 design session held under pressure when a real user's data is already at risk. Strategy: nightly encrypted
 `pg_dump` to OCI Object Storage; 7 daily + 4 weekly; heartbeat alert (O3); monthly restore drill into staging.
 Protect `GB_CREDENTIAL_KEY` first and never store it beside a dump; skip `broker_session` (expires daily).
+Since 11 Oct 2026 `raw_capture` is switched off ([[launch-scope-is-live-data-only]]), so a dump is just
+`app_user` and `broker_credential`.
 
 **How to apply:** before telling anyone about GoldenBook, or on seeing a non-owner row in `app_user` with a
 `broker_credential`, do N6 first. Detail in `NEXT-10.md` N6.

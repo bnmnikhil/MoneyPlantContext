@@ -7,6 +7,11 @@ metadata:
 
 Decided 15 Aug 2026, adding a per-underlying margin column to `/app/positions`.
 
+**Revisited 11 Oct 2026 (owner): margin must be calculated live**
+([[launch-scope-is-live-data-only]]). Risk's positions come from `position_snapshot`, which freezes at a user's
+first visit, so the column moves to the engine run on the live positions the table already shows (`NEXT-10.md`
+N12). The footing rule below still holds: subtotal and account total must come from the same source.
+
 **Both numbers come from `/api/risk/summary` — the group subtotals from
 `instruments[].marginUsed`, the account total from `margin.accounts[].used`.**
 The obvious alternative was to take the account total from the live
