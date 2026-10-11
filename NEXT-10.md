@@ -18,7 +18,7 @@ verified, `[-]` dropped. `[x]` means the verification below was run, not that co
 | N3 | Upstox live certification | UPSTOX-07, CERT-02, CERT-04 | M | `[ ]` |
 | N4 | Dhan live certification and HOLD-PRICE | HOLD-PRICE, Dhan's open facts, CERT-02, CERT-04 | M | `[ ]` |
 | N5 | Broker copy that scales past five brokers | L6, L7, E1, E2, E4, E6 | M | `[ ]` under discussion |
-| N6 | Off-VM backups | D1, O3 (backup heartbeat) | M | `[ ]` |
+| N6 | Off-VM backups | D1, O3 (backup heartbeat) | M | `[ ]` deferred until the first non-owner user registers a broker (owner, 11 Oct) |
 | N7 | Frontend failure states | B2, B3, B4, O13 | M | `[ ]` |
 | N8 | Cross-user isolation on production | L11 | S–M | `[ ]` |
 | N9 | Monitoring floor: health, uptime, alerts | D2, O1, O2 | S–M | `[ ]` |
@@ -116,7 +116,22 @@ support contact), and N1's deferred render check of the legal rewrite.
 
 **Verify:** to be written once the approach is chosen.
 
-## `[ ]` N6 — Off-VM backups (D1)
+## `[ ]` N6 — Off-VM backups (D1) — deferred until its trigger
+
+**11 Oct 2026 (owner): deferred, with a trigger.** Production holds only the owner's own data (3
+`app_user` rows, all the owner's or seeded from the owner's history; 11 MB), all recreatable, so a
+loss today costs an evening. **Switch backups on when the first account that is not the owner's
+registers a broker, or before any announcement or marketing, whichever comes first.** Sign-up is
+open, so that can happen unannounced: watch `/app/admin`'s user count until N9 can alert on it.
+The strategy is fixed now so the switch-on is an hour's work, not a design:
+
+- **What, in priority:** `GB_CREDENTIAL_KEY` (already off the VM; never in the same place as a
+  dump), then `app_user` + `broker_credential`, then `raw_capture` (the only history that cannot
+  be rebuilt). Not `broker_session`: sessions die daily.
+- **How:** nightly `pg_dump`, encrypted before it leaves the VM, to OCI Object Storage (always-free
+  tier). Losing at most a day is acceptable for a read-only product.
+- **Retention:** 7 daily, 4 weekly.
+- **Proof:** a heartbeat alert on a missed run (O3) and a monthly restore drill into staging.
 
 Production holds real users' encrypted credentials and sessions, and the only copies are on the
 VM. The scripts already exist (PR #16). Remaining: an off-VM target (OCI Object Storage PAR,
