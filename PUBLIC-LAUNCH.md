@@ -377,6 +377,8 @@ screen shows GoldenBook's name.
 
 ### `[ ]` L6 — Self-serve broker setup guide
 
+**11 Oct 2026: worked as `NEXT-10.md` N14** (Stage B): instructions shown inside the app, per broker.
+
 A stranger cannot use GoldenBook until they create a developer app at each broker, a step
 no one will walk them through in person. Kite Connect's Personal tier costs ₹0. Alice Blue
 needs its admin team to activate the app, otherwise login answers `"Invalid vendor id"`.

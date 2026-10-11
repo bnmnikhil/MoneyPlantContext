@@ -23,8 +23,8 @@ Finish a stage before starting the next; only L1's external clock runs alongside
 | Stage | Goal | Items | Done when |
 |---|---|---|---|
 | **A** | Correct and safe for a stranger who arrives unannounced | N12, N2, N13, N4's HOLD-PRICE, N7, N8, N9, L4, E3 | A new user sees only live, correct figures and nobody else's data; a new sign-up and an outage both alert the owner; terms acceptance is recorded; erasure has been run once |
-| **B** | Friends as the first users | N6, then N3 and N4's certification | Backups proven by a restore; 2–3 friends' Upstox and Dhan accounts compared figure by figure |
-| **C** | Ready to announce | L1 (review 17–24 Oct), N5 (L6, L7, E1/E2/E4/E6), L12, D4, L16 | `PUBLIC-LAUNCH.md`'s go/no-go checklist ticked; the copy claims only the four launch features. Then announce |
+| **B** | Friends as the first users | N14, N6, then N3 and N4's certification | Backups proven by a restore; 2–3 friends' Upstox and Dhan accounts compared figure by figure |
+| **C** | Ready to announce | L1 (review 17–24 Oct), N5 (L7, E1/E2/E4/E6), L12, D4, L16 | `PUBLIC-LAUNCH.md`'s go/no-go checklist ticked; the copy claims only the four launch features. Then announce |
 | **D** | After launch | Define Risk; market history; back-testing; N10 if Groww opens a path | — |
 
 **Why this order.** A is what a stranger meets today, since sign-up is open. B before C because
@@ -43,7 +43,7 @@ or Dhan accounts for B.
 | N2 | Hide the Risk page | owner decision, 10 Oct | S | A | `[ ]` un-postponed (owner, 11 Oct) |
 | N3 | Upstox live certification | UPSTOX-07, CERT-02, CERT-04 | M | B | `[ ]` |
 | N4 | Dhan live certification and HOLD-PRICE | HOLD-PRICE, Dhan's open facts, CERT-02, CERT-04 | M | A (HOLD-PRICE), B (certification) | `[ ]` |
-| N5 | Broker copy that scales past five brokers | L6, L7, E1, E2, E4, E6 | M | C | `[ ]` under discussion |
+| N5 | Broker copy that scales past five brokers | L7, E1, E2, E4, E6 (L6 moved to N14) | M | C | `[ ]` under discussion |
 | N6 | Off-VM backups | D1, O3 (backup heartbeat) | M | B | `[ ]` deferred until the first non-owner user registers a broker (owner, 11 Oct) |
 | N7 | Frontend failure states | B2, B3, B4, O13 | M | A | `[ ]` |
 | N8 | Cross-user isolation on production | L11 | S–M | A | `[ ]` |
@@ -52,6 +52,7 @@ or Dhan accounts for B.
 | N11 | Payoff: "today" curve (projected P&L), then a days slider | owner request, 10 Oct | M | — | `[x]` all three phases in production, 11 Oct |
 | N12 | Positions margin calculated live | owner, 11 Oct; supersedes the column's risk dependency | S–M | A | `[x]` |
 | N13 | Switch off `raw_capture` | owner, 11 Oct; drops L14 | S | A | `[ ]` |
+| N14 | Show how to create each broker's API key and secret | owner, 11 Oct; L6 | M | B | `[ ]` |
 
 **Removed 10 Oct 2026 (owner):** L5, the Google consent screen, because its test-user limit
 does not apply to this application; and A1, the frozen risk data, because the Risk page is
@@ -135,8 +136,7 @@ on staging (`SIM001`–`SIM003`) and real figures with one (`SIM004`); the live 
 **Under discussion with the owner (10 Oct 2026); the approach below is not decided.** The
 landing page, the legal pages and the setup guide name brokers one by one, and more brokers are
 coming, so every addition means editing prose in several places. Replace that format with one
-that a new broker does not touch. Still in scope: L6 (setup guide with exact redirect URLs),
-L7 (landing copy and its desktop/phone render check), E1/E2/E4/E6 (legal placeholders,
+that a new broker does not touch. Still in scope: L7 (landing copy and its desktop/phone render check), E1/E2/E4/E6 (legal placeholders,
 support contact), and N1's deferred render check of the legal rewrite.
 
 **Verify:** to be written once the approach is chosen.
@@ -344,3 +344,29 @@ page says nothing about keeping portfolio history. L14 is dropped with this.
 **Verify:** backend gate; after a trading day on production `select count(*) from raw_capture`
 stays 0 and no `capture_run` rows appear; positions, holdings, payoff and builder unchanged.
 
+## `[ ]` N14 — Show how to create each broker's API key and secret (L6)
+
+**Owner, 11 Oct 2026: the app has to show the instructions for creating the API key and secret at
+each broker.** Today the add-registration form shows the right field names (*API key*, *App
+code*, *secret*) and one link, "Open <broker> developer portal" (`CredentialFields.tsx`). It
+gives no steps and no redirect URL to paste, so nobody gets through it without the owner on the phone.
+This takes over L6 from N5. It sits in Stage B because friends connecting Upstox and Dhan are the
+first people who will need it.
+
+**Do:** in the add-registration form (and linked from Settings' empty state), per broker:
+numbered steps from opening the developer portal to copying the key and secret; the **exact
+redirect URL** with a copy button, built for the environment it is shown in (production
+`https://goldenbook.in/<broker>/callback`, staging its own host); and each broker's catches:
+- **Kite:** the Personal tier costs ₹0 and covers everything GoldenBook calls.
+- **Alice Blue:** its admin team must activate the app, otherwise login answers `"Invalid vendor id"`.
+- **Paytm Money:** needs a KYC'd account, and every login asks for a password and an OTP.
+- **Dhan:** TOTP required, the API key lasts 12 months, and live prices need the paid Data API.
+- **Upstox:** to be filled from `research/UPSTOX-DOSSIER.md`.
+
+Keep the steps as data per broker (beside the catalogue's `developerConsoleUrl`), not
+as prose on a page, so a new broker adds an entry and touches nothing else (N5's direction).
+Walk each portal once while writing the steps, because the vendors' screens move.
+
+**Verify:** frontend gates; every listed broker shows steps and its redirect URL on staging and
+in production, with the URL matching that host's callback; a person who has never seen the app
+connects one broker using only these instructions (L6's test). Friends in Stage B are that test.
