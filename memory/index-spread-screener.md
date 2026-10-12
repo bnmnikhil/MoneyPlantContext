@@ -5,6 +5,8 @@ metadata:
   type: decision
 ---
 
+**12 Oct 2026 (owner): the code is dropped and the screener will be started fresh.** Its two branches (`feat/index-spread-screener`, tradestack `3e533ca`, frontend `abb378e`) were never pushed and were lost when the laptop was formatted. The design below still records what was built and why.
+
 **25 Sep 2026.** The first Screener is a read-only discovery surface, not an
 execution engine. On opening `/app/screener`, the authenticated backend uses
 the caller's first available Alice Blue option-chain source, scans NIFTY,
