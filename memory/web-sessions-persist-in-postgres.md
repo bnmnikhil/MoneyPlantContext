@@ -41,3 +41,7 @@ container sessions, so `mvnw test` still needs no database.
 **Verified on staging, 13 Oct.** The owner signed in, staging was redeployed (the
 app restarted at 17:50:44), and `/api/me` still answered 200 with the Overview
 loaded. The simulated broker login survived as well.
+
+**In production, 13 Oct.** Deployed at 20:43 IST (which signed everyone out one last
+time); the owner signed in, and the next deploy restarted the backend at 21:59:40 IST
+without signing them out.
