@@ -322,7 +322,7 @@ session-status poll's 60-second interval. Manual logout remains immediate. See
 `memory/application-sessions-expire-at-midnight.md`.
 
 **That session is stored in Postgres** (Spring Session JDBC, V11, cookie `SESSION`;
-on branch `launch/persist-web-sessions`, verified on staging 13 Oct 2026), so a
+in production since 13 Oct 2026, verified by a deploy that signed nobody out), so a
 deploy or restart signs nobody out. An attribute that no longer deserialises is
 dropped, which turns the request into a 401 rather than a 500. Ending one user's
 sessions early is a `delete from spring_session where principal_name = <sub>`; a

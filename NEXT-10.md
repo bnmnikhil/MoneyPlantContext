@@ -53,8 +53,8 @@ or Dhan accounts for B.
 | N12 | Positions margin calculated live | owner, 11 Oct; supersedes the column's risk dependency | S–M | A | `[x]` |
 | N13 | Switch off `raw_capture` | owner, 11 Oct; drops L14 | S | A | `[ ]` |
 | N14 | Show how to create each broker's API key and secret | owner, 11 Oct; L6 | M | B | `[~]` in production 13 Oct; waits on a friend's walk-through |
-| N15 | Release the 13 Oct usability fixes | usability session, 13 Oct | S | A | `[~]` on staging; PRs open |
-| N16 | The screen after sign-in | usability session, 13 Oct | M | A | `[~]` on staging 13 Oct; owner to look |
+| N15 | Release the 13 Oct usability fixes | usability session, 13 Oct | S | A | `[x]` in production 13 Oct |
+| N16 | The screen after sign-in | usability session, 13 Oct | M | A | `[~]` in production 13 Oct; owner's look at desktop and phone left |
 | N17 | Staging without its password prompt | usability session, 13 Oct | S | — | `[ ]` |
 | N18 | Browser smoke pack | `TESTING.md`'s `ui` scope | M | — | `[ ]` |
 | N19 | The landing page states GoldenBook's price | usability session, 13 Oct | S | C | `[ ]` |
@@ -439,7 +439,7 @@ are walked by the Stage B friends, which is also their L6 test. The notes known 
 in production, with the URL matching that host's callback; a person who has never seen the app
 connects one broker using only these instructions (L6's test). Friends in Stage B are that test.
 
-## `[~]` N15 — Release the 13 Oct usability fixes
+## `[x]` N15 — Release the 13 Oct usability fixes
 
 Three fixes found while the owner used staging on 13 Oct 2026, all verified there:
 - **Sign in / Sign up.** The landing and login pages gave no hint that this is also how to make
@@ -457,6 +457,12 @@ the sign-in session; bump `details.ts`' version and date or not.
 **Verify:** gates (678 / 141); production deploy (it signs users out one last time); copy
 `deploy/Caddyfile` to `/etc/caddy/Caddyfile` and reload (the owner runs it); then sign in, deploy
 again and stay signed in, and `curl -I` shows `no-cache` on `/` and `immutable` on a bundle.
+
+**Done 13 Oct 2026.** tradestack #48, frontend #46 and context #39 merged and deployed (backend up
+20:43:35 IST); the owner reloaded Caddy. From outside: `/` and SPA routes `no-cache`, the bundle
+`immutable`, a missing bundle 404, and the `SESSION` cookie Secure, HttpOnly, SameSite=Lax. The
+owner signed in, then N16's deploy restarted the backend (21:59:40 IST) and they stayed signed
+in. The privacy version was not bumped.
 
 ## `[~]` N16 — The screen after sign-in
 
@@ -484,8 +490,12 @@ as a user with no keys the checklist shows, the header reads "No brokers yet", a
 lands on Settings with the form open. **Not checked:** the look itself, and phone width (the
 automation browser could not screenshot localhost).
 
-**Verify:** the owner looks at both states on staging at desktop and phone width (the daily login
-shows on staging once its simulated broker sessions end at midnight); then PR and production.
+**Verify:** the owner looks at both states at desktop and phone width (the daily login shows
+once no broker is logged in for the day).
+
+**13 Oct 2026: in production** (frontend #47, context #40; backend up 21:59:40 IST), at the
+owner's request before their look. The live bundle carries both screens and the new header
+wording. **Left:** the owner's look; then `[x]`.
 
 ## `[ ]` N17 — Staging without its password prompt
 
