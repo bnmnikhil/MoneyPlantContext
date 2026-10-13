@@ -30,7 +30,9 @@ fails loudly (GCM is authenticated) instead of yielding plausible garbage that w
 
 ## Sign-in and sessions
 
-- **Google OIDC.** The application session ends at **midnight IST**, however active the user is.
+- **Google OIDC.** The application session ends at **midnight IST**, however active the user is. It is stored
+  in Postgres (Spring Session, `SESSION` cookie), so a deploy or restart does not sign anyone out; to end one
+  user's sessions early, delete their `spring_session` rows.
 - **Admission** is `allowlist`, `open` or `closed`, backed by an `app_user` table; a user can be disabled.
 - **A broker's callback is public**, because the session cookie does not survive the cross-site redirect. It is
   attributed instead by a **single-use nonce** minted in the authenticated `login-url` call; see
