@@ -321,6 +321,14 @@ carry it into the next day. A foreground tab detects midnight within the
 session-status poll's 60-second interval. Manual logout remains immediate. See
 `memory/application-sessions-expire-at-midnight.md`.
 
+**That session is stored in Postgres** (Spring Session JDBC, V11, cookie `SESSION`;
+on branch `launch/persist-web-sessions`, verified on staging 13 Oct 2026), so a
+deploy or restart signs nobody out. An attribute that no longer deserialises is
+dropped, which turns the request into a 401 rather than a 500. Ending one user's
+sessions early is a `delete from spring_session where principal_name = <sub>`; a
+restart no longer does it. The test suite excludes the JDBC autoconfiguration. See
+`memory/web-sessions-persist-in-postgres.md`.
+
 **Sessions persist, encrypted** (ADR 0025). `PostgresSessionStore` replaced `FileSessionStore` and its plaintext `~/.moneyplant/sessions.json`, both **deleted**. The seam sits at `ConnectionService`, not in `broker/paytm`, because that service is already the single `connectionId`-keyed chokepoint and naming a broker there would break "a new broker needs zero changes". Why it exists at all: Paytm's login is a password *and* an OTP every time, issuing three access tokens and **no refresh token**, so there is no renewal path — while Kite and Alice Blue re-auth is one button.
 
 - Only sessions created **today in IST** are restored — stricter than any broker's real expiry, because restoring a dead token gives a confusing 401 while expiring early costs a login the user was making anyway. A restart across an IST date boundary costs a login, by design.

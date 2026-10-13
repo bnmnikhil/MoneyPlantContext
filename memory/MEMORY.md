@@ -60,6 +60,7 @@ below.
 - [P&L has two columns, always](pnl-has-two-columns.md) — brokers disagree on what "P&L" means, so `PositionDto` fixes both and each gateway fills the half its broker withholds.
 - [The app owns its symbols](app-owns-its-symbols.md) — broker symbols live only inside that broker's adapter; the symbol-model doc's middle path was overruled in favour of the full model.
 - [Sessions persist, encrypted](sessions-persist-encrypted.md) — driven by Paytm having no refresh token and a password+OTP login every time.
+- [Web sessions persist in Postgres](web-sessions-persist-in-postgres.md) — Oct 2026: the Google sign-in session survives deploys (Spring Session JDBC, V11); unreadable ones fail closed to a sign-in.
 - [Credentials are per user, per registration](credentials-per-user-per-registration.md) — one broker app can authorise several logins, and every user registers their own app.
 - [A real product, not a personal tool](real-product-not-personal-tool.md) — a limited number of real users, run safely, on free-tier infrastructure.
 - [Per-instrument risk model](per-instrument-risk-model.md) — netted per account; "exposure" split into three honest measures; max loss is standalone and must never be summed.
