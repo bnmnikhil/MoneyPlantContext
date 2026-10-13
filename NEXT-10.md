@@ -54,7 +54,7 @@ or Dhan accounts for B.
 | N13 | Switch off `raw_capture` | owner, 11 Oct; drops L14 | S | A | `[ ]` |
 | N14 | Show how to create each broker's API key and secret | owner, 11 Oct; L6 | M | B | `[~]` in production 13 Oct; waits on a friend's walk-through |
 | N15 | Release the 13 Oct usability fixes | usability session, 13 Oct | S | A | `[~]` on staging; PRs open |
-| N16 | The screen after sign-in | usability session, 13 Oct | M | A | `[ ]` owner: mockup or build |
+| N16 | The screen after sign-in | usability session, 13 Oct | M | A | `[~]` on staging 13 Oct; owner to look |
 | N17 | Staging without its password prompt | usability session, 13 Oct | S | — | `[ ]` |
 | N18 | Browser smoke pack | `TESTING.md`'s `ui` scope | M | — | `[ ]` |
 | N19 | The landing page states GoldenBook's price | usability session, 13 Oct | S | C | `[ ]` |
@@ -458,23 +458,34 @@ the sign-in session; bump `details.ts`' version and date or not.
 `deploy/Caddyfile` to `/etc/caddy/Caddyfile` and reload (the owner runs it); then sign in, deploy
 again and stay signed in, and `curl -I` shows `no-cache` on `/` and `immutable` on a bundle.
 
-## `[ ]` N16 — The screen after sign-in
+## `[~]` N16 — The screen after sign-in
 
-What a user meets on `/app` with no broker logged in today (`ConnectBrokerCard`), and the
-Overview's *To fix* list. From the session:
-- It reads as setup, but it is a daily step: broker logins end every day. Say "Log in to your
-  brokers for today" and list each registration as an even row with its own button; Kite is no
-  longer the one highlighted button.
-- A first-time user gets a checklist instead: add a broker's key and secret (N14's guide), then
-  log in. The `ConfigureBrokersCard` state has not been seen live; it needs a fresh Google account.
-- "Offline" in the header becomes "Not connected".
-- *To fix* lists every broker not logged in today as a problem. Not logged in yet is the normal
-  morning state, so it belongs in the login list, not the warnings.
+What a user meets on `/app` before any broker is logged in today (`ConnectBrokerCard`). From the
+session: it read as first-time setup, but for a returning user it is a daily step (broker logins
+end every night); its buttons wrapped raggedly and Kite alone was highlighted; and the header's
+"Offline" read as "the app is down".
 
-**Next:** the owner chooses a mockup first or a build on staging.
+**Decided (owner, 13 Oct 2026, from a mockup):**
+- **Daily login:** "Log in to your brokers for today", one even row per registration with its own
+  Log in button and a line on what to expect (Paytm: password and OTP every day). No broker is
+  highlighted.
+- **First-time user:** a three-step checklist (signed in, add a broker, log in for today). *Add a
+  broker* opens Settings with the add form open (`/app/settings?add=1`), where N14's guide is.
+- **Header:** "Not logged in", or "No brokers yet", with a grey dot, instead of an orange
+  "Offline". "Partial" and "Live" unchanged.
+- **The Overview once any broker is logged in is unchanged, including *To fix*** listing brokers
+  not connected. The mockup's "not logged in today" bar was rejected.
 
-**Verify:** frontend gates; on staging, the three states (no credentials, credentials but no
-login today, all logged in) at desktop and phone width.
+**Built** on `n16/daily-login` (frontend; tradestack mirrors `main` for the staging script):
+`features/session/dailyLogin.ts` (pure; `tests/daily-login.test.mjs`), `ConnectBrokerCard`,
+`Topbar`, `SettingsPage`. Gates: typecheck clean, `npm test` 145, build clean. Checked locally with
+dev auth: the owner's seven registrations list as seven rows, the header reads "Not logged in";
+as a user with no keys the checklist shows, the header reads "No brokers yet", and *Add a broker*
+lands on Settings with the form open. **Not checked:** the look itself, and phone width (the
+automation browser could not screenshot localhost).
+
+**Verify:** the owner looks at both states on staging at desktop and phone width (the daily login
+shows on staging once its simulated broker sessions end at midnight); then PR and production.
 
 ## `[ ]` N17 — Staging without its password prompt
 
