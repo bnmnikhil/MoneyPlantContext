@@ -53,6 +53,11 @@ or Dhan accounts for B.
 | N12 | Positions margin calculated live | owner, 11 Oct; supersedes the column's risk dependency | S–M | A | `[x]` |
 | N13 | Switch off `raw_capture` | owner, 11 Oct; drops L14 | S | A | `[ ]` |
 | N14 | Show how to create each broker's API key and secret | owner, 11 Oct; L6 | M | B | `[~]` in production 13 Oct; waits on a friend's walk-through |
+| N15 | Release the 13 Oct usability fixes | usability session, 13 Oct | S | A | `[~]` on staging; PRs open |
+| N16 | The screen after sign-in | usability session, 13 Oct | M | A | `[ ]` owner: mockup or build |
+| N17 | Staging without its password prompt | usability session, 13 Oct | S | — | `[ ]` |
+| N18 | Browser smoke pack | `TESTING.md`'s `ui` scope | M | — | `[ ]` |
+| N19 | The landing page states GoldenBook's price | usability session, 13 Oct | S | C | `[ ]` |
 
 **Removed 10 Oct 2026 (owner):** L5, the Google consent screen, because its test-user limit
 does not apply to this application; and A1, the frozen risk data, because the Risk page is
@@ -62,6 +67,9 @@ hidden until it is defined (`NEXT-STEPS.md` owner idea 4, `memory/risk-page-hidd
 
 **11 Oct 2026 (owner):** N11 done; N2 back in, as Risk is outside the launch scope; N12 and N13
 added; the queue regrouped into the stages above, replacing the 10 Oct order.
+
+**13 Oct 2026 (owner's usability session on staging):** N15 to N19 added. The session's notes
+are kept off git (`usability/`, local); what came out of them is here.
 
 ---
 
@@ -430,3 +438,68 @@ are walked by the Stage B friends, which is also their L6 test. The notes known 
 **Verify:** frontend gates; every listed broker shows steps and its redirect URL on staging and
 in production, with the URL matching that host's callback; a person who has never seen the app
 connects one broker using only these instructions (L6's test). Friends in Stage B are that test.
+
+## `[~]` N15 — Release the 13 Oct usability fixes
+
+Three fixes found while the owner used staging on 13 Oct 2026, all verified there:
+- **Sign in / Sign up.** The landing and login pages gave no hint that this is also how to make
+  an account, and there is no username and password to look for.
+- **A deploy left a blank page.** Without a Cache-Control header the browser kept an old
+  index.html naming a bundle the deploy had deleted, and `try_files` answered that .js with
+  HTML. Caddy now revalidates index.html, keeps hashed bundles a year and 404s a missing one.
+- **A deploy signed everyone out.** The sign-in session now lives in Postgres
+  (`memory/web-sessions-persist-in-postgres.md`).
+
+tradestack PR #48 and frontend PR #46 (`launch/persist-web-sessions` in both), and this repo's
+`docs/persist-web-sessions`. **Owner decision open:** the Privacy page gains a retention line for
+the sign-in session; bump `details.ts`' version and date or not.
+
+**Verify:** gates (678 / 141); production deploy (it signs users out one last time); copy
+`deploy/Caddyfile` to `/etc/caddy/Caddyfile` and reload (the owner runs it); then sign in, deploy
+again and stay signed in, and `curl -I` shows `no-cache` on `/` and `immutable` on a bundle.
+
+## `[ ]` N16 — The screen after sign-in
+
+What a user meets on `/app` with no broker logged in today (`ConnectBrokerCard`), and the
+Overview's *To fix* list. From the session:
+- It reads as setup, but it is a daily step: broker logins end every day. Say "Log in to your
+  brokers for today" and list each registration as an even row with its own button; Kite is no
+  longer the one highlighted button.
+- A first-time user gets a checklist instead: add a broker's key and secret (N14's guide), then
+  log in. The `ConfigureBrokersCard` state has not been seen live; it needs a fresh Google account.
+- "Offline" in the header becomes "Not connected".
+- *To fix* lists every broker not logged in today as a problem. Not logged in yet is the normal
+  morning state, so it belongs in the login list, not the warnings.
+
+**Next:** the owner chooses a mockup first or a build on staging.
+
+**Verify:** frontend gates; on staging, the three states (no credentials, credentials but no
+login today, all logged in) at desktop and phone width.
+
+## `[ ]` N17 — Staging without its password prompt
+
+Basic auth on staging stops the automation browser and asks the owner for a password on every
+visit. Keep it on `/docs` (internal), take it off the app and the simulator login pages, and set
+staging's `GB_SIGNUP_MODE=allowlist` so only listed Google accounts get in. No test-login back
+door. Caddy change; the owner runs the reload. Also: the staging deploy warns that a unit file
+changed on disk (`systemctl daemon-reload`); find which and fix the deploy script.
+
+**Verify:** staging's app opens without a password prompt, `/docs` still asks, and a Google
+account not on the list is refused.
+
+## `[ ]` N18 — Browser smoke pack
+
+Playwright on the laptop against the local app with dev auth and `broker-sim`, so no Google
+sign-in is needed: open every page, log in to each simulated broker, check the Overview,
+Positions, Payoff and Builder render figures. Becomes `verify.ps1 -Scope ui`, which is a
+placeholder today.
+
+**Verify:** `.\scriptserify.ps1 -Scope ui` passes on a clean run and fails when a page breaks.
+
+## `[ ]` N19 — The landing page states GoldenBook's price
+
+The landing page never says what GoldenBook costs, so a visitor cannot tell whether it is free.
+Say it (free, while that is true), and that some brokers charge for API access. Belongs with N5's public copy in Stage C.
+
+**Verify:** the price is on the landing page and matches the terms.
+
