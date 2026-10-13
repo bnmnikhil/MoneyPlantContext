@@ -13,7 +13,7 @@ connection actions remain available through header menus. Below 1024px, primary
 navigation uses five bottom tabs. Navy/teal variables are scoped to the workspace
 and its header menus, leaving the public landing/login theme intact.
 
-The header's Live/Partial/Offline indicator describes broker sessions. It does
+The header's Live/Partial/Not logged in indicator describes broker sessions ("Offline" until 13 Oct 2026, renamed because it read as the app being down). It does
 not certify quote or risk-data freshness; those remain page-level facts. The
 broker count counts distinct broker providers, with accounts inside the dropdown.
 Known implementation gap: the backend currently marks every stored session as

@@ -37,7 +37,9 @@ cap. The first user is the owner; three people had accounts on 6 October.
 1. Sign in with Google.
 2. For each broker, **create a developer app in that broker's own portal** and copy its key and secret into
    GoldenBook's settings. GoldenBook encrypts the secret and never shows it again.
-3. Press **Connect**; the broker's own login page opens, the user signs in there, and is sent back.
+3. Press **Log in** beside the broker; its own login page opens, the user signs in there, and is sent back.
+   Broker logins end every night, so this step repeats each trading day; until one broker is logged in,
+   the Overview is that list of Log in buttons.
 4. Positions, holdings, margins and payoff charts appear.
 
 The per-user app is a deliberate design choice, not an oversight. It means GoldenBook never holds one
