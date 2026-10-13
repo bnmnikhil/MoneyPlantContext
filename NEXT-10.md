@@ -52,7 +52,7 @@ or Dhan accounts for B.
 | N11 | Payoff: "today" curve (projected P&L), then a days slider | owner request, 10 Oct | M | — | `[x]` all three phases in production, 11 Oct |
 | N12 | Positions margin calculated live | owner, 11 Oct; supersedes the column's risk dependency | S–M | A | `[x]` |
 | N13 | Switch off `raw_capture` | owner, 11 Oct; drops L14 | S | A | `[ ]` |
-| N14 | Show how to create each broker's API key and secret | owner, 11 Oct; L6 | M | B | `[ ]` |
+| N14 | Show how to create each broker's API key and secret | owner, 11 Oct; L6 | M | B | `[~]` in production 13 Oct; waits on a friend's walk-through |
 
 **Removed 10 Oct 2026 (owner):** L5, the Google consent screen, because its test-user limit
 does not apply to this application; and A1, the frozen risk data, because the Risk page is
@@ -344,7 +344,7 @@ page says nothing about keeping portfolio history. L14 is dropped with this.
 **Verify:** backend gate; after a trading day on production `select count(*) from raw_capture`
 stays 0 and no `capture_run` rows appear; positions, holdings, payoff and builder unchanged.
 
-## `[ ]` N14 — Show how to create each broker's API key and secret (L6)
+## `[~]` N14 — Show how to create each broker's API key and secret (L6)
 
 **Owner, 11 Oct 2026: the app has to show the instructions for creating the API key and secret at
 each broker.** Today the add-registration form shows the right field names (*API key*, *App
@@ -352,6 +352,15 @@ code*, *secret*) and one link, "Open <broker> developer portal" (`CredentialFiel
 gives no steps and no redirect URL to paste, so nobody gets through it without the owner on the phone.
 This takes over L6 from N5. It sits in Stage B because friends connecting Upstox and Dhan are the
 first people who will need it.
+
+**13 Oct 2026: shipped to production** (tradestack PR #47 `2eda115`, frontend PR #45 `6483bf2`;
+gates 675 / 141). Owner checked staging; production boots with all five guides and
+`GB_FRONTEND_URL=https://goldenbook.in`, so every URL reads `https://goldenbook.in/<id>/callback`.
+Owner's wording rules (13 Oct): steps and the activation wait only, no extra detail. Alice Blue
+says activation can take some time, usually the same day; the IP field and Paytm's product type
+are left out. Alice Blue's portal link moved to `a3.aliceblueonline.com`.
+**Left:** a friend connects one broker using only the guide (L6's test), then tick L6; correct
+the Upstox and Dhan text after the Stage B walk-through.
 
 ### Plan (11 Oct 2026)
 
