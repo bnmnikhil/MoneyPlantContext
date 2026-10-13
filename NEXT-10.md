@@ -494,7 +494,7 @@ sign-in is needed: open every page, log in to each simulated broker, check the O
 Positions, Payoff and Builder render figures. Becomes `verify.ps1 -Scope ui`, which is a
 placeholder today.
 
-**Verify:** `.\scriptserify.ps1 -Scope ui` passes on a clean run and fails when a page breaks.
+**Verify:** `.\scripts\verify.ps1 -Scope ui` passes on a clean run and fails when a page breaks.
 
 ## `[ ]` N19 — The landing page states GoldenBook's price
 
