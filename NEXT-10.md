@@ -25,7 +25,7 @@ Finish a stage before starting the next; only L1's external clock runs alongside
 | **A** | Correct and safe for a stranger who arrives unannounced | N12, N2, N13, N4's HOLD-PRICE, N7, N8, N9, L4, E3 | A new user sees only live, correct figures and nobody else's data; a new sign-up and an outage both alert the owner; terms acceptance is recorded; erasure has been run once |
 | **B** | Friends as the first users | N14, N6, then N3 and N4's certification | Backups proven by a restore; 2–3 friends' Upstox and Dhan accounts compared figure by figure |
 | **C** | Ready to announce | L1 (review 17–24 Oct), N5 (L7, E1/E2/E4/E6), L12, D4, L16 | `PUBLIC-LAUNCH.md`'s go/no-go checklist ticked; the copy claims only the four launch features. Then announce |
-| **D** | After launch | Define Risk; market history; back-testing; N10 if Groww opens a path | — |
+| **D** | After launch | Define Risk (`moneyplant-risk-page-plan.md`, owner questions open); market history; back-testing; N10 if Groww opens a path | — |
 
 **Why this order.** A is what a stranger meets today, since sign-up is open. B before C because
 friends both certify Upstox and Dhan (live since 6 Oct, unverified) and fire N6's backup trigger,
