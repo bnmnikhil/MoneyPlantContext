@@ -553,3 +553,24 @@ underneath.
 
 Files: `MoneyPlantFrontend/src/features/strategy-builder/StrategyBuilderView.tsx`
 (`chainOpen`, `#builder-chain-drawer`), `src/index.css` (`.builder-drawer`).
+
+### `[ ]` G2: One "Add legs" entry point, with futures in the chain sheet
+
+**Found** 22 Oct 2026, building a covered short straddle on ITC: the legs panel had two ways
+to add a leg, and neither could add the future that covers it.
+
+**Agreed with the owner:**
+1. Remove "+ Add custom leg". Its BUY/SELL, strike and CE/PE dropdowns duplicate the option
+   chain without showing premiums. Rename "Add from chain" to "+ Add legs".
+   *Built on `MoneyPlantFrontend` branch `feat/builder-add-legs` (cde1a57), not yet in production.*
+2. An `Options | Futures` switch at the top of the chain sheet. The Futures tab has one row per
+   futures expiry: expiry, LTP, basis (future minus spot), OI and Buy/Sell. The row matching the
+   Builder's expiry is marked and listed first. The leg reads `B ITC 27 Oct FUT` with no strike,
+   and its qty and price are editable like an option leg.
+   *Blocked on a futures price source:* the only chain provider (`AliceBlueOptionChainProvider`)
+   calls Alice Blue's option-chain endpoints, which return no futures. The leg model,
+   `payoffMath.legPnlAtSpot` and the margin engines already handle `FUT`.
+
+Stock (EQ) legs are not wanted in the Builder for now. Futures recipes were proposed and declined
+(the Recipes menu is already crowded). The margin display is a separate discussion the owner
+wants to have; the hedge benefit of a future must show there.
