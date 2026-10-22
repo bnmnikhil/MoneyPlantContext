@@ -554,7 +554,14 @@ underneath.
 Files: `MoneyPlantFrontend/src/features/strategy-builder/StrategyBuilderView.tsx`
 (`chainOpen`, `#builder-chain-drawer`), `src/index.css` (`.builder-drawer`).
 
-### `[ ]` G2: One "Add legs" entry point, with futures in the chain sheet
+### `[x]` G2: One "Add legs" entry point, with futures in the chain sheet
+
+**In production 22 Oct 2026, backend up 12:02:49 IST** (MoneyPlant `56a20da`, frontend `4b3b46d`;
+692 tests on the VM). **Verified live** on the owner's session, ITC at 12:05 IST: spot ₹257.80;
+futures 27 Oct ₹258.20 (+0.40), 23 Nov ₹259.45 (+1.65), 29 Dec ₹261.50 (+3.70). Three different
+prices rising with carry, so Alice Blue's `futLTP` is the requested expiry's future. Not yet
+compared against Kite's quotes. Boot-log auth check left to the owner (production log reads are
+blocked for Claude).
 
 **Found** 22 Oct 2026, building a covered short straddle on ITC: the legs panel had two ways
 to add a leg, and neither could add the future that covers it.
@@ -562,15 +569,14 @@ to add a leg, and neither could add the future that covers it.
 **Agreed with the owner:**
 1. Remove "+ Add custom leg". Its BUY/SELL, strike and CE/PE dropdowns duplicate the option
    chain without showing premiums. Rename "Add from chain" to "+ Add legs".
-   *Built on `MoneyPlantFrontend` branch `feat/builder-add-legs` (cde1a57), not yet in production.*
+   *Done.*
 2. An `Options | Futures` switch at the top of the chain sheet. The Futures tab has one row per
    futures expiry: expiry, LTP, basis (future minus spot), OI and Buy/Sell. The row matching the
    Builder's expiry is marked and listed first. The leg reads `B ITC 27 Oct FUT` with no strike,
    and its qty and price are editable like an option leg.
-   *Built* on `MoneyPlant` `feat/builder-futures` (d90becf) and `MoneyPlantFrontend`
-   `feat/builder-add-legs` (2bfee31), not yet in production. Prices come from the `futLTP` Alice
-   Blue already sends with each chain. Before production: one live check in market hours that
-   the three rows show three different prices (see `MoneyPlant/docs/aliceblue-api.md`).
+   *Done.* `GET /api/market-data/futures` lists the nearest three futures from the contract master,
+   each priced by the `futLTP` Alice Blue sends with that expiry's chain. OI is not shown: the
+   chain carries none for the future. A future's draft cashflow is ₹0, as the server counts it.
 
 **Owner's rule (22 Oct): one quotes source supplies spot, options and futures together.** Mix
 sources only where the selected one cannot supply something. Following it, the Builder's spot now
@@ -581,3 +587,15 @@ Greeks) and `FUTURE` on the live-price endpoint we already call, both untested l
 Stock (EQ) legs are not wanted in the Builder for now. Futures recipes were proposed and declined
 (the Recipes menu is already crowded). The margin display is a separate discussion the owner
 wants to have; the hedge benefit of a future must show there.
+
+### `[ ]` G3: A clearer margin view in the Builder
+
+**Raised** 22 Oct 2026; the owner wants to discuss it before anything is proposed. Known input: a
+future's hedge benefit against short options must be visible there.
+
+### `[ ]` G4: Paytm Money as a full Builder quotes source
+
+Under the one-source rule (G2), Paytm would supply spot, options and futures together. Its SDKs show
+`GET /fno/v1/option-chain` (LTP, OI, IV, Greeks) and `FUTURE` on `/data/v1/price/live`, which
+GoldenBook already calls for spot and Paytm legs. Neither is tested live; needs one supervised call
+in market hours. Not started.

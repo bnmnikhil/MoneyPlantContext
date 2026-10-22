@@ -76,7 +76,11 @@ The builder posts a set of legs to `POST /api/payoff/simulate` or `/compare`. Ex
 **immutable baseline** per account and underlying; closes and additions are hypothetical draft trades on top.
 Option prices come from the **option chain**, selected independently of the account that holds the positions (so
 a Kite position can be priced from Alice Blue's chain). The chain is fetched through whichever of the user's
-connections can serve it; Alice Blue is the only chain source today.
+connections can serve it; Alice Blue is the only chain source today. The same source supplies the
+builder's spot (the chain's own spot field, falling back to the payoff's spot only when it has none) and its
+**futures** (`GET /api/market-data/futures`, the nearest three, each priced by its expiry's chain), so spot,
+options and futures always agree. Draft legs are added from one "+ Add legs" sheet with an Options | Futures
+switch.
 
 ## Risk
 
