@@ -187,6 +187,17 @@ database and reads one user's credentials; a missed run raises an alert.
 and logs a client error; a blocked API call times out to an error state; no tile reads ₹0
 when its query failed.
 
+**22 Oct 2026: analysed, proposal parked (owner shifted to launch planning).** B4 is mostly done
+by the Overview redesign; left: the Accounts table says "Nothing open" and drops the partial
+marker when a whole positions or holdings query fails. Also found: `AuthGuard` sends any
+non-401 `/api/me` failure to `/login`, which reads as signed out when the server is down.
+Proposal: boundaries at the root, around `<Outlet />` and around the mounted Builder (reset on
+route change); a 30 s timeout in `request()` with `TIMEOUT`/`NETWORK` as `ApiError`, a caller's
+own abort left an `AbortError`, one retry after a timeout; a "Can't reach GoldenBook" state in
+`AuthGuard`; O13 in the same change (`POST /api/client-errors`, signed in, 10/min, ~8 KB cap,
+WARN log, build-stamped `appVersion`; `QueryCache` reports only non-`ApiError` failures).
+Open for the owner: the timeout length, and O13 now or after.
+
 ## `[ ]` N8 — Cross-user isolation on production (L11)
 
 With open sign-up, the one property that cannot fail is that a user never sees another user's
