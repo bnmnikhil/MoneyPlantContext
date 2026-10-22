@@ -39,3 +39,7 @@ once there is revenue. Revisit at the 17–24 Oct L1 review using the usage coun
 Supersedes the "owned by the same user" clause of
 [[quote-source-is-independent-of-position-account]] for the chain fallback only. See
 also [[free-market-data-options-researched]].
+
+**Built and switched on, 21 Oct 2026** (spot and chain; `PUBLIC-LAUNCH.md` L18). The owner
+chose to run it on their own trading account rather than a separate unfunded one, accepting
+that a broker objection would land on that account.

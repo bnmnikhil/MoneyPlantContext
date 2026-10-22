@@ -524,3 +524,32 @@ Say it (free, while that is true), and that some brokers charge for API access. 
 
 **Verify:** the price is on the landing page and matches the terms.
 
+
+---
+
+## Strategy Builder gaps (owner, 22 Oct 2026)
+
+The owner is walking the Payoff → "Adjust strategy" → Builder flow and noting gaps. Collect
+them here, agree the list, then build them together (several touch the same screen). Before
+and after screenshots go to the owner before anything reaches production. How gaps arrive:
+screenshots in `C:\projects\Goldenbook\feedback\` plus a spoken walk-through; Claude in Chrome
+was being connected so Claude can click through the owner's own session.
+
+### `[ ]` G1 — The option chain should read as a sheet over the legs
+
+**Problem.** "Add from chain" opens `.builder-drawer`, which is `position: absolute; inset: 0`
+over the "Strategy legs" panel with an opaque card background and no motion. It reads as the
+legs being *replaced*; the user loses the sense that their positions and added legs are still
+underneath.
+
+**Proposed (owner to confirm):**
+1. Slide up from the bottom of the legs panel (~200 ms), and back down on close; a plain fade
+   under `prefers-reduced-motion`.
+2. Leave the "Strategy legs" heading and the first leg or two visible, dimmed, above it.
+3. Rounded top corners and an upward shadow, so it sits visibly above.
+4. A header "Adding to your N legs", and a "+N added" count that ticks on each Buy/Sell.
+5. Done, Esc or a click on the dimmed legs closes it, and the newly added legs flash once.
+6. The same bottom sheet on a phone.
+
+Files: `MoneyPlantFrontend/src/features/strategy-builder/StrategyBuilderView.tsx`
+(`chainOpen`, `#builder-chain-drawer`), `src/index.css` (`.builder-drawer`).
