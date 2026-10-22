@@ -567,9 +567,16 @@ to add a leg, and neither could add the future that covers it.
    futures expiry: expiry, LTP, basis (future minus spot), OI and Buy/Sell. The row matching the
    Builder's expiry is marked and listed first. The leg reads `B ITC 27 Oct FUT` with no strike,
    and its qty and price are editable like an option leg.
-   *Blocked on a futures price source:* the only chain provider (`AliceBlueOptionChainProvider`)
-   calls Alice Blue's option-chain endpoints, which return no futures. The leg model,
-   `payoffMath.legPnlAtSpot` and the margin engines already handle `FUT`.
+   *Built* on `MoneyPlant` `feat/builder-futures` (d90becf) and `MoneyPlantFrontend`
+   `feat/builder-add-legs` (2bfee31), not yet in production. Prices come from the `futLTP` Alice
+   Blue already sends with each chain. Before production: one live check in market hours that
+   the three rows show three different prices (see `MoneyPlant/docs/aliceblue-api.md`).
+
+**Owner's rule (22 Oct): one quotes source supplies spot, options and futures together.** Mix
+sources only where the selected one cannot supply something. Following it, the Builder's spot now
+comes from the selected source (it used to be the payoff's spot, from Paytm first). Paytm Money
+as a full Builder source is a later item: its SDKs show `/fno/v1/option-chain` (LTP, OI, IV,
+Greeks) and `FUTURE` on the live-price endpoint we already call, both untested live.
 
 Stock (EQ) legs are not wanted in the Builder for now. Futures recipes were proposed and declined
 (the Recipes menu is already crowded). The margin display is a separate discussion the owner
