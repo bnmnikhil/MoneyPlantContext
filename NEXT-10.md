@@ -533,3 +533,78 @@ Say it (free, while that is true), and that some brokers charge for API access. 
 
 **Verify:** the price is on the landing page and matches the terms.
 
+
+---
+
+## Strategy Builder gaps (owner, 22 Oct 2026)
+
+The owner is walking the Payoff → "Adjust strategy" → Builder flow and noting gaps. Collect
+them here, agree the list, then build them together (several touch the same screen). Before
+and after screenshots go to the owner before anything reaches production. How gaps arrive:
+screenshots in `C:\projects\Goldenbook\feedback\` plus a spoken walk-through; Claude in Chrome
+was being connected so Claude can click through the owner's own session.
+
+### `[ ]` G1 — The option chain should read as a sheet over the legs
+
+**Problem.** "Add from chain" opens `.builder-drawer`, which is `position: absolute; inset: 0`
+over the "Strategy legs" panel with an opaque card background and no motion. It reads as the
+legs being *replaced*; the user loses the sense that their positions and added legs are still
+underneath.
+
+**Proposed (owner to confirm):**
+1. Slide up from the bottom of the legs panel (~200 ms), and back down on close; a plain fade
+   under `prefers-reduced-motion`.
+2. Leave the "Strategy legs" heading and the first leg or two visible, dimmed, above it.
+3. Rounded top corners and an upward shadow, so it sits visibly above.
+4. A header "Adding to your N legs", and a "+N added" count that ticks on each Buy/Sell.
+5. Done, Esc or a click on the dimmed legs closes it, and the newly added legs flash once.
+6. The same bottom sheet on a phone.
+
+Files: `MoneyPlantFrontend/src/features/strategy-builder/StrategyBuilderView.tsx`
+(`chainOpen`, `#builder-chain-drawer`), `src/index.css` (`.builder-drawer`).
+
+### `[x]` G2: One "Add legs" entry point, with futures in the chain sheet
+
+**In production 22 Oct 2026, backend up 12:02:49 IST** (MoneyPlant `56a20da`, frontend `4b3b46d`;
+692 tests on the VM). **Verified live** on the owner's session, ITC at 12:05 IST: spot ₹257.80;
+futures 27 Oct ₹258.20 (+0.40), 23 Nov ₹259.45 (+1.65), 29 Dec ₹261.50 (+3.70). Three different
+prices rising with carry, so Alice Blue's `futLTP` is the requested expiry's future. Not yet
+compared against Kite's quotes. Boot-log auth check left to the owner (production log reads are
+blocked for Claude).
+
+**Found** 22 Oct 2026, building a covered short straddle on ITC: the legs panel had two ways
+to add a leg, and neither could add the future that covers it.
+
+**Agreed with the owner:**
+1. Remove "+ Add custom leg". Its BUY/SELL, strike and CE/PE dropdowns duplicate the option
+   chain without showing premiums. Rename "Add from chain" to "+ Add legs".
+   *Done.*
+2. An `Options | Futures` switch at the top of the chain sheet. The Futures tab has one row per
+   futures expiry: expiry, LTP, basis (future minus spot), OI and Buy/Sell. The row matching the
+   Builder's expiry is marked and listed first. The leg reads `B ITC 27 Oct FUT` with no strike,
+   and its qty and price are editable like an option leg.
+   *Done.* `GET /api/market-data/futures` lists the nearest three futures from the contract master,
+   each priced by the `futLTP` Alice Blue sends with that expiry's chain. OI is not shown: the
+   chain carries none for the future. A future's draft cashflow is ₹0, as the server counts it.
+
+**Owner's rule (22 Oct): one quotes source supplies spot, options and futures together.** Mix
+sources only where the selected one cannot supply something. Following it, the Builder's spot now
+comes from the selected source (it used to be the payoff's spot, from Paytm first). Paytm Money
+as a full Builder source is a later item: its SDKs show `/fno/v1/option-chain` (LTP, OI, IV,
+Greeks) and `FUTURE` on the live-price endpoint we already call, both untested live.
+
+Stock (EQ) legs are not wanted in the Builder for now. Futures recipes were proposed and declined
+(the Recipes menu is already crowded). The margin display is a separate discussion the owner
+wants to have; the hedge benefit of a future must show there.
+
+### `[ ]` G3: A clearer margin view in the Builder
+
+**Raised** 22 Oct 2026; the owner wants to discuss it before anything is proposed. Known input: a
+future's hedge benefit against short options must be visible there.
+
+### `[ ]` G4: Paytm Money as a full Builder quotes source
+
+Under the one-source rule (G2), Paytm would supply spot, options and futures together. Its SDKs show
+`GET /fno/v1/option-chain` (LTP, OI, IV, Greeks) and `FUTURE` on `/data/v1/price/live`, which
+GoldenBook already calls for spot and Paytm legs. Neither is tested live; needs one supervised call
+in market hours. Not started.

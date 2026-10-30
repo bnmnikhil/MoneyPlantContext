@@ -570,6 +570,28 @@ The cross-user leak closes when this is deployed.
 - The admin session cannot serve positions.
 - With no source at all, the builder refuses to estimate rather than inventing a level.
 
+**Phases 2 and 3 in production, 21 Oct 2026, and switched on** (owner set
+`GB_ADMIN_MARKET_DATA=on` and `GB_MARKET_DATA_USER_ID` in `/etc/goldenbook/goldenbook.env`; boot
+log `Shared spot feed: on`). Merged straight to `main` with no PR pages (`gh` is not installed
+on the laptop): tradestack `62eee1f` (spot) and `9a7190e` (chain), frontend `c5f8344`.
+- `marketdata/SharedMarketDataAccount` holds the switch and hands the admin's sessions to
+  `SpotPriceService` and `OptionChainService` (and `OptionContractService` for the shared
+  source's contract list) only. It is the plan's `MarketDataAccount`.
+- Spot: own Paytm, own Alice Blue chain, then the admin's (Paytm, then Alice Blue chain),
+  labelled `shared`; one shared 5 s cache by underlying; a daily count of shared spot lookups
+  in the log (`Shared spot feed: N lookup(s) served on <day>`). Payoff shows "Spot is from
+  GoldenBook's shared price feed".
+- Chain: a user with no chain-capable broker is offered one source, id `shared`, label
+  "GoldenBook shared feed"; one cache entry for everyone, at least 15 s. An expired admin
+  session answers 503, not the 409 reconnect prompt.
+- The admin uses their **own trading account** for the feed, not the separate unfunded one
+  recommended above, and must log in to Paytm and Alice Blue each trading morning.
+
+**Still open:** usage counts for shared chains, per-user limits on shared chain requests
+(guard rail 5), the ArchUnit rule keeping `SharedMarketDataAccount` inside `marketdata/`,
+phase 4 (`spot_snapshot.kind`/`.source`) and phase 5. Not yet verified end to end with a
+second, Kite-only account.
+
 ## Tier 2: new items
 
 ### `[ ]` L13 — Capacity
