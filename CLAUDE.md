@@ -463,7 +463,7 @@ The anti-corruption rule for *types*, extended to *names* — which had leaked m
 ## Frontend
 
 **UX shell:** authenticated pages use a full-width navy/teal
-workspace with top navigation (Overview, Positions, Holdings, Payoff, Risk), a
+workspace with top navigation (Overview, Positions, Holdings, Payoff, Builder; Risk hidden by N2), a
 broker dropdown, and account/settings menus. Below 1024px navigation uses five
 bottom tabs. The header's Live indicator reads session status, not data freshness.
 Known limitation: the backend reports stored sessions as connected even after a
@@ -505,7 +505,7 @@ the adaptive reference-label layout. Risk cards also use zero-minimum grid track
 so financial tables scroll inside their cards at phone widths.
 Browser access is available.
 
-Routing: `/` landing, `/login`, then `AuthGuard` → `AppShell` → `/app`, `/app/positions`, `/app/holdings`, `/app/payoff`, `/app/risk`, `/app/settings`.
+Routing: `/` landing, `/login`, then `AuthGuard` → `AppShell` → `/app`, `/app/positions`, `/app/holdings`, `/app/payoff`, `/app/builder`, `/app/settings`; `/app/risk` redirects to `/app/positions` (N2).
 
 **The shell is a top bar, not a sidebar.** `AppShell` renders `Topbar` + `MobileTabBar`. `Topbar` carries the logo, the horizontal nav (`primaryNavItems`, `lg:` and up), a **Brokers n/m** menu listing every connection with its state, a Live/Partial/Not logged in pill (No brokers yet before any keys), the account menu and an overflow kebab. `MobileTabBar` repeats `primaryNavItems` at the foot below `lg`. `components/layout/Sidebar.tsx` is unused and `launch/l8-settings-redesign` deletes it. **The screener (`/app/screener`) lives only on `feat/index-spread-screener`**, kept out of the launch build (L8); its sixth nav item moves both breakpoints to `xl`. **Broker credentials is not in `primaryNavItems`** — it is reached from three header menus, so no nav item highlights while the user is on it and the page must supply its own way back.
 

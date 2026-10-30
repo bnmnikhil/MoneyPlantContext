@@ -40,7 +40,7 @@ or Dhan accounts for B.
 | ID | Item | Wraps | Size | Stage | Status |
 |---|---|---|---|---|---|
 | N1 | Land the pending branches | broker-sim #2, frontend `docs/rewrite-legal-copy`, context `docs/overview-a-plan` | S | — | `[x]` |
-| N2 | Hide the Risk page | owner decision, 10 Oct | S | A | `[ ]` un-postponed (owner, 11 Oct) |
+| N2 | Hide the Risk page | owner decision, 10 Oct | S | A | `[x]` in production 30 Oct |
 | N3 | Upstox live certification | UPSTOX-07, CERT-02, CERT-04 | M | B | `[ ]` |
 | N4 | Dhan live certification and HOLD-PRICE | HOLD-PRICE, Dhan's open facts, CERT-02, CERT-04 | M | A (HOLD-PRICE), B (certification) | `[ ]` |
 | N5 | Broker copy that scales past five brokers | L7, E1, E2, E4, E6 (L6 moved to N14) | M | C | `[ ]` under discussion |
@@ -71,6 +71,12 @@ added; the queue regrouped into the stages above, replacing the 10 Oct order.
 **13 Oct 2026 (owner's usability session on staging):** N15 to N19 added. The session's notes
 are kept off git (`usability/`, local); what came out of them is here.
 
+
+**30 Oct 2026:** N2 done and in production. Payoff screen gaps P1 (instrument heading, solid zero
+line, no what-if bar) in production; P2 (full company names) open; see the section at the end.
+The Strategy Builder gaps section (22 Oct) is merged in from `docs/close-22-oct` with this update.
+**Next:** N13.
+
 ---
 
 ## `[x]` N1 — Land the pending branches
@@ -92,7 +98,7 @@ branch went up as a context-repo PR. Staging's simulator was not redeployed: its
 is the same code as the simulator's new `main`, and the next staging deploy picks up `main` by
 default.
 
-## `[ ]` N2 — Hide the Risk page
+## `[x]` N2 — Hide the Risk page
 
 The owner has not settled what Risk should show (`NEXT-STEPS.md` owner idea 4). Take the
 `Risk` entry out of `components/layout/nav.ts` and the `/app/risk` route out of `App.tsx`, so
@@ -103,6 +109,15 @@ the bottom tab bar has four tabs. Leave `RiskPage`, `features/risk/` and the bac
 
 **Verify:** `npm test`, `npm run build`; no `/app/risk` link in the built app; positions'
 margin column unchanged; desktop and phone nav checked in Chrome.
+
+**Done 30 Oct 2026** (frontend `n2/hide-risk-page` `4040c2a`, merged as `6daebfd`). The nav has
+five items, not four, because Builder joined it after this plan. `/app/risk` redirects to
+`/app/positions` rather than 404ing, and Overview's stale-estimates link now reads "Positions →".
+Gates: typecheck, `npm test` 154, build. Checked in Chrome locally with dev auth: desktop nav and
+a 390 px frame's bottom tab bar show Overview, Positions, Holdings, Payoff, Builder; the old URL
+lands on Positions with the margin column filled. **In production 30 Oct, 11:06 IST:** backend
+gate 694, `/` and `/app/positions` 200, `/api/me` 401, Google OIDC in the boot log, and the served
+bundle has no nav link to `/app/risk`.
 
 ## `[ ]` N3 — Upstox live certification (UPSTOX-07)
 
@@ -524,3 +539,107 @@ Say it (free, while that is true), and that some brokers charge for API access. 
 
 **Verify:** the price is on the landing page and matches the terms.
 
+
+---
+
+## Strategy Builder gaps (owner, 22 Oct 2026)
+
+The owner is walking the Payoff → "Adjust strategy" → Builder flow and noting gaps. Collect
+them here, agree the list, then build them together (several touch the same screen). Before
+and after screenshots go to the owner before anything reaches production. How gaps arrive:
+screenshots in `C:\projects\Goldenbook\feedback\` plus a spoken walk-through; Claude in Chrome
+was being connected so Claude can click through the owner's own session.
+
+### `[ ]` G1 — The option chain should read as a sheet over the legs
+
+**Problem.** "Add from chain" opens `.builder-drawer`, which is `position: absolute; inset: 0`
+over the "Strategy legs" panel with an opaque card background and no motion. It reads as the
+legs being *replaced*; the user loses the sense that their positions and added legs are still
+underneath.
+
+**Proposed (owner to confirm):**
+1. Slide up from the bottom of the legs panel (~200 ms), and back down on close; a plain fade
+   under `prefers-reduced-motion`.
+2. Leave the "Strategy legs" heading and the first leg or two visible, dimmed, above it.
+3. Rounded top corners and an upward shadow, so it sits visibly above.
+4. A header "Adding to your N legs", and a "+N added" count that ticks on each Buy/Sell.
+5. Done, Esc or a click on the dimmed legs closes it, and the newly added legs flash once.
+6. The same bottom sheet on a phone.
+
+Files: `MoneyPlantFrontend/src/features/strategy-builder/StrategyBuilderView.tsx`
+(`chainOpen`, `#builder-chain-drawer`), `src/index.css` (`.builder-drawer`).
+
+### `[x]` G2: One "Add legs" entry point, with futures in the chain sheet
+
+**In production 22 Oct 2026, backend up 12:02:49 IST** (MoneyPlant `56a20da`, frontend `4b3b46d`;
+692 tests on the VM). **Verified live** on the owner's session, ITC at 12:05 IST: spot ₹257.80;
+futures 27 Oct ₹258.20 (+0.40), 23 Nov ₹259.45 (+1.65), 29 Dec ₹261.50 (+3.70). Three different
+prices rising with carry, so Alice Blue's `futLTP` is the requested expiry's future. Not yet
+compared against Kite's quotes. Boot-log auth check left to the owner (production log reads are
+blocked for Claude).
+
+**Found** 22 Oct 2026, building a covered short straddle on ITC: the legs panel had two ways
+to add a leg, and neither could add the future that covers it.
+
+**Agreed with the owner:**
+1. Remove "+ Add custom leg". Its BUY/SELL, strike and CE/PE dropdowns duplicate the option
+   chain without showing premiums. Rename "Add from chain" to "+ Add legs".
+   *Done.*
+2. An `Options | Futures` switch at the top of the chain sheet. The Futures tab has one row per
+   futures expiry: expiry, LTP, basis (future minus spot), OI and Buy/Sell. The row matching the
+   Builder's expiry is marked and listed first. The leg reads `B ITC 27 Oct FUT` with no strike,
+   and its qty and price are editable like an option leg.
+   *Done.* `GET /api/market-data/futures` lists the nearest three futures from the contract master,
+   each priced by the `futLTP` Alice Blue sends with that expiry's chain. OI is not shown: the
+   chain carries none for the future. A future's draft cashflow is ₹0, as the server counts it.
+
+**Owner's rule (22 Oct): one quotes source supplies spot, options and futures together.** Mix
+sources only where the selected one cannot supply something. Following it, the Builder's spot now
+comes from the selected source (it used to be the payoff's spot, from Paytm first). Paytm Money
+as a full Builder source is a later item: its SDKs show `/fno/v1/option-chain` (LTP, OI, IV,
+Greeks) and `FUTURE` on the live-price endpoint we already call, both untested live.
+
+Stock (EQ) legs are not wanted in the Builder for now. Futures recipes were proposed and declined
+(the Recipes menu is already crowded). The margin display is a separate discussion the owner
+wants to have; the hedge benefit of a future must show there.
+
+### `[ ]` G3: A clearer margin view in the Builder
+
+**Raised** 22 Oct 2026; the owner wants to discuss it before anything is proposed. Known input: a
+future's hedge benefit against short options must be visible there.
+
+### `[ ]` G4: Paytm Money as a full Builder quotes source
+
+Under the one-source rule (G2), Paytm would supply spot, options and futures together. Its SDKs show
+`GET /fno/v1/option-chain` (LTP, OI, IV, Greeks) and `FUTURE` on `/data/v1/price/live`, which
+GoldenBook already calls for spot and Paytm legs. Neither is tested live; needs one supervised call
+in market hours. Not started.
+
+## Payoff screen gaps (owner, 30 Oct 2026)
+
+Raised while the owner looked at the live Payoff page on a HEROMOTOCO call spread.
+
+### `[x]` P1: Instrument heading, solid zero line, no what-if bar
+
+**In production 30 Oct 2026, backend up 11:28 IST** (frontend `d969872`, merged as `c5d2bda`;
+gates: typecheck, `npm test` 155, build; backend 694 on the VM). Checked in Chrome locally on the
+owner's data before the deploy; production checked from outside only (pages 200, `/api/me` 401,
+the served bundle carries the change).
+1. The chart panel's heading is the selected underlying's label (`HEROMOTOCO`), not "Payoff" or
+   "Combined expiry scenario". Beneath it: live spot and day change, `5,141.00 (+0.71%)`, green or
+   red, from `GET /api/market-data/spot` (the header ticker's endpoint and wording, now shared
+   through `spotItem` in `features/market/tickerItems.ts`), refreshed every 30 s. No line at all
+   when nothing can quote it. The expiry date left the heading; it still shows beside the slider,
+   and mixed expiries still raise the warning above the chart.
+2. The P&L zero line is thin, solid and faint (was dashed), so with a leg unticked it no longer
+   reads as the dashed "Your real position" curve. Applies to the Builder's chart too.
+3. The violet "What-if: showing n of m legs" bar is removed (owner: it repeats what the legs
+   panel's "n of m on the graph", **Show all** and the struck-through figures already say).
+
+### `[ ]` P2: Full company names in the heading
+
+The owner's example was "Hero Motor Corp", but GoldenBook knows stocks only by NSE symbol:
+`underlyings.properties` names indices only. Needs a backend source for display names (Kite's or
+Paytm's instrument master carries a company name; Paytm's `display_name` already reaches
+`PaytmMapper`), carried on `CurveRef`/`PayoffResponse`, symbol as fallback. Owner chose to ship P1
+with the symbol first (30 Oct). Not started.
