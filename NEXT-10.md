@@ -40,7 +40,7 @@ or Dhan accounts for B.
 | ID | Item | Wraps | Size | Stage | Status |
 |---|---|---|---|---|---|
 | N1 | Land the pending branches | broker-sim #2, frontend `docs/rewrite-legal-copy`, context `docs/overview-a-plan` | S | — | `[x]` |
-| N2 | Hide the Risk page | owner decision, 10 Oct | S | A | `[ ]` un-postponed (owner, 11 Oct) |
+| N2 | Hide the Risk page | owner decision, 10 Oct | S | A | `[x]` in production 30 Oct |
 | N3 | Upstox live certification | UPSTOX-07, CERT-02, CERT-04 | M | B | `[ ]` |
 | N4 | Dhan live certification and HOLD-PRICE | HOLD-PRICE, Dhan's open facts, CERT-02, CERT-04 | M | A (HOLD-PRICE), B (certification) | `[ ]` |
 | N5 | Broker copy that scales past five brokers | L7, E1, E2, E4, E6 (L6 moved to N14) | M | C | `[ ]` under discussion |
@@ -92,7 +92,7 @@ branch went up as a context-repo PR. Staging's simulator was not redeployed: its
 is the same code as the simulator's new `main`, and the next staging deploy picks up `main` by
 default.
 
-## `[ ]` N2 — Hide the Risk page
+## `[x]` N2 — Hide the Risk page
 
 The owner has not settled what Risk should show (`NEXT-STEPS.md` owner idea 4). Take the
 `Risk` entry out of `components/layout/nav.ts` and the `/app/risk` route out of `App.tsx`, so
@@ -103,6 +103,15 @@ the bottom tab bar has four tabs. Leave `RiskPage`, `features/risk/` and the bac
 
 **Verify:** `npm test`, `npm run build`; no `/app/risk` link in the built app; positions'
 margin column unchanged; desktop and phone nav checked in Chrome.
+
+**Done 30 Oct 2026** (frontend `n2/hide-risk-page` `4040c2a`, merged as `6daebfd`). The nav has
+five items, not four, because Builder joined it after this plan. `/app/risk` redirects to
+`/app/positions` rather than 404ing, and Overview's stale-estimates link now reads "Positions →".
+Gates: typecheck, `npm test` 154, build. Checked in Chrome locally with dev auth: desktop nav and
+a 390 px frame's bottom tab bar show Overview, Positions, Holdings, Payoff, Builder; the old URL
+lands on Positions with the margin column filled. **In production 30 Oct, 11:06 IST:** backend
+gate 694, `/` and `/app/positions` 200, `/api/me` 401, Google OIDC in the boot log, and the served
+bundle has no nav link to `/app/risk`.
 
 ## `[ ]` N3 — Upstox live certification (UPSTOX-07)
 
