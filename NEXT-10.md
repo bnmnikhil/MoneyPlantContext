@@ -77,6 +77,33 @@ line, no what-if bar) in production; P2 (full company names) open; see the secti
 The Strategy Builder gaps section (22 Oct) is merged in from `docs/close-22-oct` with this update.
 **Next:** N13.
 
+**4 Nov 2026:** status, so the next session starts fresh.
+
+- **In production** (backend `main` `164e7fc`, frontend `main` `e4f4d39`, backend up 11:07 IST):
+  - **Multi-expiry payoffs at the first expiry** (3 Nov). Legs expiring then are at intrinsic.
+    Later options are priced with Black-Scholes at their own implied volatility; later futures
+    keep their basis. The days slider stops at the first expiry. `valuedAt` is on both payoff
+    responses.
+  - **Paytm feed watchdog and diagnostics** (3 Nov, `OBSERVABILITY.md` O18). Pings, and a
+    5-minute summary. A socket silent for 30s in market hours is reconnected, and the feed
+    gives up after 3 silent reconnects. It logs unreadable frames, the first packet after
+    open, and unsent subscriptions.
+  - **Live header fix** (4 Nov). On 3 Nov the header froze while Paytm data was arriving: an
+    uncaught exception in the price push or heartbeat task cancelled it, with no log. Both
+    tasks now log and carry on, and one failing page no longer costs the others their prices.
+    Caddy no longer gzips `/api/market-data/quotes/stream`; that config is applied on the VM,
+    with the old one kept as `/etc/caddy/Caddyfile.bak-20261104`. A page coming back to the
+    foreground drops any pending retry and reconnects at once. A 38s probe got a batch every
+    second, uncompressed, and the owner saw the header stay live for over 10 minutes. It is
+    not yet proven over a full session.
+- **Watch:** any `quote stream: push failed` or `heartbeat failed` line in the journal names the
+  exception behind the 3 Nov freeze. Fix its cause when it appears.
+- **Not yet seen live:** Paytm token expiry mid-session; whether the 500-instrument limit is per
+  socket or per account; the price stream on staging.
+- **Open:** the observability plan O1–O22 (hosted, provisional; O18's watchdog done), G1, G3
+  (discuss first), G4, P2, and the rest of this queue. Docs branches not on `main`: MoneyPlant
+  `docs/futltp-verified`, context `docs/close-22-oct` (`65be745`, N7 analysed, proposal parked).
+
 ---
 
 ## `[x]` N1 — Land the pending branches
