@@ -558,7 +558,7 @@ Pure computation in `PayoffEngine.compute(List<Leg>, currentSpot)`: 201 regular 
 
 ### Remaining payoff limitations
 
-- **Different expiries still share one terminal-price scenario.** The live page labels this explicitly, lists the dates and qualifies its maximum-profit/loss cards. It does not reprice later contracts at the first expiry, and a displayed scenario loss is not a guaranteed cap across those dates.
+- **Different expiries are valued at the first expiry (3 Nov 2026).** `ExpiryHorizon` (mirrored by the frontend's `projection.ts`) holds the legs expiring then at intrinsic. It prices later options with Black-Scholes at their own implied volatility, borrowing one from the same expiry or the nearest strike when a leg has none, and gives later futures their basis. Responses carry `valuedAt`. When no volatility can be found, the page falls back to the old single terminal-price scenario and labels it so.
 - **Breakevens are found only inside the plotted range.** Deeply off-screen crossings still require broader analytical root finding.
 
 ---

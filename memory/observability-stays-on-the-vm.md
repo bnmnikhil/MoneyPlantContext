@@ -5,6 +5,11 @@ metadata:
   type: decision
 ---
 
+> **Revisited 3 Nov 2026 (owner), provisional:** prefers hosted services (Grafana Cloud,
+> Sentry) to reduce dependency on the VPS, to be confirmed during implementation. If it
+> is, this decision is superseded, and the privacy policy must name the new processors.
+> See "Revisited 3 Nov 2026" in `OBSERVABILITY.md`.
+
 **Decided 2 Oct 2026 (owner)**, while planning monitoring for the public launch
 ([[public-launch-is-open-signup]]). The plan and its O-items are in `OBSERVABILITY.md`.
 
