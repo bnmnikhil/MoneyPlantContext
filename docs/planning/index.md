@@ -14,6 +14,7 @@ may mark an item done **only after its verification line has actually been run**
 
 | Tracker | Owns |
 |---|---|
+| [`KITE-LIVE-PRICES-PLAN.md`](https://github.com/bnmnikhil/MoneyPlantContext/blob/main/KITE-LIVE-PRICES-PLAN.md) | Planned integration of each user's entitled Kite account for spot, builder quotes and live payoff marks |
 | [`PUBLIC-LAUNCH.md`](https://github.com/bnmnikhil/MoneyPlantContext/blob/main/PUBLIC-LAUNCH.md) | **What is being worked on now**: the open sign-up launch, its L-items, and the **session handoff** at the top |
 | [`P0-LAUNCH.md`](https://github.com/bnmnikhil/MoneyPlantContext/blob/main/P0-LAUNCH.md) | Production readiness: correctness, security, deploy, legal (items A to F) |
 | [`BROKER-EXPANSION-PLAN.md`](https://github.com/bnmnikhil/MoneyPlantContext/blob/main/BROKER-EXPANSION-PLAN.md) | Adding brokers: certification, foundations, simulators, one phase per broker |

@@ -31,6 +31,25 @@ git clone https://github.com/bnmnikhil/broker-sim.git broker-sim
 cd frontend; npm install
 ```
 
+**Layout actually used from 13 Oct to 9 Nov 2026** (the laptop was rebuilt that way; paths elsewhere in
+this file, including the Claude settings below, still name the layout above — adjust them to whichever
+you clone into). The workspace root `C:\projects\Goldenbook\` is a plain folder, not a repo, and holds
+`.claude\settings.local.json`:
+
+```
+C:\projects\Goldenbook\MoneyPlantContext\    bnmnikhil/MoneyPlantContext
+C:\projects\Goldenbook\MoneyPlant\           bnmnikhil/MoneyPlant
+C:\projects\Goldenbook\MoneyPlantFrontend\   bnmnikhil/MoneyPlantFrontend
+```
+
+`broker-sim` was not cloned in that layout. Commits use the identity
+`Nikhil <b.nikhilbabu1@gmail.com>`; set it on the new install (`git config --global user.name/user.email`)
+before committing.
+
+**Before the 9 Nov 2026 format, also back up** (private, never git): `C:\Users\<you>\.claude\projects\*\memory\`
+(Claude's per-project memory, stored nowhere else) and `C:\projects\Goldenbook\artifacts\architecture\`
+(architecture PDF, screenshots and their generator scripts; skip `tooling\node_modules`).
+
 **Not restored, by owner decision (12 Oct 2026):** the screener branches
 `feat/index-spread-screener` in tradestack (`3e533ca`) and frontend (`abb378e`) were never pushed
 and are dropped; the screener will be started fresh (`memory/index-spread-screener.md`).
