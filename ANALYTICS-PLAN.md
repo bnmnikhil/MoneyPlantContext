@@ -12,7 +12,7 @@ step's **Verify** was run, not that code exists.
 
 | | State on 11 Nov 2026 |
 |---|---|
-| **Next step** | **AN-14** (owner-only import endpoints). AN-11 `1e69199` and AN-12 `9cc9775` committed and pushed. AN-13 done 11 Nov: `fundamentals/store/` and `fundamentals/ingest/` on `MoneyPlant` branch `research/fundamentals`, **uncommitted**. |
+| **Next step** | **AN-15** (read API). AN-11 `1e69199`, AN-12 `9cc9775`, AN-13 `bfeee33` committed and pushed. AN-14 done 11 Nov: `fundamentals/api/FundamentalsAdminController` on `MoneyPlant` branch `research/fundamentals`, **uncommitted**. Local DB holds 3 ITC quarters from the AN-14 check. |
 | Sample page | Built and verified locally. `MoneyPlantFrontend`, branch `research/stock-page-sample` at `277d01f`, pushed; no PR, not merged. |
 | Data | `public/fundamentals/ITC.json` (64 quarter rows, Mar 2018 – Sep 2026) and `BSE.json` (1 row). Files only; **no database tables exist yet**. Raw filings cached (untracked) in `MoneyPlantFrontend/scripts/fundamentals/cache/`. |
 | Backend | `main` at `164e7fc` (migrations to `V11`). Branch `research/fundamentals` adds `V12`; local Postgres is at `V12`, staging and production at `V11`. |
@@ -194,8 +194,8 @@ mergers and renames need a symbol-history table; an annual figure summed from qu
 | AN-11 | `V12` migration | `[x]` 11 Nov, local only |
 | AN-12 | Parser in the backend | `[x]` 11 Nov |
 | AN-13 | Storage and ingest service | `[x]` 11 Nov |
-| AN-14 | Owner-only import endpoints | `[ ]` **next** |
-| AN-15 | Read API | `[ ]` |
+| AN-14 | Owner-only import endpoints | `[x]` 11 Nov |
+| AN-15 | Read API | `[ ]` **next** |
 | AN-16 | Stock page reads the API | `[ ]` |
 | AN-17 | ITC end to end on the laptop | `[ ]` |
 | AN-18 | Server reachability, then staging | `[ ]` |
@@ -325,13 +325,35 @@ owners of parent". Standalone filings have no owners' line (null).
 
 **Verify:** as a non-owner the endpoints answer 403 (test); as owner a paste of two rows answers two `parsed`.
 
+**Done 11 Nov 2026** (uncommitted on `research/fundamentals`).
+- `fundamentals/api/FundamentalsAdminController`, guarded by `ops/AdminGuard` (`GB_ADMIN_EMAILS`, verified address):
+  - `POST /api/admin/fundamentals/import` `{symbol, text}` → `ImportReport` (`symbol`, `filings[]` of
+    `{source, outcome, periodEnd, basis, detail}`, `withoutFile`, `ignored`). Symbol `[A-Z0-9&-]{1,20}` after
+    upper-casing; at most 200 addresses; 400 `INVALID_IMPORT` with a message otherwise. **Synchronous**: about 2 s
+    per new filing (ITC's 64 ≈ 2 min the first time); a frontend calling it must allow for that.
+  - `POST /api/admin/fundamentals/upload?symbol=&source=` with the file as the body (`application/octet-stream`) →
+    one `FilingResult`. `source` must pass the fetcher's host rule.
+- **Deviation:** a non-owner gets **404, not 403**, following `StatusController`'s rule that a signed-in user must
+  not learn the endpoint exists. AN-15's read API should do the same while it is owner-only.
+- `common/RequestBodyLimitFilter`: the 64 KB body cap (C4) is raised to **2 MB for the exact path
+  `/api/admin/fundamentals/upload` only** (a filing is 50–150 KB); the paste import stays under 64 KB (ITC's two
+  NSE tables ≈ 25 KB). Tested, including look-alike paths.
+- Tests: `FundamentalsAdminControllerTest` (5): 404 for a stranger, an unverified owner and no login, with nothing
+  imported; the report passed through `no-store`; every 400 reason; `M&M`; upload checks. `RequestLimitsTest` +1.
+- **Over HTTP, local backend, dev auth as owner** (`GB_ADMIN_EMAILS=dev@localhost` for that process only): no CSRF
+  header → 403; bad symbol → 400; two pasted ITC rows → two `PARSED` in 2.6 s (two real NSE downloads), `withoutFile
+  1`, `ignored 1`; the same again → two `ALREADY_STORED` in 0.08 s; a 94 KB upload (Mar 2025) → `PARSED`, and it
+  filled ITC's ISIN `INE154A01025`; a 2.2 MB upload → 413. Database: 3 rows with the expected figures; originals
+  gzipped under `GB_FUNDAMENTALS_RAW_DIR`; the log shows counts only.
+- Gate: `mvnw clean test` **786 passing**.
+
 ### `[ ]` AN-15 — Read API
 
 - `ResearchController` `GET /api/research/stocks/{symbol}`; DTO mirrors the JSON's field names. Owner-only for
   now behind one property (`goldenbook.research.audience=owner|all`, default `owner`).
 - Update the API table in `CLAUDE.md` and `src/types/api.ts`.
 
-**Verify:** controller tests for found, not loaded (404), not owner (403); `mvnw clean test` green.
+**Verify:** controller tests for found, not loaded (404), not owner (404, per AN-14's rule); `mvnw clean test` green.
 
 ### `[ ]` AN-16 — Stock page reads the API
 
