@@ -12,13 +12,13 @@ step's **Verify** was run, not that code exists.
 
 | | State on 11 Nov 2026 |
 |---|---|
-| **Next step** | **AN-10** (commit the sample so it is safe). Nothing of the production build has started. |
-| Sample page | Built and verified locally. `MoneyPlantFrontend`, branch `research/stock-page-sample`, **uncommitted**. |
-| Data | `public/fundamentals/ITC.json` (64 quarter rows, Mar 2018 – Sep 2026) and `BSE.json` (1 row). Files only; **no database tables exist yet**. |
+| **Next step** | **AN-11** (`V12` migration) on a new branch `research/fundamentals`. Nothing of the production build has started. |
+| Sample page | Built and verified locally. `MoneyPlantFrontend`, branch `research/stock-page-sample` at `277d01f`, pushed; no PR, not merged. |
+| Data | `public/fundamentals/ITC.json` (64 quarter rows, Mar 2018 – Sep 2026) and `BSE.json` (1 row). Files only; **no database tables exist yet**. Raw filings cached (untracked) in `MoneyPlantFrontend/scripts/fundamentals/cache/`. |
 | Backend | Untouched. `main` at `164e7fc`, migrations at `V11`. |
-| This file, `BUSINESS-PLAN.md` | **Uncommitted** in `MoneyPlantContext` on branch `marketing/first-users`, which is 11 commits behind `origin/main`. |
-| Local servers | Not running (stopped 11 Nov for low memory). Start only when a step needs them. |
-| Open owner decisions | Universe for the first load (AN-20); timing against Stages A–C; the NSE licence question (AN-02). |
+| This file, `BUSINESS-PLAN.md` | Committed in `MoneyPlantContext` on `marketing/first-users`, which now contains all of `origin/main` (merged 11 Nov). Pushed; no PR. |
+| Local servers | Not running (stopped 11 Nov for low memory). Start only when a step needs them, memory-capped (`memory/laptop-git-and-tooling-gaps`). |
+| Open owner decisions | Universe for the first load (AN-20); timing against Stages A–C; the NSE licence question (AN-02). The Java parser port (AN-12) is approved. |
 
 **After every step:** flip its marker in the status table below, update the "Next step" line above, and add one
 dated line under the step saying what was verified and what was not.
@@ -39,7 +39,7 @@ positions and holdings in that stock, its option chain, its payoff).
 | **Banks, NBFCs and insurers get their own result tables**, with a view over the common columns | 11 Nov (owner) | Their statements share almost nothing with a manufacturer's |
 | **Prices are stored raw (as traded), corporate actions separately**; adjusted series are computed when read | 11 Nov | Industry practice; history is never rewritten |
 | The current price stays live from the user's broker; `price_eod` is history only | 11 Nov | Already works; no intraday storage is planned |
-| The parser moves into the backend, in Java (Claude's recommendation; assumed by this plan, **owner to confirm at AN-12**) | 11 Nov | One test gate, one place that defines each line item |
+| The parser moves into the backend, in Java | 11 Nov (owner) | One test gate, one place that defines each line item |
 | Filing links are collected by hand from NSE's two results tabs; nothing automates NSE's listing pages | 11 Nov | The listing call needs a cookie handshake and was refused as bot-check circumvention. Do not retry it or route around it |
 | Facts with sources, never advice: no ranked ideas, no recommendation-like text | 9 Nov | SEBI Research Analyst exposure (`research/BROKER-API-TERMS-MULTI-USER.md`). Not legal advice |
 
@@ -190,8 +190,8 @@ mergers and renames need a symbol-history table; an annual figure summed from qu
 | AN-05 | Filing probe from the laptop | `[x]` 11 Nov, except banks and a PDF reconciliation |
 | AN-06 | Can the production VM reach `nsearchives`? | `[ ]` → AN-18 |
 | AN-07 | Upstox fundamentals as a cross-check | `[ ]` optional |
-| AN-10 | Commit the sample branch and these docs | `[ ]` **next** |
-| AN-11 | `V12` migration | `[ ]` |
+| AN-10 | Commit the sample branch and these docs | `[x]` 11 Nov |
+| AN-11 | `V12` migration | `[ ]` **next** |
 | AN-12 | Parser in the backend | `[ ]` |
 | AN-13 | Storage and ingest service | `[ ]` |
 | AN-14 | Owner-only import endpoints | `[ ]` |
@@ -222,6 +222,10 @@ Needs the owner's word (commits are made only when asked).
   bring `marketing/first-users` up to `origin/main` (it is 11 behind, so its `NEXT-10.md` is stale).
 
 **Verify:** `git status` clean in both; `git ls-remote` shows the branches.
+
+**Done 11 Nov 2026.** Frontend `research/stock-page-sample` committed (`277d01f`) and pushed. Context: the two docs
+committed (`ba21ee3`), then `origin/main` merged into `marketing/first-users` (no conflicts; NEXT-10 is now the
+4 Nov version), pushed. Not done: PRs (no `gh` on this laptop; the owner opens them on GitHub if wanted).
 
 ### `[ ]` AN-11 — `V12` migration
 
