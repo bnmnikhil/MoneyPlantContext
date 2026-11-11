@@ -12,7 +12,7 @@ step's **Verify** was run, not that code exists.
 
 | | State on 11 Nov 2026 |
 |---|---|
-| **Next step** | **AN-13** (storage and ingest service). AN-11 committed (`1e69199`, pushed). AN-12 done 11 Nov: parsers in `fundamentals/parse/` on `MoneyPlant` branch `research/fundamentals`, **uncommitted**. |
+| **Next step** | **AN-14** (owner-only import endpoints). AN-11 `1e69199` and AN-12 `9cc9775` committed and pushed. AN-13 done 11 Nov: `fundamentals/store/` and `fundamentals/ingest/` on `MoneyPlant` branch `research/fundamentals`, **uncommitted**. |
 | Sample page | Built and verified locally. `MoneyPlantFrontend`, branch `research/stock-page-sample` at `277d01f`, pushed; no PR, not merged. |
 | Data | `public/fundamentals/ITC.json` (64 quarter rows, Mar 2018 – Sep 2026) and `BSE.json` (1 row). Files only; **no database tables exist yet**. Raw filings cached (untracked) in `MoneyPlantFrontend/scripts/fundamentals/cache/`. |
 | Backend | `main` at `164e7fc` (migrations to `V11`). Branch `research/fundamentals` adds `V12`; local Postgres is at `V12`, staging and production at `V11`. |
@@ -193,8 +193,8 @@ mergers and renames need a symbol-history table; an annual figure summed from qu
 | AN-10 | Commit the sample branch and these docs | `[x]` 11 Nov |
 | AN-11 | `V12` migration | `[x]` 11 Nov, local only |
 | AN-12 | Parser in the backend | `[x]` 11 Nov |
-| AN-13 | Storage and ingest service | `[ ]` **next** |
-| AN-14 | Owner-only import endpoints | `[ ]` |
+| AN-13 | Storage and ingest service | `[x]` 11 Nov |
+| AN-14 | Owner-only import endpoints | `[ ]` **next** |
 | AN-15 | Read API | `[ ]` |
 | AN-16 | Stock page reads the API | `[ ]` |
 | AN-17 | ITC end to end on the laptop | `[ ]` |
@@ -294,6 +294,28 @@ owners of parent". Standalone filings have no owners' line (null).
   does not run: say so, and check the SQL by hand against local Postgres.
 
 **Verify:** `mvnw clean test` green; a manual run of the service against local Postgres loads two ITC filings.
+
+**Done 11 Nov 2026** (uncommitted on `research/fundamentals`).
+- `fundamentals/store/`: `FilingStore` (interface, so the rules test without a database) and `PostgresFilingStore`
+  (`JdbcClient`; company upsert keyed by NSE symbol keeps an ISIN once known; result upsert on the primary key).
+- `fundamentals/ingest/`: `FilingSources` (paste → addresses: first address per line ending `.xml`/`.html`,
+  repeats dropped, `.../xbrl/-` counted as "without file", address-less lines counted as ignored),
+  `NseArchivesFetcher` (https on `nsearchives.nseindia.com` only, no redirects, self-identifying, 2 s apart,
+  10 s connect / 30 s read, 5 MB cap), `RawFilingArchive` (`goldenbook.fundamentals.raw-dir` =
+  `GB_FUNDAMENTALS_RAW_DIR`; `<SYMBOL>/<sha256>.gz`; blank = not kept), `FilingIngestService`
+  (`importFilings(symbol, pastedText)` and `importDocument(symbol, source, bytes)` for AN-14's upload).
+- Rules: an address stored before is not fetched again (`ALREADY_STORED`); a filing of another company is refused;
+  the filing **approved latest** wins its quarter and basis, a same-day one imported later wins, an unknown date
+  counts as oldest; the loser is stored as `superseded` (`OLDER_THAN_STORED` when it arrives late). One transaction
+  per filing; one failure is reported and the rest carry on. Logs counts and failing addresses, never the paste.
+- **Deviation from the schema's intent:** a filing that fails to fetch or parse is **not** stored (its company,
+  period and basis are unknown, and those columns are required), so `filing.status = 'failed'` is unused. Failures
+  are in the import report and the log; an `ingest_run` table can keep them later.
+- Tests: `FilingSourcesTest` (5), `FilingIngestServiceTest` (11, in-memory store, fetcher serving the fixtures),
+  `FundamentalsStoreDbTest` (2, tagged `db`). The db test runs on Testcontainers, **or** with
+  `-Dfundamentals.db.url=jdbc:postgresql://localhost:5433/goldenbook` in a throwaway schema it drops afterwards:
+  run that way here, both passed, no schema left behind, the real tables untouched.
+- Gate: `mvnw clean package` **780 passing**. Boot: context starts; logs "GB_FUNDAMENTALS_RAW_DIR unset".
 
 ### `[ ]` AN-14 — Owner-only import endpoints
 
