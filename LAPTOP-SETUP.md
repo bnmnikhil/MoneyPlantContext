@@ -50,6 +50,33 @@ before committing.
 (Claude's per-project memory, stored nowhere else) and `C:\projects\Goldenbook\artifacts\architecture\`
 (architecture PDF, screenshots and their generator scripts; skip `tooling\node_modules`).
 
+### Format of 12-13 Nov 2026
+
+Everything in git was pushed first (all three repos; the local-only branches `feat/paytm-live-ticks` and
+`plan/*` hold no commit that is not on GitHub). The private items were gathered into **one folder,
+`GoldenBook-backup-2026-11-12`**, with a `README.txt` saying where each goes back: SSH keys, the `GB_*`
+variables (`gb-env-backup.txt`), a dump of the local database (`goldenbook-local.dump`, which includes ITC and a
+year of prices), Claude's memory and the workspace `.claude\settings.local.json`, the architecture artifacts, and
+the 64 downloaded ITC filings (optional; only the backend's golden test reads them). Restore from that folder,
+then:
+
+- **Clone into the `C:\projects\Goldenbook\` layout** above. Branches to check out:
+  - `MoneyPlant` and `MoneyPlantFrontend`: `main` (it carries the Research section since 11 Nov).
+  - `MoneyPlantContext`: **`marketing/first-users`**. It holds the current `ANALYTICS-PLAN.md`, `BUSINESS-PLAN.md`
+    and this file, and is not yet merged into `main`.
+- **Research data on the new laptop:** either restore the database dump, or start empty and re-import ITC at
+  `http://localhost:5173/app/admin/research` (owner only: start the backend with `GB_ADMIN_EMAILS` set to the dev
+  address, `dev@localhost`, for that process). The NSE links lists are in this repo at
+  `research/fundamentals-links/` (`ITC.txt`, `BSE.txt`).
+- **Optional for the golden test:** put the 64 filings back at
+  `MoneyPlantFrontend\scripts\fundamentals\cache\` (git-ignored). Without them `ItcGoldenFilingsTest` is skipped.
+- **Docker is still not used locally;** the `db`-tagged tests run against local Postgres instead:
+  `mvnw test -DexcludedGroups= -Dtest=FundamentalsStoreDbTest -Dfundamentals.db.url=jdbc:postgresql://localhost:5433/goldenbook`
+  (a throwaway schema, dropped afterwards).
+- The memory-capped way to run the backend on 8 GB is in Claude's memory (`laptop-git-and-tooling-gaps`):
+  `mvnw -DskipTests package`, then `java -Xmx512m -XX:+UseSerialGC -jar target\tradestack-0.0.1-SNAPSHOT.jar`
+  with the `GB_*` variables loaded.
+
 **Not restored, by owner decision (12 Oct 2026):** the screener branches
 `feat/index-spread-screener` in tradestack (`3e533ca`) and frontend (`abb378e`) were never pushed
 and are dropped; the screener will be started fresh (`memory/index-spread-screener.md`).

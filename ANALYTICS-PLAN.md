@@ -12,7 +12,7 @@ step's **Verify** was run, not that code exists.
 
 | | State on 11 Nov 2026 |
 |---|---|
-| **Next step** | **AN-20**: load the first stocks on production through `/app/admin/research` (production holds no fundamentals data yet; start with ITC and a year of prices). AN-19 done 11 Nov: `main` is backend `c1111c0`, frontend `8c1ad4e`, deployed; owner-only. Still with the owner: AN-21 (bank filing links), AN-23 (corporate-actions source; lead under AN-22), the two display decisions under AN-24, and optionally `GB_FUNDAMENTALS_RAW_DIR` on production. |
+| **Next step** | **AN-20, more stocks**: production has ITC (64 quarters) and a year of prices since 12 Nov. The owner picks the next companies and loads each at `/app/admin/research` (two NSE exports per company). Still with the owner: AN-21 (bank filing links), AN-23 (corporate-actions source; lead under AN-22), the two display decisions under AN-24, and optionally `GB_FUNDAMENTALS_RAW_DIR` on production. **Laptop formatted 12-13 Nov 2026:** restore per `LAPTOP-SETUP.md` ("Format of 12-13 Nov 2026"); this repo's working branch is `marketing/first-users`. |
 | Sample page | Built and verified locally. `MoneyPlantFrontend`, branch `research/stock-page-sample` at `277d01f`, pushed; no PR, not merged. |
 | Data | `public/fundamentals/ITC.json` (64 quarter rows, Mar 2018 – Sep 2026) and `BSE.json` (1 row). Files only; **no database tables exist yet**. Raw filings cached (untracked) in `MoneyPlantFrontend/scripts/fundamentals/cache/`. |
 | Backend | `main` at `164e7fc` (migrations to `V11`). Branch `research/fundamentals` adds `V12`; local Postgres is at `V12`, staging and production at `V11`. |
@@ -200,7 +200,7 @@ mergers and renames need a symbol-history table; an annual figure summed from qu
 | AN-17 | ITC end to end on the laptop | `[x]` 11 Nov |
 | AN-18 | Server reachability, then staging | `[x]` 11 Nov |
 | AN-19 | Production, owner only | `[x]` 11 Nov |
-| AN-20 | First universe loaded | `[ ]` |
+| AN-20 | First universe loaded | `[~]` ITC on production 12 Nov; more stocks to choose |
 | AN-21 | Bank, NBFC, insurer formats | `[ ]` |
 | AN-22 | End-of-day prices | `[x]` 11 Nov (backend `9f56112`, frontend `1753513`) |
 | AN-23 | Corporate actions | `[ ]` |
@@ -455,6 +455,11 @@ Owner decides the list (suggested: own holdings plus 30–50 liquid F&O names, g
 For each: paste both NSE tabs, import, spot-check one quarter. Record the list and any failures here.
 
 **Verify:** every listed company has its latest quarter; failures are listed with reasons.
+
+**AN-20 started 12 Nov 2026.** On production through `/app/admin/research`: the owner imported ITC (64 quarters, March 2018 to
+September 2026); a year of prices was loaded from the owner's signed-in tab (10 Nov 2025 to 11 Nov 2026: 315 days loaded,
+52 not published, 0 failed, about 12 minutes). Production's ITC page shows the live price, P/E and market cap, and the
+52-week range ₹252.80-₹412.00 over 248 trading days to 11 Nov 2026.
 
 **AN-22 done 11 Nov 2026.** `V13`: `price_eod` (raw prices as traded, EQ only, keyed by **NSE symbol** and date, because the
 file covers every listed stock, not only loaded companies; **not partitioned**, as about 700k rows a year does not need it yet)
