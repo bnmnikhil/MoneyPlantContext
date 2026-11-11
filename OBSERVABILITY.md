@@ -6,6 +6,44 @@ against the public launch (`PUBLIC-LAUNCH.md`), which carries the schedule. Stat
 and the `[x]`-only-after-verification rule are the same as `P0-LAUNCH.md`'s. Branch names
 carry the id (`launch/o1-health`).
 
+## Revisited 3 Nov 2026: hosted, provisional (owner)
+
+**Pending task: implement this whole plan, O1–O22.** It was prompted by an incident
+during market hours on 3 Nov (below). The live NIFTY/BANKNIFTY header went silent, and
+nothing in the code, the log or any alert said so.
+
+**Stack change, provisional:** the owner prefers **hosted services**, to reduce
+dependency on the VPS: metrics and logs on Grafana Cloud, errors (backend and frontend)
+on Sentry, with UptimeRobot, Healthchecks.io and Telegram as before. The details will be
+settled while implementing. If confirmed, this **supersedes the 2 Oct "stays on the VM"
+decision** (`memory/observability-stays-on-the-vm.md`). Consequences to settle first:
+- The privacy policy must name the new processors (Grafana Labs, Sentry), and the
+  cookie/script statement changes if Sentry's browser SDK is used.
+- Scrubbing becomes a hard gate: before anything ships, O6's log rules and the
+  no-user-tag metric rule are enforced by code (a log filter, and a meter filter that
+  drops any `userId`/`connectionId` tag), not only by review.
+- Pick each service's data region, and check its free-tier limits at sign-up.
+- O10 (self-hosted Prometheus/Grafana) becomes "Grafana Alloy agent → Grafana Cloud";
+  O13's `/api/client-errors` becomes Sentry's SDK, or stays self-built if the policy
+  change is unwanted. O15 (Loki) moves to Tier 2 as hosted Loki.
+
+**Also stale below:** Actuator is now in the pom (management on `127.0.0.1:8081`, health
+and info only), so O1 is partly done. The `MarginAllocator` "estimate vs bill" line
+(connection id plus rupee figures, at INFO) is **still in the production log** on 3 Nov.
+
+### Incident, 3 Nov 2026: the header stopped streaming, silently
+
+- **Seen:** around 12:20 IST, NIFTY and BANKNIFTY in the header moved only every 30 s.
+  The SSE stream accepted connections and sent nothing at all: no `quotes`, no
+  `unavailable`, no `ended`. Reopening the tab did not help. The 20 s linger means a
+  quick reopen reuses the same socket.
+- **Log:** no `paytm feed` or `quote stream` lines for an hour. Retries log at `debug`,
+  and a socket that is open but silent raises no `onClose`/`onError`, so nothing retried,
+  failed over or told the page to poll. The page went on treating itself as live.
+- **Cause:** unconfirmed. Either a half-open socket (`PaytmLiveFeed` sends no pings) or
+  a stale Paytm token that the socket accepted. The fix for both is O18.
+- **Noticed by:** the owner, by eye. Nothing alerted.
+
 ## Where it stands (read off `origin/main`, 2 Oct)
 
 | Area | Today |
@@ -73,6 +111,11 @@ Re-check each free tier's limits when signing up; they change.
 | O15 | Loki, if journalctl is not enough after a month | 3 | `[ ]` |
 | O16 | SLOs, set from a month of real data, not guessed now | 3 | `[ ]` |
 | O17 | Product numbers (users, connections, daily active) as a DB view, no tracking | 3 | `[ ]` |
+| O18 | Live-feed silence watchdog: pings, no ticks for 30 s in market hours on a socket carrying a spot → reconnect, then fail over or poll; state changes at INFO | **1** (3 Nov incident) | `[ ]` |
+| O19 | Feature health as metrics: ticks per socket, silent sockets, pages polling, broker sessions logged in today, admin Paytm up, spot source | 1 | `[ ]` |
+| O20 | Market-calendar checks: 09:05 pre-open (sessions, contract masters), 09:20 "is it ticking", 15:40 end-of-day digest to Telegram | 2 | `[ ]` |
+| O21 | Claude's read access: dashboards and scrubbed logs, never the database | 2 | `[ ]` |
+| O22 | Incident log, plus definition of done for features: a health signal, a metric, an alert (or a written reason for none), a runbook line | 1 | `[ ]` |
 
 **Tier 1 is the launch floor (O1–O8, plus O13 by owner decision):** you find out the site is down before a user tells you,
 and every promise in the privacy policy about logs is true. It replaces D2 in
@@ -314,6 +357,46 @@ three steps, and where O15/O16 would go next.
 - **O17 Product numbers.** A SQL view (users, connections per broker, daily active,
   retention), read through the tunnel. **No analytics script and no tracking cookie.**
   The privacy policy promises none.
+
+## Added 3 Nov 2026
+
+### `[ ]` O18 — Live-feed silence watchdog
+
+**Do:** in `PaytmLiveFeed`, send a WebSocket ping every 20 s. While the market is open,
+a socket that carries a spot key (spots tick about once a second; an illiquid contract
+may legitimately stay quiet) and has seen no packet for 30 s is treated as dropped: it
+goes into the existing `retry()`, then `QuoteStreamService` failover, then `ended` to the
+pages, which poll. Log connect, retry, give-up, fail-over and recovery at **INFO**.
+
+**Verify:** in a test, a fake socket that goes silent is reconnected, and pages get
+`ended` once the retries are spent. Live, the header recovers without a tab reload.
+
+### `[ ]` O19 — Feature health signals
+
+`goldenbook.feed.sockets{broker}`, `goldenbook.feed.ticks{broker}` (counter),
+`goldenbook.feed.silent{broker}` (counter), `goldenbook.feed.pages{mode=stream|poll}`,
+`goldenbook.broker.loggedin.today{broker}`, `goldenbook.shared.admin.session` (0/1),
+`goldenbook.spot.source{source}`. Tags follow the O9 rule. These feed O12's
+market-hours rules, for example "no NIFTY tick for 60 s while the market is open → page".
+
+### `[ ]` O20 — Market-calendar checks
+
+Scheduled in the app on NSE trading days. 09:05: brokers logged in, contract masters
+loaded, admin Paytm session present. 09:20: spots ticking. 15:40: a digest (errors,
+fallbacks, ticks, margin-ratio drift, backup age). These replace the manual "market
+open, go check" sessions.
+
+### `[ ]` O21 — Read access for Claude
+
+Claude Code is currently refused production reads (correctly: no prod DB reads), which
+blocked the 3 Nov diagnosis. Give it dashboards and a scrubbed log view by design, and
+write down what it may and may not read.
+
+### `[ ]` O22 — Incident log and definition of done
+
+`incidents/` in this repository: one short note each (seen, impact, cause, fix,
+follow-ups), starting with 3 Nov. Any feature that can degrade quietly ships with a
+health signal, a metric, an alert or a written reason for none, and a runbook line.
 
 ## What changes elsewhere
 
