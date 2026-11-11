@@ -374,10 +374,10 @@ The two halves are split by sensitivity: `apiKey`/`appCode` is an identifier tha
 | GET | `/api/payoff/{underlying}?connectionId=` | `PayoffResponse` incl. `brokerId`, `connectionId`, `spot` |
 | GET | `/api/debug/instrument?symbol=`, `/api/debug/symbols` | `OptionInstrument`, symbol-model debug. **Dev auth only** (C3): the controller is not created without `GB_DEV_AUTH=true`, so production 404s |
 | GET | `/{kite|aliceblue|paytm}/callback` | public by necessity; attributed by nonce. Redirects to `${app.frontend-url}/app`, or `/app?error=…` |
-| GET | `/api/research/stocks/{symbol}` | `{symbol, name, isin, source, generatedAt, quarters[]}`: every stored quarter, both bases, oldest first; amounts in whole rupees, null = not filed. Audience `GB_RESEARCH_AUDIENCE` (`owner` default = `GB_ADMIN_EMAILS` only, or `all`). Outside it: bare 404. Inside it, nothing loaded: 404 `{error: STOCK_NOT_LOADED}`. *(branch `research/fundamentals`, not on `main`)* |
-| POST | `/api/admin/fundamentals/import` | `{symbol, text}` (NSE results tables pasted) → per-filing outcomes. Owner only, others 404. Synchronous, ~2 s per new filing *(branch `research/fundamentals`)* |
-| POST | `/api/admin/fundamentals/upload?symbol=&source=` | one filing as the body (cap 2 MB on this path only) → one outcome. Owner only *(branch `research/fundamentals`)* |
-| POST | `/api/admin/prices/load` | `{from, to}` (at most 62 days, not in the future) → per-day outcomes; loads NSE daily price files into `price_eod`. Owner only *(branch `research/fundamentals`)* |
+| GET | `/api/research/stocks/{symbol}` | `{symbol, name, isin, source, generatedAt, quarters[]}`: every stored quarter, both bases, oldest first; amounts in whole rupees, null = not filed. Audience `GB_RESEARCH_AUDIENCE` (`owner` default = `GB_ADMIN_EMAILS` only, or `all`). Outside it: bare 404. Inside it, nothing loaded: 404 `{error: STOCK_NOT_LOADED}`. |
+| POST | `/api/admin/fundamentals/import` | `{symbol, text}` (NSE results tables pasted) → per-filing outcomes. Owner only, others 404. Synchronous, ~2 s per new filing |
+| POST | `/api/admin/fundamentals/upload?symbol=&source=` | one filing as the body (cap 2 MB on this path only) → one outcome. Owner only |
+| POST | `/api/admin/prices/load` | `{from, to}` (at most 62 days, not in the future) → per-day outcomes; loads NSE daily price files into `price_eod`. Owner only |
 
 **Frontend mirrors these exactly in `src/types/api.ts`. The TS types are the contract — keep the two in sync.**
 

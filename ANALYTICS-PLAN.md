@@ -12,7 +12,7 @@ step's **Verify** was run, not that code exists.
 
 | | State on 11 Nov 2026 |
 |---|---|
-| **Next step** | **AN-19** (production, owner's approval) or **AN-25** (owner import page, proposed). AN-18 done 11 Nov: staging runs `research/fundamentals` with ITC and a year of prices. Still with the owner: AN-20 (list of stocks), AN-21 (bank filing links), AN-23 (corporate-actions source; lead under AN-22), and the two display decisions under AN-24. Code on `research/fundamentals`: backend `d25a226`, frontend `86122be`; all pushed. |
+| **Next step** | **AN-20**: load the first stocks on production through `/app/admin/research` (production holds no fundamentals data yet; start with ITC and a year of prices). AN-19 done 11 Nov: `main` is backend `c1111c0`, frontend `8c1ad4e`, deployed; owner-only. Still with the owner: AN-21 (bank filing links), AN-23 (corporate-actions source; lead under AN-22), the two display decisions under AN-24, and optionally `GB_FUNDAMENTALS_RAW_DIR` on production. |
 | Sample page | Built and verified locally. `MoneyPlantFrontend`, branch `research/stock-page-sample` at `277d01f`, pushed; no PR, not merged. |
 | Data | `public/fundamentals/ITC.json` (64 quarter rows, Mar 2018 – Sep 2026) and `BSE.json` (1 row). Files only; **no database tables exist yet**. Raw filings cached (untracked) in `MoneyPlantFrontend/scripts/fundamentals/cache/`. |
 | Backend | `main` at `164e7fc` (migrations to `V11`). Branch `research/fundamentals` adds `V12`; local Postgres is at `V12`, staging and production at `V11`. |
@@ -199,13 +199,13 @@ mergers and renames need a symbol-history table; an annual figure summed from qu
 | AN-16 | Stock page reads the API | `[x]` 11 Nov |
 | AN-17 | ITC end to end on the laptop | `[x]` 11 Nov |
 | AN-18 | Server reachability, then staging | `[x]` 11 Nov |
-| AN-19 | Production, owner only | `[ ]` |
+| AN-19 | Production, owner only | `[x]` 11 Nov |
 | AN-20 | First universe loaded | `[ ]` |
 | AN-21 | Bank, NBFC, insurer formats | `[ ]` |
 | AN-22 | End-of-day prices | `[x]` 11 Nov (backend `9f56112`, frontend `1753513`) |
 | AN-23 | Corporate actions | `[ ]` |
 | AN-24 | Metrics table | `[x]` 11 Nov (`2b4f9fc`) |
-| AN-25 | Owner import page (file upload instead of console) | `[ ]` proposed 11 Nov |
+| AN-25 | Owner import page (file upload instead of console) | `[x]` 11 Nov (`594520e`) |
 
 ## Steps
 
@@ -440,6 +440,15 @@ runs it; Claude does not read the production database). Import ITC through the e
 **Verify:** site 200, `/api/me` 401 from outside, `/api/research/stocks/ITC` 401 unsigned; the owner sees the
 ITC page; a second Google account does not.
 
+**AN-19 done 11 Nov 2026**, on the owner's word ("AN-25 then AN-19"). `research/fundamentals` merged `--no-ff` into `main` in
+both repos (backend `c1111c0`, frontend `8c1ad4e`; both branches were 0 behind `main`, so the merge is the gated code) and
+deployed with `deploy.sh`: 800 tests on the VM (1 skipped: the golden test, which needs the laptop's filing cache), frontend
+built. Live boot: Google OIDC, open sign-up as before, no dev auth; Flyway applied `12`, `13`, `14` (0.2 s); started in 13.7 s;
+`GB_FUNDAMENTALS_RAW_DIR` unset, so originals are not kept (optional to set; the production service's writable paths must
+allow it). From outside: `/`, `/app/positions`, `/app/stocks/ITC`, `/app/admin/research` 200; `/api/me` and
+`/api/research/stocks/ITC` 401; an import POST without a session is redirected, not served. Production holds **no
+fundamentals data yet**: AN-20.
+
 ### `[ ]` AN-20 — First universe loaded
 
 Owner decides the list (suggested: own holdings plus 30–50 liquid F&O names, general format only until AN-21).
@@ -494,6 +503,14 @@ rather than paste text; uploading filing documents themselves is box 3.
 
 **Verify:** typecheck, `npm test`, build; in Chrome on the laptop, import a second stock from its two exported files and load a
 week of prices from the page; a non-owner session sees a 404.
+
+**AN-25 done 11 Nov 2026** (frontend `594520e`). `/app/admin/research`, linked from `/app/admin`: Import results (symbol +
+NSE's exported list files, read in the browser, at most 1 MB, preview of filings found, outcome table with failures first and a
+link to the stock page); Load prices (date range, default the last 7 days because no endpoint gives the last stored day; the
+page cuts it into 62-day calls and shows each outcome); Upload one filing (fallback). Owner only through the status endpoint's
+guard. `lib/api.ts` gains a raw-body option for the upload. Helpers in `features/research/importTools.ts` with tests. Checked in
+Chrome on the laptop: a one-filing list imported (1 parsed), a week of prices (5 already loaded, 1 not published, 1 loaded),
+and with no owner configured the page reads "Not available" and the import 404s. Gates: typecheck, `npm test` 183, build.
 
 ### Later, each its own step
 
