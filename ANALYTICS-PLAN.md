@@ -188,7 +188,7 @@ mergers and renames need a symbol-history table; an annual figure summed from qu
 | AN-03 | Universe decision | `[ ]` owner (see AN-20) |
 | AN-04 | Memory: GoldenBook stores market data (not user data) | `[ ]` |
 | AN-05 | Filing probe from the laptop | `[x]` 11 Nov, except banks and a PDF reconciliation |
-| AN-06 | Can the production VM reach `nsearchives`? | `[ ]` → AN-18 |
+| AN-06 | Can the production VM reach `nsearchives`? | `[x]` 11 Nov: **yes** |
 | AN-07 | Upstox fundamentals as a cross-check | `[ ]` optional |
 | AN-10 | Commit the sample branch and these docs | `[x]` 11 Nov |
 | AN-11 | `V12` migration | `[x]` 11 Nov, local only |
@@ -198,7 +198,7 @@ mergers and renames need a symbol-history table; an annual figure summed from qu
 | AN-15 | Read API | `[x]` 11 Nov |
 | AN-16 | Stock page reads the API | `[x]` 11 Nov |
 | AN-17 | ITC end to end on the laptop | `[x]` 11 Nov |
-| AN-18 | Server reachability, then staging | `[ ]` |
+| AN-18 | Server reachability, then staging | `[~]` reachability yes; staging next |
 | AN-19 | Production, owner only | `[ ]` |
 | AN-20 | First universe loaded | `[ ]` |
 | AN-21 | Bank, NBFC, insurer formats | `[ ]` |
@@ -414,6 +414,12 @@ of commits and this file.
 - Set `GB_FUNDAMENTALS_RAW_DIR` in staging's environment; deploy the branch to staging; import ITC there.
 
 **Verify:** staging's page shows ITC; the answer to AN-06 is written here.
+
+**AN-06 answered 11 Nov 2026:** from the production VM, a filing and a daily price file both answered **200**, at the same
+sizes as from the laptop (58,623 and 400,839 bytes), with the self-identifying user agent and no cookies. The server fetches
+filings and prices itself; the upload endpoint is only a fallback. Staging next: check `GB_ADMIN_EMAILS` is set for staging;
+set `GB_FUNDAMENTALS_RAW_DIR` under `/opt/goldenbook-staging` (the only place the staging service may write); run
+`deploy-staging.sh research/fundamentals`; confirm the boot and Flyway `12`-`14`.
 
 ### `[ ]` AN-19 — Production, owner only
 
