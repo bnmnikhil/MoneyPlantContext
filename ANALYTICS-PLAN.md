@@ -12,7 +12,7 @@ step's **Verify** was run, not that code exists.
 
 | | State on 11 Nov 2026 |
 |---|---|
-| **Next step** | Steps needing the owner: **AN-17** browser check (Chrome extension was not connected), **AN-18** (one curl on the VM, staging deploy), **AN-19** (prod approval), **AN-20** (list of stocks), **AN-21** (bank filing links), **AN-23** (corporate-actions source). Two owner decisions: revenue gross of excise, and one-offs in trailing growth (see AN-24). Code done to AN-24 on `research/fundamentals` in both repos: backend `2b4f9fc`, frontend `1753513`; all committed and pushed. Local DB at V14 with ITC (64 quarters, metrics) and prices 12 Oct-10 Nov 2026. |
+| **Next step** | Steps needing the owner: **AN-17** browser check (Chrome extension was not connected), **AN-18** (one curl on the VM, staging deploy), **AN-19** (prod approval), **AN-20** (list of stocks), **AN-21** (bank filing links), **AN-23** (corporate-actions source). Two owner decisions: revenue gross of excise, and one-offs in trailing growth (see AN-24). Code done to AN-24 on `research/fundamentals` in both repos: backend `d25a226`, frontend `1753513`; all committed and pushed. Local DB at V14 with ITC (64 quarters, metrics) and a **full year of prices** (10 Nov 2025-10 Nov 2026, 249 trading days, 615k rows). |
 | Sample page | Built and verified locally. `MoneyPlantFrontend`, branch `research/stock-page-sample` at `277d01f`, pushed; no PR, not merged. |
 | Data | `public/fundamentals/ITC.json` (64 quarter rows, Mar 2018 – Sep 2026) and `BSE.json` (1 row). Files only; **no database tables exist yet**. Raw filings cached (untracked) in `MoneyPlantFrontend/scripts/fundamentals/cache/`. |
 | Backend | `main` at `164e7fc` (migrations to `V11`). Branch `research/fundamentals` adds `V12`; local Postgres is at `V12`, staging and production at `V11`. |
@@ -434,6 +434,15 @@ page's 52-week tile shows the range, and "From N trading days since ..." until t
 all already loaded. **Finding:** a holiday's file (20 Oct, 10 Nov) carries the previous trading day; dating rows from inside
 the file handles it. ITC's stored days chain exactly (each prev_close equals the previous close). A year of prices is about
 six calls of 62 days, a minute and a half each.
+
+**AN-22 year backfill, 11 Nov 2026** (`d25a226`). Six 62-day loads from the laptop: 249 trading days, 615,307 rows, no
+failures; ITC's 52-week range ₹252.80-₹412.00 over 249 days (the high is Nov 2025, before the Jan 2026 fall).
+**Finding, fixed:** NSE trades on some Sundays (Union Budget, Sun 1 Feb 2026; Diwali Muhurat, Sun 8 Nov 2026); the loader
+tried weekdays only, so those sessions were missing and the next day's previous close pointed at nothing. It now tries every
+calendar date. NSE also publishes a Sunday-named file each week that repeats Friday (harmless: rows are dated from inside the
+file); Saturdays have none. After the fix ITC's price chain has 0 breaks. **Lead for AN-23:** 475 breaks remain across 427 of
+~2,800 stocks, days where NSE's stated previous close differs from the stored close. That is the signature of an ex-date
+adjustment (dividend, split, bonus), so the price files may themselves reveal corporate actions. Not verified yet.
 
 **AN-24 done 11 Nov 2026.** `V14`: `stock_metric` per company and basis (trailing four-quarter revenue, net profit and EPS;
 growth over the four before; latest quarter against a year earlier; operating margin). `StockMetrics` is pure: four or eight
