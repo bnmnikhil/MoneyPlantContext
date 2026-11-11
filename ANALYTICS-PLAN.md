@@ -12,7 +12,7 @@ step's **Verify** was run, not that code exists.
 
 | | State on 11 Nov 2026 |
 |---|---|
-| **Next step** | **AN-15** (read API). AN-11 `1e69199`, AN-12 `9cc9775`, AN-13 `bfeee33` committed and pushed. AN-14 done 11 Nov: `fundamentals/api/FundamentalsAdminController` on `MoneyPlant` branch `research/fundamentals`, **uncommitted**. Local DB holds 3 ITC quarters from the AN-14 check. |
+| **Next step** | **AN-16** (stock page reads the API; frontend branch `research/fundamentals`, made from `research/stock-page-sample`). AN-11 `1e69199`, AN-12 `9cc9775`, AN-13 `bfeee33`, AN-14 `24ae3b7` committed and pushed. AN-15 done 11 Nov: `ResearchController` + `FundamentalsReader` on `MoneyPlant` branch `research/fundamentals`, **uncommitted**. Local DB holds 3 ITC quarters. |
 | Sample page | Built and verified locally. `MoneyPlantFrontend`, branch `research/stock-page-sample` at `277d01f`, pushed; no PR, not merged. |
 | Data | `public/fundamentals/ITC.json` (64 quarter rows, Mar 2018 – Sep 2026) and `BSE.json` (1 row). Files only; **no database tables exist yet**. Raw filings cached (untracked) in `MoneyPlantFrontend/scripts/fundamentals/cache/`. |
 | Backend | `main` at `164e7fc` (migrations to `V11`). Branch `research/fundamentals` adds `V12`; local Postgres is at `V12`, staging and production at `V11`. |
@@ -195,8 +195,8 @@ mergers and renames need a symbol-history table; an annual figure summed from qu
 | AN-12 | Parser in the backend | `[x]` 11 Nov |
 | AN-13 | Storage and ingest service | `[x]` 11 Nov |
 | AN-14 | Owner-only import endpoints | `[x]` 11 Nov |
-| AN-15 | Read API | `[ ]` **next** |
-| AN-16 | Stock page reads the API | `[ ]` |
+| AN-15 | Read API | `[x]` 11 Nov |
+| AN-16 | Stock page reads the API | `[ ]` **next** |
 | AN-17 | ITC end to end on the laptop | `[ ]` |
 | AN-18 | Server reachability, then staging | `[ ]` |
 | AN-19 | Production, owner only | `[ ]` |
@@ -354,6 +354,26 @@ owners of parent". Standalone filings have no owners' line (null).
 - Update the API table in `CLAUDE.md` and `src/types/api.ts`.
 
 **Verify:** controller tests for found, not loaded (404), not owner (404, per AN-14's rule); `mvnw clean test` green.
+
+**Done 11 Nov 2026** (uncommitted on `research/fundamentals`).
+- `fundamentals/store/FundamentalsReader` (interface; `StockResults`, `QuarterView`) and `PostgresFundamentalsReader`:
+  every stored quarter of a company, both bases, ordered by period then basis, each with its filing's NSE address,
+  approval date and unit; `generatedAt` = the newest `parsed_at`. Amounts as `Long` rupees (`longValueExact`),
+  per-share as `Double`. A company with no result rows reads as not loaded.
+- `fundamentals/api/ResearchController` `GET /api/research/stocks/{symbol}`: symbol trimmed and upper-cased;
+  `Cache-Control: max-age=60, private`. Audience `goldenbook.research.audience` = `GB_RESEARCH_AUDIENCE`, `owner`
+  (default, `AdminGuard`) or `all` (any signed-in user); anything else fails at startup. **Two 404s:** outside the
+  audience a bare 404; inside it, a stock with nothing loaded (or an invalid symbol) is 404
+  `{"error":"STOCK_NOT_LOADED","message":...}`, which AN-16 shows as "No results loaded". The reader is held by the
+  controller directly: the controller-repository rule (ADR 0011) is about per-user rows, and these are not.
+- JSON field names are the stock page's (`features/research/fundamentals.ts`) plus `exceptionalItems`,
+  `profitDiscontinued`, `netProfitOwners`. **`src/types/api.ts` is updated in AN-16** with the rest of the frontend.
+- CLAUDE.md's API table lists the three endpoints, marked as on the branch.
+- Tests: `ResearchControllerTest` (5: found and its JSON shape, not loaded, outside the audience reads nothing,
+  `all`, the setting); `FundamentalsStoreDbTest` +1 for the reader (3 in all, run against local Postgres in a
+  throwaway schema). Gate: `mvnw clean package` **791 passing**.
+- Over HTTP (local, dev auth as owner): `itc` → 200, 3 quarters, ISO dates, plain numbers, Mar 2025's
+  `profitDiscontinued` 146526100000; `TCS` → 404 `STOCK_NOT_LOADED`; `M%26M` → decoded to `M&M`, 404 the same.
 
 ### `[ ]` AN-16 — Stock page reads the API
 
