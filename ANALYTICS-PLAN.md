@@ -12,7 +12,7 @@ step's **Verify** was run, not that code exists.
 
 | | State on 11 Nov 2026 |
 |---|---|
-| **Next step** | Steps needing the owner: **AN-17** browser check (Chrome extension was not connected), **AN-18** (one curl on the VM, staging deploy), **AN-19** (prod approval), **AN-20** (list of stocks), **AN-21** (bank filing links), **AN-23** (corporate-actions source). Two owner decisions: revenue gross of excise, and one-offs in trailing growth (see AN-24). Code done to AN-24 on `research/fundamentals` in both repos: backend `d25a226`, frontend `1753513`; all committed and pushed. Local DB at V14 with ITC (64 quarters, metrics) and a **full year of prices** (10 Nov 2025-10 Nov 2026, 249 trading days, 615k rows). |
+| **Next step** | Steps needing the owner: **AN-18** (one curl on the VM, staging deploy), **AN-19** (prod approval), **AN-20** (list of stocks), **AN-21** (bank filing links), **AN-23** (corporate-actions source; a lead from the price files is noted under AN-22). Two owner decisions: revenue gross of excise, and one-offs in trailing growth (see AN-24). Code done to AN-24 and AN-17 verified, on `research/fundamentals`: backend `d25a226`, frontend `86122be`; all committed and pushed. Local DB at V14 with ITC (64 quarters, metrics) and a full year of prices. |
 | Sample page | Built and verified locally. `MoneyPlantFrontend`, branch `research/stock-page-sample` at `277d01f`, pushed; no PR, not merged. |
 | Data | `public/fundamentals/ITC.json` (64 quarter rows, Mar 2018 – Sep 2026) and `BSE.json` (1 row). Files only; **no database tables exist yet**. Raw filings cached (untracked) in `MoneyPlantFrontend/scripts/fundamentals/cache/`. |
 | Backend | `main` at `164e7fc` (migrations to `V11`). Branch `research/fundamentals` adds `V12`; local Postgres is at `V12`, staging and production at `V11`. |
@@ -197,7 +197,7 @@ mergers and renames need a symbol-history table; an annual figure summed from qu
 | AN-14 | Owner-only import endpoints | `[x]` 11 Nov |
 | AN-15 | Read API | `[x]` 11 Nov |
 | AN-16 | Stock page reads the API | `[x]` 11 Nov |
-| AN-17 | ITC end to end on the laptop | `[~]` import and reconciliation done; browser check left |
+| AN-17 | ITC end to end on the laptop | `[x]` 11 Nov |
 | AN-18 | Server reachability, then staging | `[ ]` |
 | AN-19 | Production, owner only | `[ ]` |
 | AN-20 | First universe loaded | `[ ]` |
@@ -398,6 +398,14 @@ the company's published results PDF.
 **AN-16 done 11 Nov 2026** (frontend `research/fundamentals` `fc611f1`): page reads `/api/research/stocks/{symbol}`; 404 `STOCK_NOT_LOADED` → "No results loaded", bare 404 → "Research is not available yet" (none of the user's book shown); rows "Exceptional items" and "Profit from discontinued operations" only when a shown quarter has one; types in `types/api.ts`; `public/fundamentals` and `scripts/fundamentals` removed (cache kept untracked for the golden test, whose expected JSON moved to backend `itc-node-script.json`, `65ec2f2`); links files moved to `research/fundamentals-links/`. Gates: typecheck, `npm test` 177, build; nothing under `dist/fundamentals`.
 
 **AN-17 so far, 11 Nov 2026.** First full import: 31 parsed, **30 refused** — XBRL filings up to Dec 2022 state no company name (only the symbol), and the company upsert failed NOT NULL. Fixed in `58e7fbf` (named by symbol until a filing states the name; a nameless filing never blanks name or ISIN; db test added). Re-import: 30 parsed + 34 already stored; third run all 64 already stored in 0.1 s. DB: 64 quarters, Mar 2018–Sep 2026 (30 consolidated, 34 standalone), `ITC Limited`, `INE154A01025`. API vs the sample's 64 quarters: **0 differences**. Reconciled with ITC's published results: Sep 2026 consolidated net profit ₹4,229.33 cr, standalone ₹4,137.12 cr, exceptional −₹25.66 cr, Jun 2026 consolidated ₹4,508.79 cr — all exact. **Revenue caveat:** revenue from operations includes cigarette taxes (Sep 2026 ₹30,578 cr; ITC's net revenue ₹20,454 cr), so from Jun 2026 revenue jumps and operating margin falls to 18%: to discuss (show net revenue, or a note). **Left:** the Chrome check (extension not connected).
+
+**AN-17 done 11 Nov 2026** (browser check, frontend `86122be`). In Chrome on the laptop: desktop (tiles incl. the 52-week
+range from stored prices, the chart, both one-off rows); the Standalone switch (table and tiles follow the basis); the
+exposure card with a real ITC position (lines add up to the total). **Found and fixed at 390 px:** the page scrolled sideways
+(960 px) because each filing link's screen-reader text is absolutely positioned and escaped the table's scroll box; both
+scroll boxes are now `relative`. On phones the pinned label column wraps at 9rem so two quarters fit; thin dark scrollbar.
+Checked after: page 372 px wide in a 372 px view, table scrolls to the latest quarter. Personal position figures are kept out
+of commits and this file.
 
 ### `[ ]` AN-18 — Server reachability, then staging
 
