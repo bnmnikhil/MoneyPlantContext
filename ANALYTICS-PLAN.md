@@ -12,7 +12,7 @@ step's **Verify** was run, not that code exists.
 
 | | State on 11 Nov 2026 |
 |---|---|
-| **Next step** | Steps needing the owner: **AN-18** (one curl on the VM, staging deploy), **AN-19** (prod approval), **AN-20** (list of stocks), **AN-21** (bank filing links), **AN-23** (corporate-actions source; a lead from the price files is noted under AN-22). Two owner decisions: revenue gross of excise, and one-offs in trailing growth (see AN-24). Code done to AN-24 and AN-17 verified, on `research/fundamentals`: backend `d25a226`, frontend `86122be`; all committed and pushed. Local DB at V14 with ITC (64 quarters, metrics) and a full year of prices. |
+| **Next step** | **AN-19** (production, owner's approval) or **AN-25** (owner import page, proposed). AN-18 done 11 Nov: staging runs `research/fundamentals` with ITC and a year of prices. Still with the owner: AN-20 (list of stocks), AN-21 (bank filing links), AN-23 (corporate-actions source; lead under AN-22), and the two display decisions under AN-24. Code on `research/fundamentals`: backend `d25a226`, frontend `86122be`; all pushed. |
 | Sample page | Built and verified locally. `MoneyPlantFrontend`, branch `research/stock-page-sample` at `277d01f`, pushed; no PR, not merged. |
 | Data | `public/fundamentals/ITC.json` (64 quarter rows, Mar 2018 – Sep 2026) and `BSE.json` (1 row). Files only; **no database tables exist yet**. Raw filings cached (untracked) in `MoneyPlantFrontend/scripts/fundamentals/cache/`. |
 | Backend | `main` at `164e7fc` (migrations to `V11`). Branch `research/fundamentals` adds `V12`; local Postgres is at `V12`, staging and production at `V11`. |
@@ -198,13 +198,14 @@ mergers and renames need a symbol-history table; an annual figure summed from qu
 | AN-15 | Read API | `[x]` 11 Nov |
 | AN-16 | Stock page reads the API | `[x]` 11 Nov |
 | AN-17 | ITC end to end on the laptop | `[x]` 11 Nov |
-| AN-18 | Server reachability, then staging | `[~]` reachability yes; staging next |
+| AN-18 | Server reachability, then staging | `[x]` 11 Nov |
 | AN-19 | Production, owner only | `[ ]` |
 | AN-20 | First universe loaded | `[ ]` |
 | AN-21 | Bank, NBFC, insurer formats | `[ ]` |
 | AN-22 | End-of-day prices | `[x]` 11 Nov (backend `9f56112`, frontend `1753513`) |
 | AN-23 | Corporate actions | `[ ]` |
 | AN-24 | Metrics table | `[x]` 11 Nov (`2b4f9fc`) |
+| AN-25 | Owner import page (file upload instead of console) | `[ ]` proposed 11 Nov |
 
 ## Steps
 
@@ -417,9 +418,18 @@ of commits and this file.
 
 **AN-06 answered 11 Nov 2026:** from the production VM, a filing and a daily price file both answered **200**, at the same
 sizes as from the laptop (58,623 and 400,839 bytes), with the self-identifying user agent and no cookies. The server fetches
-filings and prices itself; the upload endpoint is only a fallback. Staging next: check `GB_ADMIN_EMAILS` is set for staging;
+filings and prices itself; the upload endpoint is only a fallback. Staging next (done, below): check `GB_ADMIN_EMAILS` is set for staging;
 set `GB_FUNDAMENTALS_RAW_DIR` under `/opt/goldenbook-staging` (the only place the staging service may write); run
 `deploy-staging.sh research/fundamentals`; confirm the boot and Flyway `12`-`14`.
+
+**AN-18 done 11 Nov 2026.** The owner deployed `research/fundamentals` to staging (both repos at `d25a226` / `86122be`), with
+`GB_ADMIN_EMAILS` set and `GB_FUNDAMENTALS_RAW_DIR` under `/opt/goldenbook-staging`. Boot clean in 19 s; Flyway `12`, `13`,
+`14` applied on staging's database. Imported through the owner's signed-in browser session (no import screen yet, so from
+the console): ITC **64 of 64 parsed**, all fetched by the staging server from NSE, 64 originals archived; quarters and metrics
+identical to the laptop (trailing EPS 15.07 consolidated, 14.30 standalone). Prices 10 Nov 2025-11 Nov 2026 in six loads:
+314 files loaded, 53 not published, 0 failed, about 12 minutes. Staging's ITC page renders with the 52-week range to the close
+of 11 Nov 2026. Market cap and P/E show a dash there because staging's simulated brokers do not quote ITC; a fallback to the
+last stored close would fill them (not built; a small follow-up for the owner to decide).
 
 ### `[ ]` AN-19 — Production, owner only
 
@@ -467,6 +477,23 @@ margins checked by hand in the db test. **Two owner decisions** before a screene
 cigarette taxes from Jun 2026, so revenue growth (+24%) and margin (18%) are distorted: show net revenue, or a note;
 (2) trailing profit growth (-45.6%) compares with a year holding the hotels demerger gain: exclude discontinued operations
 and exceptional items from growth, or show it as filed.
+
+### `[ ]` AN-25 — Owner import page (proposed 11 Nov 2026)
+
+Requested by the owner after AN-18, where the import ran from the browser console: a simple file upload instead. Frontend only;
+uses the existing owner-only endpoints, no backend change. Assumed meaning, to confirm: upload NSE's exported list file(s)
+rather than paste text; uploading filing documents themselves is box 3.
+- Page `/app/admin/research`, linked from `/app/admin`; owner only (a non-owner gets the same 404 the endpoints give).
+- **Import results:** symbol field; choose or drop NSE's exported file(s) (both tabs, `.csv`/`.txt`, at most 1 MB, read in the
+  browser); a preview line ("64 filings found, 57 rows without a file"); Import; progress text ("about 2 minutes for new
+  filings"); then a table of each filing's outcome with the reason for any failure.
+- **Load prices:** from/to dates, defaulting to the day after the last stored day through today; the page splits the range into
+  62-day calls itself and shows progress per call.
+- **Upload one filing (fallback):** an `.xml`/`.html` file plus its NSE address, to `/api/admin/fundamentals/upload`.
+- Pure helpers with tests: reading the file into addresses (count, rows without file), and splitting a date range.
+
+**Verify:** typecheck, `npm test`, build; in Chrome on the laptop, import a second stock from its two exported files and load a
+week of prices from the page; a non-owner session sees a 404.
 
 ### Later, each its own step
 
