@@ -12,7 +12,7 @@ step's **Verify** was run, not that code exists.
 
 | | State on 11 Nov 2026 |
 |---|---|
-| **Next step** | **Finish AN-17**: the Chrome check (desktop, phone width, Standalone switch, exposure card) — the browser extension was not connected on 11 Nov. Then AN-18 (owner: one curl on the VM, staging deploy). AN-16 done (frontend `fc611f1`, backend `65ec2f2`); AN-17 fix `58e7fbf`. Local DB holds all 64 ITC quarters. Everything committed and pushed. |
+| **Next step** | Steps needing the owner: **AN-17** browser check (Chrome extension was not connected), **AN-18** (one curl on the VM, staging deploy), **AN-19** (prod approval), **AN-20** (list of stocks), **AN-21** (bank filing links), **AN-23** (corporate-actions source). Two owner decisions: revenue gross of excise, and one-offs in trailing growth (see AN-24). Code done to AN-24 on `research/fundamentals` in both repos: backend `2b4f9fc`, frontend `1753513`; all committed and pushed. Local DB at V14 with ITC (64 quarters, metrics) and prices 12 Oct-10 Nov 2026. |
 | Sample page | Built and verified locally. `MoneyPlantFrontend`, branch `research/stock-page-sample` at `277d01f`, pushed; no PR, not merged. |
 | Data | `public/fundamentals/ITC.json` (64 quarter rows, Mar 2018 – Sep 2026) and `BSE.json` (1 row). Files only; **no database tables exist yet**. Raw filings cached (untracked) in `MoneyPlantFrontend/scripts/fundamentals/cache/`. |
 | Backend | `main` at `164e7fc` (migrations to `V11`). Branch `research/fundamentals` adds `V12`; local Postgres is at `V12`, staging and production at `V11`. |
@@ -202,9 +202,9 @@ mergers and renames need a symbol-history table; an annual figure summed from qu
 | AN-19 | Production, owner only | `[ ]` |
 | AN-20 | First universe loaded | `[ ]` |
 | AN-21 | Bank, NBFC, insurer formats | `[ ]` |
-| AN-22 | End-of-day prices | `[ ]` |
+| AN-22 | End-of-day prices | `[x]` 11 Nov (backend `9f56112`, frontend `1753513`) |
 | AN-23 | Corporate actions | `[ ]` |
-| AN-24 | Metrics table | `[ ]` |
+| AN-24 | Metrics table | `[x]` 11 Nov (`2b4f9fc`) |
 
 ## Steps
 
@@ -422,6 +422,28 @@ Owner decides the list (suggested: own holdings plus 30–50 liquid F&O names, g
 For each: paste both NSE tabs, import, spot-check one quarter. Record the list and any failures here.
 
 **Verify:** every listed company has its latest quarter; failures are listed with reasons.
+
+**AN-22 done 11 Nov 2026.** `V13`: `price_eod` (raw prices as traded, EQ only, keyed by **NSE symbol** and date, because the
+file covers every listed stock, not only loaded companies; **not partitioned**, as about 700k rows a year does not need it yet)
+and `price_eod_file` (one row per daily file). `fundamentals/prices/`: `Bhavcopy` (columns by name, trading date from inside
+the file, refuses mixed dates or high below low), `PriceLoadService` (weekdays, the same fetcher; 404 = not published, not
+recorded), `PostgresPriceStore` (batched upsert; `summary` = latest close and 52-week high and low, with the days loaded).
+`POST /api/admin/prices/load {from, to}`: owner only, at most 62 days, not in the future. The stock API gains `price`; the
+page's 52-week tile shows the range, and "From N trading days since ..." until the window holds about a year.
+**Real run:** 22 files for 12 Oct-10 Nov 2026 in 51 s: 54,221 rows, 20 trading days, 2,819 stocks; the same range again was
+all already loaded. **Finding:** a holiday's file (20 Oct, 10 Nov) carries the previous trading day; dating rows from inside
+the file handles it. ITC's stored days chain exactly (each prev_close equals the previous close). A year of prices is about
+six calls of 62 days, a minute and a half each.
+
+**AN-24 done 11 Nov 2026.** `V14`: `stock_metric` per company and basis (trailing four-quarter revenue, net profit and EPS;
+growth over the four before; latest quarter against a year earlier; operating margin). `StockMetrics` is pure: four or eight
+**consecutive** quarters or null, and no growth from a loss or zero. `StockMetricsService` rebuilds after **every** import
+(which also backfills) and after a stored upload; its failure is logged, never the import's. Checked on ITC: latest-quarter
+net profit -18.46% consolidated and -20.13% standalone (ITC reported -18.5% and -20.1%); trailing EPS 15.07, as on the page;
+margins checked by hand in the db test. **Two owner decisions** before a screener uses these: (1) ITC's revenue includes
+cigarette taxes from Jun 2026, so revenue growth (+24%) and margin (18%) are distorted: show net revenue, or a note;
+(2) trailing profit growth (-45.6%) compares with a year holding the hotels demerger gain: exclude discontinued operations
+and exceptional items from growth, or show it as filed.
 
 ### Later, each its own step
 
