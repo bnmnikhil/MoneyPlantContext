@@ -12,7 +12,7 @@ step's **Verify** was run, not that code exists.
 
 | | State on 11 Nov 2026 |
 |---|---|
-| **Next step** | **AN-12** (parser in the backend). AN-11 done 11 Nov: `V12__fundamentals.sql` on `MoneyPlant` branch `research/fundamentals`, **uncommitted**; applied to the local database only. |
+| **Next step** | **AN-13** (storage and ingest service). AN-11 committed (`1e69199`, pushed). AN-12 done 11 Nov: parsers in `fundamentals/parse/` on `MoneyPlant` branch `research/fundamentals`, **uncommitted**. |
 | Sample page | Built and verified locally. `MoneyPlantFrontend`, branch `research/stock-page-sample` at `277d01f`, pushed; no PR, not merged. |
 | Data | `public/fundamentals/ITC.json` (64 quarter rows, Mar 2018 – Sep 2026) and `BSE.json` (1 row). Files only; **no database tables exist yet**. Raw filings cached (untracked) in `MoneyPlantFrontend/scripts/fundamentals/cache/`. |
 | Backend | `main` at `164e7fc` (migrations to `V11`). Branch `research/fundamentals` adds `V12`; local Postgres is at `V12`, staging and production at `V11`. |
@@ -58,8 +58,8 @@ positions and holdings in that stock, its option chain, its payoff).
 - **NSE's own tables paste straight in.** "Financial Results" lists the XBRL era; "Integrated Filing -
   Financials" lists the rest. Rows from before 2018 have no file (`.../xbrl/-`).
 - **ITC as a test of the figures:** Dec 2024 checked against the raw XBRL. Mar 2025 net profit is ₹19,808 cr
-  because of a ~₹15,145 cr exceptional gain on the hotels demerger, so the schema needs `exceptional_items`
-  and `profit_discontinued`. The new-format quarters have **not** been checked against the published PDFs.
+  because of the hotels demerger, booked under profit from discontinued operations (₹14,653 cr; corrected at
+  AN-12, it is not in "exceptional items"), so the schema needs `exceptional_items` and `profit_discontinued`. The new-format quarters have **not** been checked against the published PDFs.
 - **End-of-day prices are free at the same host.** The filings contain no market prices. NSE's daily file
   `https://nsearchives.nseindia.com/products/content/sec_bhavdata_full_DDMMYYYY.csv` downloaded (200, 400 KB,
   3,551 rows): symbol, series, date, previous close, open, high, low, last, close, average price, volume,
@@ -192,8 +192,8 @@ mergers and renames need a symbol-history table; an annual figure summed from qu
 | AN-07 | Upstox fundamentals as a cross-check | `[ ]` optional |
 | AN-10 | Commit the sample branch and these docs | `[x]` 11 Nov |
 | AN-11 | `V12` migration | `[x]` 11 Nov, local only |
-| AN-12 | Parser in the backend | `[ ]` **next** |
-| AN-13 | Storage and ingest service | `[ ]` |
+| AN-12 | Parser in the backend | `[x]` 11 Nov |
+| AN-13 | Storage and ingest service | `[ ]` **next** |
 | AN-14 | Owner-only import endpoints | `[ ]` |
 | AN-15 | Read API | `[ ]` |
 | AN-16 | Stock page reads the API | `[ ]` |
@@ -259,6 +259,28 @@ Confirm the port with the owner first (the alternative is keeping the Node scrip
 
 **Verify:** `mvnw clean test` green; the golden test passes for all 64; a non-IndAS page and a wrong unit are
 refused.
+
+**Done 11 Nov 2026** (uncommitted on `research/fundamentals`). Package `com.goldenbook.tradestack.fundamentals.parse`:
+`FilingParsers.parse(text)` (entry point, picks the format from the document's start), `XbrlFilingParser` (JDK StAX,
+DTDs and external entities off; facts of context `OneD`), `IntegratedFilingParser` (regex port of
+`parse-filing.mjs`, comments stripped, cells split on opening tags, unit from row / heading / "(in Actuals)"),
+`ParsedFiling` (`Company`, `Quarter` with `BigDecimal` rupees), `Amounts`, `Basis`, `FilingFormat`,
+`FilingFormatException`. The three new figures: XBRL `ExceptionalItemsBeforeTax`,
+`ProfitLossFromDiscontinuedOperationsAfterTax`, `ProfitOrLossAttributableToOwnersOfParent`; HTML "Exceptional
+items", "Net profit (loss) from discontinued operation after tax", a label ending "profit or loss, attributable to
+owners of parent". Standalone filings have no owners' line (null).
+- `FilingParsersTest` (14): five real filings in `src/test/resources/fundamentals/` (ITC Dec 2024 consolidated and
+  standalone XBRL, ITC Mar 2025 actuals, ITC Sep 2025 lakhs, BSE Sep 2025 with the unclosed cell), every quirk on
+  a cut-down page, refusals (not IndAS, empty, no general revenue, unknown unit, external entity).
+- `ItcGoldenFilingsTest`: all **64** cached ITC filings give exactly the figures in `ITC.json`. It reads the
+  frontend repo's untracked cache, so it **skips** where that is absent (fresh clone, CI); here it ran.
+- ArchUnit: `..fundamentals..` must not depend on broker, portfolio, snapshot or credential; `..fundamentals.parse..`
+  must not depend on Spring, `java.net` or `java.sql`.
+- Gate: `mvnw clean test` **764 passing** (747 + 17).
+- **Correction to the 11 Nov findings:** ITC's Mar 2025 ₹19,808 cr is **not** an exceptional item (filed as 0). The
+  hotels demerger sits in profit from discontinued operations (₹14,653 cr), so `profit_discontinued` explains it.
+  ITC's Dec 2024 standalone does carry ₹528 cr of exceptional items.
+- The Node script stays as the loader until AN-16 decides its fate.
 
 ### `[ ]` AN-13 — Storage and ingest service
 
