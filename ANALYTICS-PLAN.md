@@ -12,10 +12,10 @@ step's **Verify** was run, not that code exists.
 
 | | State on 11 Nov 2026 |
 |---|---|
-| **Next step** | **AN-11** (`V12` migration) on a new branch `research/fundamentals`. Nothing of the production build has started. |
+| **Next step** | **AN-12** (parser in the backend). AN-11 done 11 Nov: `V12__fundamentals.sql` on `MoneyPlant` branch `research/fundamentals`, **uncommitted**; applied to the local database only. |
 | Sample page | Built and verified locally. `MoneyPlantFrontend`, branch `research/stock-page-sample` at `277d01f`, pushed; no PR, not merged. |
 | Data | `public/fundamentals/ITC.json` (64 quarter rows, Mar 2018 – Sep 2026) and `BSE.json` (1 row). Files only; **no database tables exist yet**. Raw filings cached (untracked) in `MoneyPlantFrontend/scripts/fundamentals/cache/`. |
-| Backend | Untouched. `main` at `164e7fc`, migrations at `V11`. |
+| Backend | `main` at `164e7fc` (migrations to `V11`). Branch `research/fundamentals` adds `V12`; local Postgres is at `V12`, staging and production at `V11`. |
 | This file, `BUSINESS-PLAN.md` | Committed in `MoneyPlantContext` on `marketing/first-users`, which now contains all of `origin/main` (merged 11 Nov). Pushed; no PR. |
 | Local servers | Not running (stopped 11 Nov for low memory). Start only when a step needs them, memory-capped (`memory/laptop-git-and-tooling-gaps`). |
 | Open owner decisions | Universe for the first load (AN-20); timing against Stages A–C; the NSE licence question (AN-02). The Java parser port (AN-12) is approved. |
@@ -191,8 +191,8 @@ mergers and renames need a symbol-history table; an annual figure summed from qu
 | AN-06 | Can the production VM reach `nsearchives`? | `[ ]` → AN-18 |
 | AN-07 | Upstox fundamentals as a cross-check | `[ ]` optional |
 | AN-10 | Commit the sample branch and these docs | `[x]` 11 Nov |
-| AN-11 | `V12` migration | `[ ]` **next** |
-| AN-12 | Parser in the backend | `[ ]` |
+| AN-11 | `V12` migration | `[x]` 11 Nov, local only |
+| AN-12 | Parser in the backend | `[ ]` **next** |
 | AN-13 | Storage and ingest service | `[ ]` |
 | AN-14 | Owner-only import endpoints | `[ ]` |
 | AN-15 | Read API | `[ ]` |
@@ -235,6 +235,15 @@ committed (`ba21ee3`), then `origin/main` merged into `marketing/first-users` (n
 
 **Verify:** start the backend locally (dev auth, Postgres 16 on 5433); `flyway_schema_history` shows `12`
 `success`; the three tables exist and are empty; `mvnw clean test` green.
+
+**Done 11 Nov 2026.** `MoneyPlant/src/main/resources/db/migration/V12__fundamentals.sql` on branch
+`research/fundamentals` (uncommitted). Additive: 3 `create table`, 2 `create index`, 5 `comment on`, nothing else.
+Beyond the sketch above: `check` constraints on the enumerated text columns (`statement_format`, `format`,
+`basis`, `status`), on non-blank symbol and name, on `period_end >= period_start`, and on a 64-character sha256;
+an index on `quarterly_result.filing_id`. Dry-run in a rolled-back transaction, then applied by Flyway when the
+jar booted against local Postgres: history `12 | fundamentals | t`; `company`, `filing`, `quarterly_result`
+exist with 0 rows; 9 indexes. `mvnw clean test`: **747 passing**, 0 failures (tests disable Flyway, so the boot
+is the migration's real check). Not done: staging and production, which run it at AN-18 and AN-19.
 
 ### `[ ]` AN-12 — Parser in the backend
 
