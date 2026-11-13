@@ -12,7 +12,7 @@ step's **Verify** was run, not that code exists.
 
 | | State on 11 Nov 2026 |
 |---|---|
-| **Next step** | **AN-20, more stocks**: production has 38 companies (ITC plus the non-financial Nifty 50, 12-13 Nov; list and failures under AN-20) and a year of prices. Open: the renamed-symbol decision (TMPV/TATAMOTORS, TATACONSUM/TATAGLOBAL), then the rest of the F&O list, read from NSE's listing pages in Chrome. Still with the owner: AN-21 (bank filing links), AN-23 (corporate-actions source; lead under AN-22), the two display decisions under AN-24, and optionally `GB_FUNDAMENTALS_RAW_DIR` on production. **Laptop formatted 12-13 Nov 2026:** restore per `LAPTOP-SETUP.md` ("Format of 12-13 Nov 2026"); this repo's working branch is `marketing/first-users`. |
+| **Next step** | **AN-20, more stocks**: production has 46 companies (ITC, the non-financial Nifty 50 and 8 more F&O names, 12-13 Nov; list and failures under AN-20) and a year of prices. Open: the renamed-symbol decision (TMPV/TATAMOTORS, TATACONSUM/TATAGLOBAL), then the rest of the F&O list, read from NSE's listing pages in Chrome. Still with the owner: AN-21 (bank filing links), AN-23 (corporate-actions source; lead under AN-22), the two display decisions under AN-24, and optionally `GB_FUNDAMENTALS_RAW_DIR` on production. **Laptop formatted 12-13 Nov 2026:** restore per `LAPTOP-SETUP.md` ("Format of 12-13 Nov 2026"); this repo's working branch is `marketing/first-users`. |
 | Sample page | Built and verified locally. `MoneyPlantFrontend`, branch `research/stock-page-sample` at `277d01f`, pushed; no PR, not merged. |
 | Data | `public/fundamentals/ITC.json` (64 quarter rows, Mar 2018 – Sep 2026) and `BSE.json` (1 row). Files only; **no database tables exist yet**. Raw filings cached (untracked) in `MoneyPlantFrontend/scripts/fundamentals/cache/`. |
 | Backend | `main` at `164e7fc` (migrations to `V11`). Branch `research/fundamentals` adds `V12`; local Postgres is at `V12`, staging and production at `V11`. |
@@ -200,7 +200,7 @@ mergers and renames need a symbol-history table; an annual figure summed from qu
 | AN-17 | ITC end to end on the laptop | `[x]` 11 Nov |
 | AN-18 | Server reachability, then staging | `[x]` 11 Nov |
 | AN-19 | Production, owner only | `[x]` 11 Nov |
-| AN-20 | First universe loaded | `[~]` 38 non-financial Nifty 50 companies on production 12-13 Nov; renamed-symbol decision open |
+| AN-20 | First universe loaded | `[~]` 46 companies on production 12-13 Nov (non-financial Nifty 50 + 8 F&O); renamed-symbol decision open |
 | AN-21 | Bank, NBFC, insurer formats | `[ ]` |
 | AN-22 | End-of-day prices | `[x]` 11 Nov (backend `9f56112`, frontend `1753513`) |
 | AN-23 | Corporate actions | `[ ]` |
@@ -461,7 +461,7 @@ September 2026); a year of prices was loaded from the owner's signed-in tab (10 
 52 not published, 0 failed, about 12 minutes). Production's ITC page shows the live price, P/E and market cap, and the
 52-week range ₹252.80-₹412.00 over 248 trading days to 11 Nov 2026.
 
-**AN-20, two more batches, 12-13 Nov 2026 (38 companies on production).** Filing links read from NSE's two listing pages
+**AN-20, three more batches, 12-13 Nov 2026 (46 companies on production).** Filing links read from NSE's two listing pages
 in the owner's Chrome (no file downloads, no listing API), imported one company at a time through
 `/api/admin/fundamentals/import` from the owner's signed-in tab (about 2 s per filing). Non-financial Nifty 50 names only;
 banks, NBFCs and insurers wait for AN-21. Checked afterwards through `GET /api/research/stocks/{symbol}` (rows = quarters
@@ -471,6 +471,7 @@ across both bases):
 |---|---|
 | 1 | RELIANCE 67, TCS 66, INFY 66, HCLTECH 67, WIPRO 64, LT 70, BHARTIARTL 66, HINDUNILVR 65, MARUTI 61, SUNPHARMA 69, ASIANPAINT 69, ULTRACEMCO 64, TITAN 68, M&M 62; all Mar/Jun/Sep 2018 to Sep 2026 |
 | 2 | TECHM 66, ONGC 63, NTPC 63, POWERGRID 65, COALINDIA 70, TATASTEEL 69, JSWSTEEL 67, HINDALCO 65, ADANIENT 67, ADANIPORTS 65, CIPLA 68, DRREDDY 70, BRITANNIA 68, HEROMOTOCO 66, BAJAJ-AUTO 66, APOLLOHOSP 62, BEL 64, TRENT 65 to Sep 2026; GRASIM 68 and EICHERMOT 68 to Jun 2026 (Sep results not filed yet) |
+| 3 (13 Nov) | DIVISLAB 67, TATAPOWER 66, PIDILITIND 70, SIEMENS 63, DLF 63, HAVELLS 65, GODREJCP 66, DABUR 70 filings, every one parsed, none failed; all to Sep 2026. Slower tonight: about 6 minutes a company |
 | Partial | NESTLEIND 22 (Sep 2023 on: NSE's results list has nothing for it between 2010 and Sep 2023, around its change of financial year); TATACONSUM 54 (Mar 2020 on); TMPV 8 (Sep 2025 to Jun 2026) |
 
 Failures, all understood:
@@ -487,7 +488,9 @@ Failures, all understood:
 
 Seen on the way: after midnight IST the stock page shows "No live price", so P/E and market cap are blank until a broker
 session is live again; the last-close fallback suggested under AN-24 would cover this. Not loaded: TMCV (new listing, no
-history), the rest of the F&O list.
+history), the rest of the F&O list. BAJAJ-AUTO lacks its consolidated Mar 2026 quarter, so its trailing figures show dashes on the
+search page; re-import that filing. Also shipped 13 Nov: the Research search page and header tab (backend `dd2bc2c`,
+frontend `2c87678`), the chart tooltip (`d9269a8`), loss bars below the zero line and no Filing row (`0b184c1`).
 
 **AN-22 done 11 Nov 2026.** `V13`: `price_eod` (raw prices as traded, EQ only, keyed by **NSE symbol** and date, because the
 file covers every listed stock, not only loaded companies; **not partitioned**, as about 700k rows a year does not need it yet)
