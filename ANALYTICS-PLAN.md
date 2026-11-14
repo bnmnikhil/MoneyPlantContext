@@ -206,9 +206,9 @@ mergers and renames need a symbol-history table; an annual figure summed from qu
 | AN-23 | Corporate actions | `[ ]` |
 | AN-24 | Metrics table | `[x]` 11 Nov (`2b4f9fc`) |
 | AN-25 | Owner import page (file upload instead of console) | `[x]` 11 Nov (`594520e`) |
-| AN-26 | Price chart with volume and delivery % | `[~]` 1Y done 14 Nov; daily job built (AN-26c, awaiting deploy); 3Y/5Y/Max pending (AN-26b) |
+| AN-26 | Price chart with volume and delivery % | `[~]` 1Y done 14 Nov; daily job in prod 14 Nov (AN-26c); 3Y/5Y/Max pending (AN-26b) |
 | AN-27 | Results-day moves | `[ ]` |
-| AN-28 | Annual profit and loss | `[x]` 14 Nov (`7ce1edb`); growth-span fix `ca60c77` awaiting deploy |
+| AN-28 | Annual profit and loss | `[x]` 14 Nov (`7ce1edb`); growth-span fix `ca60c77` deployed 14 Nov |
 | AN-29 | Shareholding pattern | `[ ]` |
 | AN-30 | Balance sheet and cash flow | `[ ]` |
 | AN-31 | Peers and upcoming events | `[ ]` |
@@ -596,8 +596,8 @@ Open with the owner: one long page or tabs (Overview, Results, Ownership, Price)
   - **Chart:** add 3Y, 5Y, Max; above one year send or draw **weekly** points (last close of the week, summed volume and
     delivered quantity), so about 350 points rather than 1,700; the endpoint takes a range or a `from` date.
 
-  **AN-26c daily prices, built 14 Nov 2026, not yet deployed** (branch `research/daily-prices` in both repos, backend
-  `23b817d`, frontend `8da7656`; awaiting the owner's go-ahead). `PriceDailyJob` runs at 19:30, 21:30 and 08:00 IST every
+  **AN-26c daily prices, in production 14 Nov 2026** (branch `research/daily-prices` in both repos, backend
+  `23b817d`, frontend `8da7656`; merged `c6fbaa3` / `9f34e42`). `PriceDailyJob` runs at 19:30, 21:30 and 08:00 IST every
   day (weekends too: NSE's special sessions) and loads every date from the day after the newest stored file
   (`PriceStore.lastFileDate`, the max `price_eod_file.file_date`) to today through `PriceLoadService`, so a missed run, a
   restart or a late file is caught up and a repeat does nothing; a holiday stays "not published". A gap over 62 days loads
@@ -625,7 +625,10 @@ Open with the owner: one long page or tabs (Overview, Results, Ownership, Price)
   missing FY23 (FY22 to FY26). Until deployed, production's growth is wrong for stocks with a missing year.
   **BAJAJ-AUTO, 14 Nov:** its Mar 2026 filing names the company BAJAJAUTO; the importer now compares symbols on letters and
   digits only and stores under the symbol being loaded (backend `c7fb6ca`, `f515cbe`, in production). The Mar 2026 quarter
-  imported; P/E 23.1. Its FY23 gap is probably the same spelling in another filing: re-import its whole list to fill it.
+  imported; P/E 23.1. Its FY23 gap is NSE's, not ours: NSE's results list has no row at all for the 30 Jun 2022 quarter
+  (checked 14 Nov), so FY23 and 3-year growth stay dashes unless that quarter is found elsewhere (BSE, or the company's site).
+  **Deployed 14 Nov 13:10 IST:** the growth fix and AN-26c (backend `c6fbaa3`, frontend `9f34e42`); BAJAJ-AUTO now shows
+  3-year growth as a dash, 5-year 17.8% revenue / 16.8% profit; the price status reads daily load on, latest file 13 Nov.
 - **AN-29 Shareholding pattern.** Promoter, foreign institutions, domestic institutions, public, and promoter pledges, each
   quarter. A new NSE filing type: new tables, a parser, IDs read from NSE's listing page in Chrome as for results.
 - **AN-30 Balance sheet and cash flow.** Half-yearly, filed with the September and March results. Enables debt, cash, ROE,
