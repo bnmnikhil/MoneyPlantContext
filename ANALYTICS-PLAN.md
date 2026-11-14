@@ -561,11 +561,11 @@ Order: AN-26, AN-27 (no new data; they make the page useful to F&O traders), the
 then AN-29 and AN-30 (new data and parsers), and AN-31 once more companies are loaded. Corporate actions stay AN-23.
 Open with the owner: one long page or tabs (Overview, Results, Ownership, Price) once the page has more than four sections.
 
-- **AN-26 Price chart with volume and delivery %.** From  (a year is stored; the daily file also carries delivery
+- **AN-26 Price chart with volume and delivery %.** From `price_eod` (a year is stored; the daily file also carries delivery
   quantity and %, which most screeners do not show). A read endpoint for one stock's daily rows; close-price chart with
   1M/3M/6M/1Y ranges; volume bars split into delivered and not delivered; delivery % against its own average. Prices are as
   traded, not adjusted for splits or bonuses until AN-23, and the page says so.
-- **AN-27 Results-day moves.** For each of the last eight results: the approval date (), the close
+- **AN-27 Results-day moves.** For each of the last eight results: the approval date (`filing.approved_on`), the close
   before and the next trading day's close, the move in % and against the stock's typical daily move. The section closest to
   GoldenBook's purpose: does this stock move a lot on results? One query over data already stored.
 - **AN-28 Annual profit and loss.** Ten years of revenue, profit and margins; 3-, 5- and 7-year growth. First as the sum of a
