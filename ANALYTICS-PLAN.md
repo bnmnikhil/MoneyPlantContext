@@ -206,7 +206,7 @@ mergers and renames need a symbol-history table; an annual figure summed from qu
 | AN-23 | Corporate actions | `[ ]` |
 | AN-24 | Metrics table | `[x]` 11 Nov (`2b4f9fc`) |
 | AN-25 | Owner import page (file upload instead of console) | `[x]` 11 Nov (`594520e`) |
-| AN-26 | Price chart with volume and delivery % | `[~]` started 14 Nov |
+| AN-26 | Price chart with volume and delivery % | `[~]` 1Y done 14 Nov; 3Y/5Y/Max pending (AN-26b) |
 | AN-27 | Results-day moves | `[ ]` |
 | AN-28 | Annual profit and loss | `[ ]` |
 | AN-29 | Shareholding pattern | `[ ]` |
@@ -565,6 +565,36 @@ Open with the owner: one long page or tabs (Overview, Results, Ownership, Price)
   quantity and %, which most screeners do not show). A read endpoint for one stock's daily rows; close-price chart with
   1M/3M/6M/1Y ranges; volume bars split into delivered and not delivered; delivery % against its own average. Prices are as
   traded, not adjusted for splits or bonuses until AN-23, and the page says so.
+
+  **AN-26 1Y done 14 Nov 2026** (branch `research/price-chart` in both repos; production deploy on the owner's word, "A,
+  take 1Y to prod first"). `GET /api/research/stocks/{symbol}/prices` → `{symbol, adjusted: false, days[]}`, the stored days
+  in the 365 up to the latest (`PriceStore.lastYear`), same audience and bare 404 as the stock endpoint, 200 with no days
+  when none are stored. Frontend `features/research/PriceSection.tsx` + pure `prices.ts`: 1M/3M/6M/1Y; close as an area
+  line, **green when up over the shown range and red when down** (owner's choice over neutral grey, gold or blue); volume
+  bars split delivered / traded-not-delivered on the same date axis (two panels, never two scales); a readout above that
+  follows the crosshair and rests on the latest day; delivery % latest vs 20-day vs range average; heading shows change
+  over the range and the **intraday** low and high (they can sit outside the closes the line draws: ITC's 1M low ₹252.80
+  on 28 Oct closed at ₹259.50). Month labels once per month for 6M/1Y. Checked on the laptop in Chrome (ITC, desktop and
+  390 px); gates: backend 804, frontend 200, typecheck, build.
+
+  **AN-26b pending — 3Y, 5Y and Max (agreed 14 Nov 2026, next after the 1Y deploy).**
+  - **How far back:** probed 14 Nov from the laptop with a self-identifying user agent: `sec_bhavdata_full_DDMMYYYY.csv`
+    answers 200 for 15 Oct 2019, 1 Nov 2019, 13 Nov 2020, 12 Nov 2021, 14 Nov 2023, and 404 for every date tried from
+    Jan to 16 Sep 2019 and in 2016 and 2018. So about seven years: 3Y, 5Y and **Max (from Oct 2019)**. The first exact
+    day between 16 Sep and 15 Oct 2019 is not pinned yet.
+  - **10Y is not in this file.** Before Oct 2019 only NSE's older bhavcopy exists (different format, zipped, no delivery
+    columns): a separate loader, later, if wanted.
+  - **Backfill:** about 1,550 trading days, Oct 2019 to Nov 2025, through `POST /api/admin/prices/load` from the owner's
+    signed-in tab (62 days per call, about 30 calls, about an hour at the last load's pace; stop before midnight IST, when
+    the session ends). Adds roughly 4-5 million `price_eod` rows (every EQ symbol); **check the VM's free disk first**
+    (ask the owner to run `df -h` on the VM, or get approval to run it). Not partitioned; revisit if it grows past that.
+  - **Split and bonus adjustment without AN-23:** on an ex-date NSE's file prints an *adjusted* `PREV_CLOSE`. The factor
+    for each day is `stored close of the previous trading day / that day's prev_close`; where it differs from 1 beyond
+    rounding (say more than 0.5%), multiply every earlier price (and divide earlier volumes) by it. Computed when read,
+    prices stay stored as traded. Dividends are not adjusted this way (NSE does not adjust prev close for them); say so.
+    Flip `adjusted` to true on the response when applied. Test with a known split or bonus in the window.
+  - **Chart:** add 3Y, 5Y, Max; above one year send or draw **weekly** points (last close of the week, summed volume and
+    delivered quantity), so about 350 points rather than 1,700; the endpoint takes a range or a `from` date.
 - **AN-27 Results-day moves.** For each of the last eight results: the approval date (`filing.approved_on`), the close
   before and the next trading day's close, the move in % and against the stock's typical daily move. The section closest to
   GoldenBook's purpose: does this stock move a lot on results? One query over data already stored.
