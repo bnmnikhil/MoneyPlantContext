@@ -208,7 +208,7 @@ mergers and renames need a symbol-history table; an annual figure summed from qu
 | AN-25 | Owner import page (file upload instead of console) | `[x]` 11 Nov (`594520e`) |
 | AN-26 | Price chart with volume and delivery % | `[~]` 1Y done 14 Nov; daily job in prod 14 Nov (AN-26c); 3Y/5Y/Max pending (AN-26b) |
 | AN-27 | Results-day moves | `[ ]` |
-| AN-28 | Annual profit and loss | `[x]` 14 Nov (`7ce1edb`); growth-span fix `ca60c77` deployed 14 Nov |
+| AN-28 | Annual profit and loss | `[x]` 14 Nov (`7ce1edb`); growth-span fix `ca60c77` deployed 14 Nov; AN-28b (years from March filings) later |
 | AN-29 | Shareholding pattern | `[ ]` |
 | AN-30 | Balance sheet and cash flow | `[ ]` |
 | AN-31 | Peers and upcoming events | `[ ]` |
@@ -626,7 +626,17 @@ Open with the owner: one long page or tabs (Overview, Results, Ownership, Price)
   **BAJAJ-AUTO, 14 Nov:** its Mar 2026 filing names the company BAJAJAUTO; the importer now compares symbols on letters and
   digits only and stores under the symbol being loaded (backend `c7fb6ca`, `f515cbe`, in production). The Mar 2026 quarter
   imported; P/E 23.1. Its FY23 gap is NSE's, not ours: NSE's results list has no row at all for the 30 Jun 2022 quarter
-  (checked 14 Nov), so FY23 and 3-year growth stay dashes unless that quarter is found elsewhere (BSE, or the company's site).
+  (checked 14 Nov under Quarterly, Half Yearly, Annual and Others), so FY23 and 3-year growth stay dashes. **Owner: leave
+  it for now (14 Nov).**
+
+  **AN-28b, later (agreed 14 Nov 2026): yearly figures from the March filing itself.** Each March-quarter filing carries the
+  full financial year beside the quarter (XBRL context `FourD`, 12 months; the integrated HTML has a "year ended" column),
+  as the Sep filing carries the half year (`FourD`, 6 months: Bajaj's Sep 2022 file has Apr-Sep and Jul-Sep). Read the
+  12-month column and store it as a yearly row (new table or a `period_months` on the result), and show those years in
+  place of summed quarters. Fixes years with a quarter NSE never published (BAJAJ-AUTO FY23, June 2022 missing) and gives
+  the company's own annual EPS instead of the sum of quarterly EPS. Cost: parser change and a re-import of each company's
+  March filings (about 8 per company) because production does not keep originals. Fallbacks considered and not chosen:
+  June = half year − Sep quarter from the Sep filing; or fetch the missing filing from BSE (needs BSE addresses allowed).
   **Deployed 14 Nov 13:10 IST:** the growth fix and AN-26c (backend `c6fbaa3`, frontend `9f34e42`); BAJAJ-AUTO now shows
   3-year growth as a dash, 5-year 17.8% revenue / 16.8% profit; the price status reads daily load on, latest file 13 Nov.
 - **AN-29 Shareholding pattern.** Promoter, foreign institutions, domestic institutions, public, and promoter pledges, each
