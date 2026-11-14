@@ -206,9 +206,9 @@ mergers and renames need a symbol-history table; an annual figure summed from qu
 | AN-23 | Corporate actions | `[ ]` |
 | AN-24 | Metrics table | `[x]` 11 Nov (`2b4f9fc`) |
 | AN-25 | Owner import page (file upload instead of console) | `[x]` 11 Nov (`594520e`) |
-| AN-26 | Price chart with volume and delivery % | `[~]` 1Y done 14 Nov; 3Y/5Y/Max pending (AN-26b) |
+| AN-26 | Price chart with volume and delivery % | `[~]` 1Y done 14 Nov; daily job built (AN-26c, awaiting deploy); 3Y/5Y/Max pending (AN-26b) |
 | AN-27 | Results-day moves | `[ ]` |
-| AN-28 | Annual profit and loss | `[ ]` |
+| AN-28 | Annual profit and loss | `[x]` 14 Nov (`7ce1edb`); growth-span fix `ca60c77` awaiting deploy |
 | AN-29 | Shareholding pattern | `[ ]` |
 | AN-30 | Balance sheet and cash flow | `[ ]` |
 | AN-31 | Peers and upcoming events | `[ ]` |
@@ -595,12 +595,37 @@ Open with the owner: one long page or tabs (Overview, Results, Ownership, Price)
     Flip `adjusted` to true on the response when applied. Test with a known split or bonus in the window.
   - **Chart:** add 3Y, 5Y, Max; above one year send or draw **weekly** points (last close of the week, summed volume and
     delivered quantity), so about 350 points rather than 1,700; the endpoint takes a range or a `from` date.
+
+  **AN-26c daily prices, built 14 Nov 2026, not yet deployed** (branch `research/daily-prices` in both repos, backend
+  `23b817d`, frontend `8da7656`; awaiting the owner's go-ahead). `PriceDailyJob` runs at 19:30, 21:30 and 08:00 IST every
+  day (weekends too: NSE's special sessions) and loads every date from the day after the newest stored file
+  (`PriceStore.lastFileDate`, the max `price_eod_file.file_date`) to today through `PriceLoadService`, so a missed run, a
+  restart or a late file is caught up and a repeat does nothing; a holiday stays "not published". A gap over 62 days loads
+  the latest 62 and says so (older days are an owner load). On unless `GB_PRICES_DAILY=false`; to keep it off on the laptop
+  set that in the user environment; **staging runs it too** once deployed there. `GET /api/admin/prices/status` (owner only)
+  → newest file, on/off, last run; one line on `/app/admin/research` above Load prices, red when off, failed or gapped.
+  Verified: unit tests for catch-up, not published, up to date, empty store, gap, failure; DB test for `lastFileDate`;
+  the local backend boots with the job wired and the status endpoint answering. Gates: backend 810, frontend 210, build.
+  Production prices were loaded by hand to 13 Nov on 14 Nov.
 - **AN-27 Results-day moves.** For each of the last eight results: the approval date (`filing.approved_on`), the close
   before and the next trading day's close, the move in % and against the stock's typical daily move. The section closest to
   GoldenBook's purpose: does this stock move a lot on results? One query over data already stored.
 - **AN-28 Annual profit and loss.** Ten years of revenue, profit and margins; 3-, 5- and 7-year growth. First as the sum of a
   financial year's four stored quarters (only when all four are there); later, the March filing's own full-year column,
   which needs the filings fetched again (production does not keep the originals).
+
+  **AN-28 done 14 Nov 2026, in production** (frontend `7ce1edb`). `features/research/annual.ts`: a year is the sum of its
+  four stored quarters, only when all four are there and consecutive; the year end is the company's own (commonest month of
+  its audited quarters, March by default; Siemens September); at most ten years plus TTM when the latest quarter is not a
+  year end; the quarterly table's rows reused, so lines a quarter did not state are a dash. EPS is the sum of quarterly EPS.
+  Growth: revenue and net profit compounded over 3, 5 and 7 full years; a dash with a loss at either end. ITC consolidated
+  shows FY20-FY26 + TTM (FY19 is incomplete: quarterly consolidated results were mandatory only from April 2019).
+  **Fix merged, not deployed** (frontend `ca60c77` on `main`; the deploy was held for the owner's go-ahead): growth must start
+  at the year exactly N years back, found by date. Counting back along the list stretched BAJAJ-AUTO's "3 years" across its
+  missing FY23 (FY22 to FY26). Until deployed, production's growth is wrong for stocks with a missing year.
+  **BAJAJ-AUTO, 14 Nov:** its Mar 2026 filing names the company BAJAJAUTO; the importer now compares symbols on letters and
+  digits only and stores under the symbol being loaded (backend `c7fb6ca`, `f515cbe`, in production). The Mar 2026 quarter
+  imported; P/E 23.1. Its FY23 gap is probably the same spelling in another filing: re-import its whole list to fill it.
 - **AN-29 Shareholding pattern.** Promoter, foreign institutions, domestic institutions, public, and promoter pledges, each
   quarter. A new NSE filing type: new tables, a parser, IDs read from NSE's listing page in Chrome as for results.
 - **AN-30 Balance sheet and cash flow.** Half-yearly, filed with the September and March results. Enables debt, cash, ROE,
