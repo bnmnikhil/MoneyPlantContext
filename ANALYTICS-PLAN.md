@@ -206,6 +206,12 @@ mergers and renames need a symbol-history table; an annual figure summed from qu
 | AN-23 | Corporate actions | `[ ]` |
 | AN-24 | Metrics table | `[x]` 11 Nov (`2b4f9fc`) |
 | AN-25 | Owner import page (file upload instead of console) | `[x]` 11 Nov (`594520e`) |
+| AN-26 | Price chart with volume and delivery % | `[~]` started 14 Nov |
+| AN-27 | Results-day moves | `[ ]` |
+| AN-28 | Annual profit and loss | `[ ]` |
+| AN-29 | Shareholding pattern | `[ ]` |
+| AN-30 | Balance sheet and cash flow | `[ ]` |
+| AN-31 | Peers and upcoming events | `[ ]` |
 
 ## Steps
 
@@ -547,6 +553,30 @@ page cuts it into 62-day calls and shows each outcome); Upload one filing (fallb
 guard. `lib/api.ts` gains a raw-body option for the upload. Helpers in `features/research/importTools.ts` with tests. Checked in
 Chrome on the laptop: a one-filing list imported (1 parsed), a week of prices (5 already loaded, 1 not published, 1 loaded),
 and with no owner configured the page reads "Not available" and the import 404s. Gates: typecheck, `npm test` 183, build.
+
+### Stock page sections beyond quarterly results (agreed 14 Nov 2026)
+
+Discussed with the owner on 14 Nov 2026, ranked by value against how hard the data is. The owner said to start with AN-26.
+Order: AN-26, AN-27 (no new data; they make the page useful to F&O traders), then AN-28 from the quarters already stored,
+then AN-29 and AN-30 (new data and parsers), and AN-31 once more companies are loaded. Corporate actions stay AN-23.
+Open with the owner: one long page or tabs (Overview, Results, Ownership, Price) once the page has more than four sections.
+
+- **AN-26 Price chart with volume and delivery %.** From  (a year is stored; the daily file also carries delivery
+  quantity and %, which most screeners do not show). A read endpoint for one stock's daily rows; close-price chart with
+  1M/3M/6M/1Y ranges; volume bars split into delivered and not delivered; delivery % against its own average. Prices are as
+  traded, not adjusted for splits or bonuses until AN-23, and the page says so.
+- **AN-27 Results-day moves.** For each of the last eight results: the approval date (), the close
+  before and the next trading day's close, the move in % and against the stock's typical daily move. The section closest to
+  GoldenBook's purpose: does this stock move a lot on results? One query over data already stored.
+- **AN-28 Annual profit and loss.** Ten years of revenue, profit and margins; 3-, 5- and 7-year growth. First as the sum of a
+  financial year's four stored quarters (only when all four are there); later, the March filing's own full-year column,
+  which needs the filings fetched again (production does not keep the originals).
+- **AN-29 Shareholding pattern.** Promoter, foreign institutions, domestic institutions, public, and promoter pledges, each
+  quarter. A new NSE filing type: new tables, a parser, IDs read from NSE's listing page in Chrome as for results.
+- **AN-30 Balance sheet and cash flow.** Half-yearly, filed with the September and March results. Enables debt, cash, ROE,
+  ROCE and free cash flow. The largest parser job.
+- **AN-31 Peers and upcoming events.** Peers needs NSE's industry classification; the next results date comes from board-
+  meeting notices, so a trader can see whether results fall before expiry.
 
 ### Later, each its own step
 
